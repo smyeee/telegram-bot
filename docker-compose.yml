@@ -8,4 +8,4 @@ services:
       - .:/bot
     # ports:
     #   - 8000:8000
-    command: python3 main.py
+    command: python3 -u main.py
