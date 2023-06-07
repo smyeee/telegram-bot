@@ -1,4 +1,4 @@
-# How to use:
+# How to use the bot
 ### Run it locally
 install the dependancies:  
 `pip install -r requirement.txt`  
