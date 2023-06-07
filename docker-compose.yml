@@ -1,0 +1,11 @@
+version: '3'
+services:
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: dockerfile
+    volumes:
+      - .:/bot
+    # ports:
+    #   - 8000:8000
+    command: python3 main.py
