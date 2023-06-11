@@ -25,7 +25,7 @@ import json
 import datetime
 import geopandas as gpd
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup,  ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, BasePersistence, ConversationHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, BasePersistence, ConversationHandler, PicklePersistence
 from telegram.error import BadRequest
 # Enable logging
 logging.basicConfig(
@@ -35,21 +35,51 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class JSONPersistence(BasePersistence):
-    def __init__(self, filename):
-        self.filename = filename
+# class JSONPersistence(BasePersistence):
+#     def __init__(self, filename):
+#         self.filename = filename
+#         self.data = self.load()
 
-    def load(self):
-        try:
-            with open(self.filename, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return {}
+#     def load(self):
+#         try:
+#             with open(self.filename, 'r') as f:
+#                 return json.load(f)
+#         except FileNotFoundError:
+#             return {}
 
-    def dump(self, data):
-        with open(self.filename, 'w') as f:
-            json.dump(data, f)
+#     def dump(self):
+#         with open(self.filename, 'w') as f:
+#             json.dump(self.data, f)
 
+#     def get_user_data(self):
+#         return self.data.setdefault('user_data', {})
+
+#     def update_user_data(self, user_id, data):
+#         self.data.setdefault('user_data', {})[str(user_id)] = data
+#         self.dump()
+
+#     def get_bot_data():
+#         pass
+
+#     def update_bot_data():
+#         pass
+
+#     def get_chat_data():
+#         pass
+
+#     def update_chat_data():
+#         pass
+
+#     def get_conversations():
+#         pass
+
+#     def update_conversation():
+#         pass
+
+#     # Implement other required methods for chat and conversation data if needed
+
+
+# persistence = JSONPersistence('bot_data.json')
 
 # Constants for ConversationHandler states
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION = range(5)
@@ -57,8 +87,7 @@ START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION = range(5)
 TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
 PROXY_URL = "http://192.168.10.185:22222"
 
-persistence = JSONPersistence('bot_data.json')
-
+persistence = PicklePersistence(filename='bot_data.pickle')
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
     user_data = context.user_data
@@ -169,7 +198,7 @@ def send_scheduled_messages(context: CallbackContext):
 def main():
     # Create an instance of Updater and pass the bot token and persistence
     # updater = Updater(TOKEN, persistence=persistence, use_context=True)
-    updater = Updater(TOKEN, persistence=persistence, use_context=True, request_kwargs={'proxy_url': PROXY_URL})
+    updater = Updater(TOKEN, persistence=persistence, use_context=True) #, request_kwargs={'proxy_url': PROXY_URL})
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -200,56 +229,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# def start(update: Update, context: CallbackContext) -> None:
-#     update.message.reply_text("Send me your location!")
-
-# def handle_location(update: Update, context: CallbackContext) -> None:
-#     user_location = update.message.location
-#     context.user_data["location"] = user_location
-
-#     question = "Choose an option:"
-#     options = [("Option 1", "o1"), ("Option 2", "o2"), ("Option 3", "o3")]
-#     keyboard = [[InlineKeyboardButton(text, callback_data=data)] for text, data in options]
-
-#     reply_markup = InlineKeyboardMarkup(keyboard)
-#     update.message.reply_text(question, reply_markup=reply_markup)
-
-# def handle_button_click(update: Update, context: CallbackContext) -> None:
-#     query = update.callback_query
-#     query.answer()
-
-#     choice = query.data
-#     location = context.user_data["location"]
-#     geo_data = gpd.read_file("test.geojson")
-
-#     # Process GeoJSON data and user's choice
-#     result = process_geo_data(geo_data, location, choice)
-#     query.edit_message_text(f"Your choice: {choice}\nResult: {result}")
-
-# def process_geo_data(geo_data, location, choice):
-#     # Implement your custom logic to extract values from the GeoJSON file
-#     # based on the user's location and choice.
-
-#     # Example: Find the nearest point to the user's location
-#     user_point = gpd.points_from_xy([location.longitude], [location.latitude])
-#     nearest = geo_data.distance(user_point[0]).idxmin()
-#     result = geo_data.iloc[nearest]
-
-#     return result
-
-# def main() -> None:
-#     try:
-#         updater = Updater(TOKEN, request_kwargs={'proxy_url': PROXY_URL})
-#         dispatcher = updater.dispatcher
-
-#         dispatcher.add_handler(CommandHandler("start", start))
-#         dispatcher.add_handler(MessageHandler(Filters.location, handle_location))
-#         dispatcher.add_handler(CallbackQueryHandler(handle_button_click))
-
-#         updater.start_polling()
-#         updater.idle()
-#     except BadRequest:
-#         print('err')
-# if __name__ == "__main__":
-#     main()
