@@ -222,7 +222,7 @@ def main():
 
     # Schedule periodic messages
     job_queue = updater.job_queue
-    job_queue.run_repeating(send_scheduled_messages, interval=datetime.timedelta(days=1).total_seconds())
+    job_queue.run_repeating(send_scheduled_messages, interval=datetime.timedelta(seconds=30).total_seconds())
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
