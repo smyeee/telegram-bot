@@ -6,7 +6,7 @@ authors = ["Amir Reza Rezvanian <arrezvaniyan@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.10.4"
+python = "3.10.6"
 python-telegram-bot = {extras = ["all"], version = "13.7"}
 pydantic = "^1.10.6"
 motor = "^3.1.1"
