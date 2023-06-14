@@ -37,7 +37,7 @@ def start(update: Update, context: CallbackContext):
     reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
 
     # Ask for user ID
-    update.message.reply_text("Please enter your ID:")
+    update.message.reply_text("Please enter your ID")
     return ASK_PHONE
 
 
