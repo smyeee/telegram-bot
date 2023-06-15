@@ -28,30 +28,38 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}
+
+      - name: Establish VPN connection
+        run: |
+            echo "${{ secrets.VPN_CONFIG }}" > vpn-config.ovpn
+            echo "${{ secrets.VPN_USERNAME }}" > vpn-credentials.txt
+            echo "${{ secrets.VPN_PASSWORD }}" >> vpn-credentials.txt
+            openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
+            sleep 10
         
       - name: Deploy to Staging
         uses: appleboy/ssh-action@v0.1.10
-        env: 
-          OVPN_CONFIG: ${{ secrets.VPN_CONFIG }}
-          VPN_USERNAME: ${{ secrets.VPN_USERNAME }}
-          VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+        # env: 
+        #   OVPN_CONFIG: ${{ secrets.VPN_CONFIG }}
+        #   VPN_USERNAME: ${{ secrets.VPN_USERNAME }}
+        #   VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
         with:
           host: ${{ secrets.STAGING_SERVER_HOST }}
           username: ${{ secrets.STAGING_SERVER_USERNAME }}
           password: ${{ secrets.STAGING_SERVER_PASSWORD }}   
-          envs: OVPN_CONFIG,VPN_USERNAME,VPN_PASSWORD
+          # envs: OVPN_CONFIG,VPN_USERNAME,VPN_PASSWORD
           script: |
-            echo "${OVPN_CONFIG}" > vpn-config.ovpn
-            echo "${VPN_USERNAME}" > vpn-credentials.txt
-            echo "${VPN_PASSWORD}" >> vpn-credentials.txt
+            # echo "${OVPN_CONFIG}" > vpn-config.ovpn
+            # echo "${VPN_USERNAME}" > vpn-credentials.txt
+            # echo "${VPN_PASSWORD}" >> vpn-credentials.txt
       
-            openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
-            sleep 5
+            # openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
+            # sleep 5
 
             ls -la
 
-            # docker pull ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
-            # docker run -d --name meteor-bot ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+            docker pull ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+            docker run -d --name meteor-bot ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
       
             # Cleanup: Delete the temporary VPN credentials file
             rm vpn-credentials.txt
