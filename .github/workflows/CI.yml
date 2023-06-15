@@ -11,7 +11,7 @@ on:
 
 jobs:
   docker-build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
@@ -34,22 +34,22 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}
         
-      - name: Deploy to Staging
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.STAGING_SERVER_HOST }}
-          username: ${{ secrets.STAGING_SERVER_USERNAME }}
-          password: ${{ secrets.STAGING_SERVER_PASSWORD }}   
-          script: |
-            # echo "${OVPN_CONFIG}" > vpn-config.ovpn
-            # echo "${VPN_USERNAME}" > vpn-credentials.txt
-            # echo "${VPN_PASSWORD}" >> vpn-credentials.txt
+      # - name: Deploy to Staging
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.STAGING_SERVER_HOST }}
+      #     username: ${{ secrets.STAGING_SERVER_USERNAME }}
+      #     password: ${{ secrets.STAGING_SERVER_PASSWORD }}   
+      #     script: |
+      #       echo "${OVPN_CONFIG}" > vpn-config.ovpn
+      #       echo "${VPN_USERNAME}" > vpn-credentials.txt
+      #       echo "${VPN_PASSWORD}" >> vpn-credentials.txt
       
-            # openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
-            # sleep 5
-            # Rest of the deployment steps
-            docker pull ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
-            docker run -d --name meteor-bot ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+      #       openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
+      #       sleep 5
+      #       # Rest of the deployment steps
+      #       docker pull ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+      #       docker run -d --name meteor-bot ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
       
-            # Cleanup: Delete the temporary VPN credentials file
-            rm vpn-credentials.txt
+      #       # Cleanup: Delete the temporary VPN credentials file
+      #       rm vpn-credentials.txt
