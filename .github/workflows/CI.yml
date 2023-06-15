@@ -31,11 +31,12 @@ jobs:
 
       - name: Establish VPN connection
         run: |
-            sudo apt-get install openvpn
+            sudo apt update
+            sudo apt install -y openvpn openvpn-systemd-resolved
             echo "${{ secrets.VPN_CONFIG }}" > vpn-config.ovpn
             echo "${{ secrets.VPN_USERNAME }}" > vpn-credentials.txt
             echo "${{ secrets.VPN_PASSWORD }}" >> vpn-credentials.txt
-            openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
+            sudo openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
             sleep 10
         
       - name: Deploy to Staging
