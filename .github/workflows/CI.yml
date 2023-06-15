@@ -21,22 +21,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          
       - name: Build and push image
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}
-
-      - name: Deploy to Staging
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.STAGING_SERVER_HOST }}
-          username: ${{ secrets.STAGING_SERVER_USERNAME }}
-          password: ${{ secrets.STAGING_SERVER_PASSWORD }}
-          script: |
-            docker pull your-dockerhub-username/your-image:latest
-            docker run -d --name your-app-container your-dockerhub-username/your-image:latest
         
       - name: Deploy to Staging
         uses: appleboy/ssh-action@master
