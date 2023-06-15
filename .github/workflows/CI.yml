@@ -1,5 +1,10 @@
 name: CI
 
+env: 
+  OVPN_CONFIG: ${{ secrets.VPN_CONFIG }}
+  VPN_USERNAME: ${{ secrets.VPN_USERNAME }}
+  VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+
 on:
   push:
     branches: [ "main" ]
@@ -34,12 +39,7 @@ jobs:
         with:
           host: ${{ secrets.STAGING_SERVER_HOST }}
           username: ${{ secrets.STAGING_SERVER_USERNAME }}
-          password: ${{ secrets.STAGING_SERVER_PASSWORD }}
-          env: |
-              OVPN_CONFIG: ${{ secrets.VPN_CONFIG }}
-              VPN_USERNAME: ${{ secrets.VPN_USERNAME }}
-              VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
-        
+          password: ${{ secrets.STAGING_SERVER_PASSWORD }}   
           script: |
             echo "${OVPN_CONFIG}" > vpn-config.ovpn
             echo "${VPN_USERNAME}" > vpn-credentials.txt
