@@ -2,11 +2,9 @@ FROM python:3.10.6
 
 WORKDIR /bot
 
-RUN pip install poetry
+COPY requirements.txt .
 
-COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN poetry install
-
-CMD ["python", "main.py"]
+CMD ["python", "-m", "watchdog", "main.py"]
 
