@@ -57,11 +57,13 @@ jobs:
       
             # openvpn --config vpn-config.ovpn --auth-user-pass vpn-credentials.txt
             # sleep 5
-
+            pwd
             ls -la
 
-            docker pull ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
-            docker run -d --name meteor-bot ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+            # docker pull ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+            # docker run -d --name meteor-bot ${{ secrets.DOCKERHUB_NAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+
+            docker run -d --name meteor-bot amirr95/telegram-bot:latest
       
             # Cleanup: Delete the temporary VPN credentials file
             rm vpn-credentials.txt
