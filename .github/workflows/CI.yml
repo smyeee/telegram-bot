@@ -48,7 +48,6 @@ jobs:
           script: |
             pwd
             ls -la
-            # docker run -d amirr95/telegram-bot:latest
             cd telegram-bot
             git pull
             docker-compose up --build -d
