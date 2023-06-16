@@ -50,4 +50,5 @@ jobs:
             ls -la
             cd telegram-bot
             git pull
-            docker-compose up --build -d
+            docker-compose down
+            docker-compose up -d

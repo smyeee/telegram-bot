@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
 
 TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
-PROXY_URL = "http://192.168.10.185:22222"
+PROXY_URL = "socks5://192.168.10.185:44444"
 
 persistence = PicklePersistence(filename='bot_data.pickle')
 
@@ -163,7 +163,7 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
 def main():
     # Create an instance of Updater and pass the bot token and persistence
     # updater = Updater(TOKEN, persistence=persistence, use_context=True)
-    updater = Updater(TOKEN, persistence=persistence, use_context=True)  # , request_kwargs={'proxy_url': PROXY_URL})
+    updater = Updater(TOKEN, persistence=persistence, use_context=True, request_kwargs={'proxy_url': PROXY_URL})
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
