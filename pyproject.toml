@@ -10,6 +10,7 @@ packages = [{include = "telegram_bot"}]
 python = "^3.10"
 python-telegram-bot = {version = "13.7.0", extras = ["all"]}
 geopandas = "^0.13.2"
+pysocks = "^1.7.1"
 
 
 [build-system]
