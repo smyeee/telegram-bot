@@ -382,6 +382,7 @@ files = [
 APScheduler = "3.6.3"
 cachetools = "4.2.2"
 certifi = "*"
+PySocks = {version = "*", optional = true, markers = "extra == \"socks\""}
 pytz = ">=2018.6"
 tornado = ">=6.1"
 
@@ -533,4 +534,4 @@ devenv = ["black", "check-manifest", "flake8", "pyroma", "pytest (>=4.3)", "pyte
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "2523150e400aa390a9579c890ed0a6fdd0c8c87cbed4fa851079e126620c9bf8"
+content-hash = "29d01b52f7fde4febaed71b28174b3013fe398b24eb4a4edae1ce4b48642a78b"
