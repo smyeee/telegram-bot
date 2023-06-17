@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 # Constants for ConversationHandler states
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
+START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_LOCATION, ASK_NAME, ASK_PHONE, HANDLE_PHONE = range(8)
+
 
 TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
 PROXY_URL = "socks5://192.168.10.185:44444"
@@ -25,76 +27,89 @@ persistence = PicklePersistence(filename='bot_data.pickle')
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
+    name = user.username
     # update.message.reply_text(f"id: {user.id}, username: {user.username}")
     user_data = context.user_data
     # update.message.reply_text(user_data)
     # Check if the user has already signed up
     if user.id in persistence.user_data:
-        reply_text = "You have already signed up. Thank you!"
+        reply_text = """
+ثبت نام شما تکمیل شده است.
+در روزهای آینده توصیه‌های کاربردی هواشناسی محصولتان برای شما ارسال می‌شود.
+همراه ما باشید.
+راه‌های ارتباطی با ما:
+ادمین:
+شماره ثابت:
+شماره همراه:
+
+        """
         update.message.reply_text(reply_text)
         return ConversationHandler.END
 
-    reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
+    # reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
+    reply_text = f"""
+باغدار عزیز {name} سلام
+ممنون از این که به ما اعتماد کردید.
+برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … به سوالات پاسخ دهید.
+راه‌های ارتباطی با ما:
+اکانت ادمین
+تلفن ثابت 
+تلفن همراه
+                """
+    update.message.reply_text(reply_text)
+    update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
+    return ASK_PROVINCE
 
-    # Ask for user ID
-    update.message.reply_text("Please enter your ID")
-    return ASK_PHONE
 
-
-# Function to handle user ID input
-def ask_phone(update: Update, context: CallbackContext):
+def ask_province(update: Update, context: CallbackContext):
     user_data = context.user_data
 
-    # Get the user ID
-    user_id = update.message.text.strip()
-    user_data['id'] = user_id
+    # Get the answer to the province question
+    logger.info(f"contact: {update.message.contact}")
+    logger.info(f"message: ,, {update.message.text}")
+    produce = update.message.text.strip()
+    logger.info(f"produce: ,, {produce}")
+    user_data['produce'] = produce
 
-    # Ask for phone number
-    update.message.reply_text("Please enter your phone number:")
-    return ASK_QUESTION_1
+    # update.message.reply_text("", reply_markup=ReplyKeyboardRemove())
+    update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
+    return ASK_CITY
 
 
-# Function to handle phone number input
-def ask_question_1(update: Update, context: CallbackContext):
+def ask_city(update: Update, context: CallbackContext):
     user_data = context.user_data
 
-    # Get the phone number
-    phone_number = update.message.text.strip()
-    user_data['phone'] = phone_number
+    # Get the answer to the province question
+    province = update.message.text.strip()
+    user_data['province'] = province
 
-    # Ask the first question
-    update.message.reply_text("Question 1: What is your favorite color?", reply_markup=get_color_keyboard())
-    return ASK_QUESTION_2
+    update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+    return ASK_AREA
 
 
-# Function to handle the first question answer
-def ask_question_2(update: Update, context: CallbackContext):
+def ask_area(update: Update, context: CallbackContext):
     user_data = context.user_data
 
-    # Get the answer to the first question
-    answer_1 = update.message.text.strip()
-    user_data['answer_1'] = answer_1
+    # Get the answer to the city question
+    city = update.message.text.strip()
+    user_data['city'] = city
 
-    # Ask the second question
-    update.message.reply_text("Question 2: What is your favorite animal?", reply_markup=get_animal_keyboard())
+    update.message.reply_text("لطفا متراژ زیر کشت خود را به متر مربع وارد کنید:")
     return ASK_LOCATION
 
 
-# Function to handle the second question answer
 def ask_location(update: Update, context: CallbackContext):
     user_data = context.user_data
 
-    # Get the answer to the second question
-    answer_2 = update.message.text.strip()
-    user_data['answer_2'] = answer_2
+    # Get the answer to the area question
+    area = update.message.text.strip()
+    user_data['area'] = area
 
-    # Ask for the user's location
-    update.message.reply_text("Please share your location:", reply_markup=ReplyKeyboardRemove())
-    return HANDLE_LOCATION
+    update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
+    return ASK_NAME
 
 
-# Function to handle the user's location input  persistence: BasePersistence, bot: Bot
-def handle_location(update: Update, context: CallbackContext):
+def ask_name(update: Update, context: CallbackContext):
     user_data = context.user_data
     # update.message.reply_text("Please share your location!")
 
@@ -104,41 +119,54 @@ def handle_location(update: Update, context: CallbackContext):
         'latitude': location.latitude,
         'longitude': location.longitude
     }
-    # Save user data
-    # logger.log(msg=context.user_data)
-    print("bot_data", context.bot_data)
-    print("user_data", context.user_data)
-    # persistence("bot")
-    # context.persistence.update_user_data(update.effective_user.id, user_data)
+
+    update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
+    return ASK_PHONE
+    
+
+def ask_phone(update: Update, context: CallbackContext):
+    user_data = context.user_data
+
+    # Get the answer to the area question
+    name = update.message.text.strip()
+    user_data['name'] = name
+
+    update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
+    return HANDLE_PHONE
+
+
+def handle_phone(update: Update, context: CallbackContext):
+    user_data = context.user_data
+
+    # Get the answer to the area question
+    phone = update.message.text.strip()
+    user_data['phone'] = phone
+
     persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
-    update.message.reply_text("Thank you for providing your information! You have successfully signed up.")
+    reply_text = """
+از ثبت نام شما در بات هواشناسی اینفورتک متشکریم.
+در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
+همراه ما باشید.
+راه‌های ارتباطی با ما:
+ادمین:
+شماره ثابت:
+شماره همراه:
+    """
+    update.message.reply_text(reply_text)
     return ConversationHandler.END
 
 
-# Function to get the multi-choice keyboard for question 1
-def get_color_keyboard():
-    keyboard = [['Red', 'Blue', 'Green'], ['Yellow', 'Orange', 'Purple']]
+# Function to get the multi-choice keyboard for provinces
+def get_province_keyboard():
+    keyboard = [['استان 1', 'استان 2', 'استان 3'], ['استان 4', 'استان 5', 'استان 6']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 
-# Function to get the multi-choice keyboard for question 2
-def get_animal_keyboard():
-    keyboard = [['Dog', 'Cat', 'Bird'], ['Elephant', 'Tiger', 'Lion']]
+# Function to get the multi-choice keyboard for produce
+def get_produce_keyboard():
+    keyboard = [['محصول 1', 'محصول 2', 'محصول 3'], ['محصول 4', 'محصول 5', 'محصول 6']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
-
-# Function to send scheduled messages
-# def send_scheduled_messages(context: CallbackContext):
-#     # Retrieve all user data
-#     user_data = context.persistence.get_user_data()
-
-#     # Loop through all users
-#     for user_id, data in user_data.items():
-#         user = context.bot.get_chat(user_id)
-#         if 'phone' in data:
-#             # Send scheduled message to each user
-#             message = f"Hello {user.first_name}! This is a scheduled message from the bot."
-#             context.bot.send_message(user_id, message)
 
 # Function to send personalized scheduled messages
 def send_scheduled_messages(persistence: persistence, bot: Bot):
@@ -152,18 +180,19 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
             # Customize the message based on user's data
             message = f"Hello {user.first_name}! This is a scheduled message from the bot.\n"
             message += f"Your phone number: {data['phone']}\n"
-            message += f"Answer to Question 1: {data['answer_1']}\n"
-            message += f"Answer to Question 2: {data['answer_2']}\n"
+            message += f"Answer to Question 1: {data['province']}\n"
+            message += f"Answer to Question 2: {data['city']}\n"
             # ... add more personalized information
             # message = "Hello..."
             # message = data
             bot.send_message(user_id, message)
+            logger.info(f"A message was sent to {data['id']}")
 
 
 def main():
     # Create an instance of Updater and pass the bot token and persistence
     # updater = Updater(TOKEN, persistence=persistence, use_context=True)
-    updater = Updater(TOKEN, persistence=persistence, use_context=True, request_kwargs={'proxy_url': PROXY_URL})
+    updater = Updater(TOKEN, persistence=persistence, use_context=True) # , request_kwargs={'proxy_url': 'socks5://192.168.10.185:44444',})
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -172,11 +201,13 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            ASK_PHONE: [MessageHandler(Filters.text, ask_phone)],
-            ASK_QUESTION_1: [MessageHandler(Filters.text, ask_question_1)],
-            ASK_QUESTION_2: [MessageHandler(Filters.text, ask_question_2)],
+            ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
+            ASK_CITY: [MessageHandler(Filters.text, ask_city)],
+            ASK_AREA: [MessageHandler(Filters.text, ask_area)],
             ASK_LOCATION: [MessageHandler(Filters.text, ask_location)],
-            HANDLE_LOCATION: [MessageHandler(Filters.location, handle_location)]
+            ASK_NAME: [MessageHandler(Filters.location, ask_name)],
+            ASK_PHONE: [MessageHandler(Filters.text, ask_phone)],
+            HANDLE_PHONE: [MessageHandler(Filters.text, handle_phone)]
         },
         fallbacks=[CommandHandler('cancel', start)]
     )
@@ -189,7 +220,7 @@ def main():
     # Schedule periodic messages
     job_queue = updater.job_queue
     job_queue.run_repeating(lambda context: send_scheduled_messages(persistence, context.bot),
-                            interval=datetime.timedelta(seconds=60).total_seconds())
+                            interval=datetime.timedelta(seconds=500).total_seconds())
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
