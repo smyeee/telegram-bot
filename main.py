@@ -5,7 +5,9 @@ import geopandas as gpd
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, \
     BasePersistence, ConversationHandler, PicklePersistence
-from telegram.error import BadRequest
+from telegram.error import BadRequest, Unauthorized
+import os
+
 
 # Enable logging
 logging.basicConfig(
@@ -18,8 +20,7 @@ logger = logging.getLogger(__name__)
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_LOCATION, ASK_NAME, ASK_PHONE, HANDLE_PHONE = range(8)
 
-# test_bot: "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
-TOKEN = "5909077503:AAHM6fjR5brfcbJwdU2e-XQa6w2BfywmnDI" # intelligrow
+TOKEN = os.environ["SECRET_AGRIWEATHBOT_TOKEN"]
 PROXY_URL = "http://192.168.10.185:22222"
 
 persistence = PicklePersistence(filename='bot_data.pickle')
@@ -48,8 +49,8 @@ def start(update: Update, context: CallbackContext):
             return ConversationHandler.END
 
     # reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
-    reply_text = f"""
-باغدار عزیز {name} سلام
+    reply_text = """
+باغدار عزیز سلام
 ممنون از این که به ما اعتماد کردید.
 برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … به سوالات پاسخ دهید.
 راه‌های ارتباطی با ما:
@@ -66,13 +67,9 @@ def ask_province(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the province question
-    logger.info(f"contact: {update.message.contact}")
-    logger.info(f"message: ,, {update.message.text}")
     produce = update.message.text.strip()
-    logger.info(f"produce: ,, {produce}")
     user_data['produce'] = produce
 
-    # update.message.reply_text("", reply_markup=ReplyKeyboardRemove())
     update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
     return ASK_CITY
 
@@ -114,7 +111,10 @@ def ask_location(update: Update, context: CallbackContext):
     area = update.message.text.strip()
     user_data['area'] = area
 
-    update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")  # add a screenshot
+    # update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")  # add a screenshot
+    with open("./location-guide.jpg", "rb") as pic:
+        update.message.reply_photo(photo=pic, caption="لطفا محل زمین خود را در نقشه مانند تصویر بالا با ما به اشتراک بگذارید:")
+
     return ASK_NAME
 
 
@@ -124,9 +124,12 @@ def ask_name(update: Update, context: CallbackContext):
 
     # Get the user's location
     location = update.message.location
-    logger.info(f"location: {update.message.location}")
+    # logger.info(f"location: {update.message.location}")
     if not location:
-        update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
+        # update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
+        with open("./location-guide.jpg", "rb") as pic:
+            update.message.reply_photo(photo=pic, caption="لطفا محل زمین خود را در نقشه مانند تصویر بالا با ما به اشتراک بگذارید:")
+
         return ASK_NAME
     user_data['location'] = {
         'latitude': location.latitude,
@@ -193,25 +196,41 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
     user_data = persistence.get_user_data()
 
     # Loop through all users
-    for user_id, data in user_data.items():
-        user = bot.get_chat(user_id)
-        if 'phone' in data:
+    # for user_id in user_data.items():
+    #     user = bot.get_chat(user_id)
+        # if 'phone' in data:
             # Customize the message based on user's data
-            message = f"Hello {user.first_name}! This is a scheduled message from the bot.\n"
-            message += f"Your phone number: {data['phone']}\n"
-            message += f"Answer to Question 1: {data['province']}\n"
-            message += f"Answer to Question 2: {data['city']}\n"
-            # ... add more personalized information
-            # message = "Hello..."
-            # message = data
+            # message = f"Hello {user.first_name}! This is a scheduled message from the bot.\n"
+            # message += f"Your phone number: {data['phone']}\n"
+            # message += f"Answer to Question 1: {data['province']}\n"
+            # message += f"Answer to Question 2: {data['city']}\n"
+    for user_id in user_data:    
+        message = """
+از ثبت نام شما در بات هواشناسی اینفورتک متشکریم.
+در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
+همراه ما باشید.
+راه‌های ارتباطی با ما:
+ادمین:
+شماره ثابت:
+شماره همراه:
+    """
+        try:
             bot.send_message(user_id, message)
-            logger.info(f"A message was sent to {data['id']}")
+            user_data[user_id]["blocked"] = False
+            # logger.info(f"A message was sent to user id:{user_id}")
+            # logger.info(f"not blocked: {user_data}")
+            # persistence.update_user_data(user_id=user_id, data = user_data)
 
+        except Unauthorized:
+            logger.info(f"user {user_id} blocked the bot")
+            # user_data[user_id]["blocked"] = True
+            # logger.info(f"blocked: {user_data}")
+            # persistence.update_user_data(user_id=user_id, data = user_data)
 
 def main():
     # Create an instance of Updater and pass the bot token and persistence
     # updater = Updater(TOKEN, persistence=persistence, use_context=True)
-    updater = Updater(TOKEN, persistence=persistence, use_context=True) # , request_kwargs={'proxy_url': 'socks5://192.168.10.185:44444',})
+    updater = Updater(TOKEN, persistence=persistence, use_context=True, request_kwargs={'proxy_url': PROXY_URL})
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -239,7 +258,7 @@ def main():
     # Schedule periodic messages
     job_queue = updater.job_queue
     job_queue.run_repeating(lambda context: send_scheduled_messages(persistence, context.bot),
-                            interval=datetime.timedelta(days=1).total_seconds())
+                            interval=datetime.timedelta(seconds=15).total_seconds())
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()

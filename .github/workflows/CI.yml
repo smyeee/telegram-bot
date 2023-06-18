@@ -49,6 +49,7 @@ jobs:
             pwd
             ls -la
             cd telegram-bot
-            git pull
-            # docker-compose down
-            # docker-compose up
+            git pull --rebase
+            docker-compose down
+            docker-compose up -d
+            docker-compose ps
