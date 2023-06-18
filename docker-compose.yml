@@ -6,6 +6,8 @@ services:
       dockerfile: dockerfile
     volumes:
       - .:/bot
+    environment:
+      - SECRET_AGRIWEATHBOT_TOKEN=$(AGRIWEATHBOT_TOKEN)
     # ports:
     #   - 8000:8000
     command: python3 -u main.py
