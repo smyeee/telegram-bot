@@ -18,22 +18,23 @@ logger = logging.getLogger(__name__)
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_LOCATION, ASK_NAME, ASK_PHONE, HANDLE_PHONE = range(8)
 
-
-TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
-PROXY_URL = "socks5://192.168.10.185:44444"
+# test_bot: "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
+TOKEN = "5909077503:AAHM6fjR5brfcbJwdU2e-XQa6w2BfywmnDI" # intelligrow
+PROXY_URL = "http://192.168.10.185:22222"
 
 persistence = PicklePersistence(filename='bot_data.pickle')
-
+REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
     name = user.username
     # update.message.reply_text(f"id: {user.id}, username: {user.username}")
-    user_data = context.user_data
-    # update.message.reply_text(user_data)
+    persistence_data = persistence.user_data # {103465015: {'produce': 'محصول 3', 'province': 'استان 4', 'city': 'اردستان', 'area': '۵۴۳۳۴۵۶', 'location': {'latitude': 35.762059, 'longitude': 51.476923}, 'name': 'امیررضا', 'phone': '۰۹۱۳۳۶۴۷۹۹۱'}})
+    user_data = context.user_data # {'produce': 'محصول 3', 'province': 'استان 4', 'city': 'اردستان', 'area': '۵۴۳۳۴۵۶', 'location': {'latitude': 35.762059, 'longitude': 51.476923}, 'name': 'امیررضا', 'phone': '۰۹۱۳۳۶۴۷۹۹۱'}
     # Check if the user has already signed up
     if user.id in persistence.user_data:
-        reply_text = """
+        if all(key in user_data and user_data[key] for key in REQUIRED_KEYS):
+            reply_text = """
 ثبت نام شما تکمیل شده است.
 در روزهای آینده توصیه‌های کاربردی هواشناسی محصولتان برای شما ارسال می‌شود.
 همراه ما باشید.
@@ -43,8 +44,8 @@ def start(update: Update, context: CallbackContext):
 شماره همراه:
 
         """
-        update.message.reply_text(reply_text)
-        return ConversationHandler.END
+            update.message.reply_text(reply_text)
+            return ConversationHandler.END
 
     # reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
     reply_text = f"""
@@ -91,10 +92,14 @@ def ask_area(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the city question
+    if not update.message.text.strip():
+        update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+        return ASK_AREA
+    
     city = update.message.text.strip()
     user_data['city'] = city
 
-    update.message.reply_text("لطفا متراژ زیر کشت خود را به متر مربع وارد کنید:")
+    update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
     return ASK_LOCATION
 
 
@@ -102,10 +107,14 @@ def ask_location(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the area question
+    if not update.message.text.strip():
+        update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
+        return ASK_LOCATION
+    
     area = update.message.text.strip()
     user_data['area'] = area
 
-    update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
+    update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")  # add a screenshot
     return ASK_NAME
 
 
@@ -115,6 +124,10 @@ def ask_name(update: Update, context: CallbackContext):
 
     # Get the user's location
     location = update.message.location
+    logger.info(f"location: {update.message.location}")
+    if not location:
+        update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
+        return ASK_NAME
     user_data['location'] = {
         'latitude': location.latitude,
         'longitude': location.longitude
@@ -128,6 +141,9 @@ def ask_phone(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the area question
+    if not update.message.text.strip():
+        update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
+        return ASK_PHONE
     name = update.message.text.strip()
     user_data['name'] = name
 
@@ -140,6 +156,9 @@ def handle_phone(update: Update, context: CallbackContext):
 
     # Get the answer to the area question
     phone = update.message.text.strip()
+    if not phone or len(phone) != 11:
+        update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
+        return HANDLE_PHONE
     user_data['phone'] = phone
 
     persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
@@ -158,13 +177,13 @@ def handle_phone(update: Update, context: CallbackContext):
 
 # Function to get the multi-choice keyboard for provinces
 def get_province_keyboard():
-    keyboard = [['استان 1', 'استان 2', 'استان 3'], ['استان 4', 'استان 5', 'استان 6']]
+    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 
 # Function to get the multi-choice keyboard for produce
 def get_produce_keyboard():
-    keyboard = [['محصول 1', 'محصول 2', 'محصول 3'], ['محصول 4', 'محصول 5', 'محصول 6']]
+    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 
@@ -205,7 +224,7 @@ def main():
             ASK_CITY: [MessageHandler(Filters.text, ask_city)],
             ASK_AREA: [MessageHandler(Filters.text, ask_area)],
             ASK_LOCATION: [MessageHandler(Filters.text, ask_location)],
-            ASK_NAME: [MessageHandler(Filters.location, ask_name)],
+            ASK_NAME: [MessageHandler(Filters.all, ask_name)],
             ASK_PHONE: [MessageHandler(Filters.text, ask_phone)],
             HANDLE_PHONE: [MessageHandler(Filters.text, handle_phone)]
         },
@@ -220,7 +239,7 @@ def main():
     # Schedule periodic messages
     job_queue = updater.job_queue
     job_queue.run_repeating(lambda context: send_scheduled_messages(persistence, context.bot),
-                            interval=datetime.timedelta(seconds=500).total_seconds())
+                            interval=datetime.timedelta(days=1).total_seconds())
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
