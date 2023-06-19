@@ -40,10 +40,8 @@ def start(update: Update, context: CallbackContext):
 در روزهای آینده توصیه‌های کاربردی هواشناسی محصولتان برای شما ارسال می‌شود.
 همراه ما باشید.
 راه‌های ارتباطی با ما:
-ادمین:
-شماره ثابت:
-شماره همراه:
-
+ادمین: @agriiadmin
+شماره ثابت: 02164063399
         """
             update.message.reply_text(reply_text)
             return ConversationHandler.END
@@ -54,9 +52,8 @@ def start(update: Update, context: CallbackContext):
 ممنون از این که به ما اعتماد کردید.
 برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … به سوالات پاسخ دهید.
 راه‌های ارتباطی با ما:
-اکانت ادمین
-تلفن ثابت 
-تلفن همراه
+ادمین: @agriiadmin
+تلفن ثابت: 02164063399
                 """
     update.message.reply_text(reply_text)
     update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
@@ -89,7 +86,7 @@ def ask_area(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the city question
-    if not update.message.text.strip():
+    if not update.message.text:
         update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
         return ASK_AREA
     
@@ -104,7 +101,7 @@ def ask_location(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the area question
-    if not update.message.text.strip():
+    if not update.message.text:
         update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
         return ASK_LOCATION
     
@@ -112,8 +109,8 @@ def ask_location(update: Update, context: CallbackContext):
     user_data['area'] = area
 
     # update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")  # add a screenshot
-    with open("./location-guide.jpg", "rb") as pic:
-        update.message.reply_photo(photo=pic, caption="لطفا محل زمین خود را در نقشه مانند تصویر بالا با ما به اشتراک بگذارید:")
+    with open("./help.mp4", "rb") as gif:
+        update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
 
     return ASK_NAME
 
@@ -127,8 +124,8 @@ def ask_name(update: Update, context: CallbackContext):
     # logger.info(f"location: {update.message.location}")
     if not location:
         # update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
-        with open("./location-guide.jpg", "rb") as pic:
-            update.message.reply_photo(photo=pic, caption="لطفا محل زمین خود را در نقشه مانند تصویر بالا با ما به اشتراک بگذارید:")
+        with open("./help.mp4", "rb") as gif:
+            update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
 
         return ASK_NAME
     user_data['location'] = {
@@ -180,13 +177,13 @@ def handle_phone(update: Update, context: CallbackContext):
 
 # Function to get the multi-choice keyboard for provinces
 def get_province_keyboard():
-    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان']]
+    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['سایر']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 
 # Function to get the multi-choice keyboard for produce
 def get_produce_keyboard():
-    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز']]
+    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 
@@ -205,27 +202,27 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
             # message += f"Answer to Question 1: {data['province']}\n"
             # message += f"Answer to Question 2: {data['city']}\n"
     for user_id in user_data:    
-        message = """
+        if "phone" in user_data[user_id]:
+            message = """
 از ثبت نام شما در بات هواشناسی اینفورتک متشکریم.
 در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
 همراه ما باشید.
 راه‌های ارتباطی با ما:
-ادمین:
-شماره ثابت:
-شماره همراه:
+ادمین: @agriiadmin
+شماره ثابت: 02164063399
     """
-        try:
-            bot.send_message(user_id, message)
-            user_data[user_id]["blocked"] = False
-            # logger.info(f"A message was sent to user id:{user_id}")
-            # logger.info(f"not blocked: {user_data}")
-            # persistence.update_user_data(user_id=user_id, data = user_data)
+            try:
+                bot.send_message(user_id, message)
+                user_data[user_id]["blocked"] = False
+                # logger.info(f"A message was sent to user id:{user_id}")
+                # logger.info(f"not blocked: {user_data}")
+                # persistence.update_user_data(user_id=user_id, data = user_data)
 
-        except Unauthorized:
-            logger.info(f"user {user_id} blocked the bot")
-            # user_data[user_id]["blocked"] = True
-            # logger.info(f"blocked: {user_data}")
-            # persistence.update_user_data(user_id=user_id, data = user_data)
+            except Unauthorized:
+                logger.info(f"user {user_id} blocked the bot")
+                # user_data[user_id]["blocked"] = True
+                # logger.info(f"blocked: {user_data}")
+                # persistence.update_user_data(user_id=user_id, data = user_data)
 
 def main():
     # Create an instance of Updater and pass the bot token and persistence
@@ -241,8 +238,8 @@ def main():
         states={
             ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
             ASK_CITY: [MessageHandler(Filters.text, ask_city)],
-            ASK_AREA: [MessageHandler(Filters.text, ask_area)],
-            ASK_LOCATION: [MessageHandler(Filters.text, ask_location)],
+            ASK_AREA: [MessageHandler(Filters.all, ask_area)],
+            ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
             ASK_NAME: [MessageHandler(Filters.all, ask_name)],
             ASK_PHONE: [MessageHandler(Filters.text, ask_phone)],
             HANDLE_PHONE: [MessageHandler(Filters.text, handle_phone)]
