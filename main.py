@@ -20,11 +20,13 @@ logger = logging.getLogger(__name__)
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_LOCATION, ASK_NAME, ASK_PHONE, HANDLE_PHONE = range(8)
 
-TOKEN = os.environ["SECRET_AGRIWEATHBOT_TOKEN"]
+TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 PROXY_URL = "http://192.168.10.185:22222"
 
 persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
+PROVINCES = ['کرمان', 'خراسان رضوی', 'خراسان جنوبی', 'یزد', 'فارس', 'سمنان', 'سایر']
+PRODUCTS = ['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی', 'پسته بادامی', 'پسته فندقی', 'پسته کله قوچی', 'پسته ممتاز', 'سایر']
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
@@ -49,7 +51,7 @@ def start(update: Update, context: CallbackContext):
     # reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
     reply_text = """
 باغدار عزیز سلام
-ممنون از این که به ما اعتماد کردید.
+از این که به ما اعتماد کردید متشکریم.
 برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … به سوالات پاسخ دهید.
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
@@ -64,6 +66,9 @@ def ask_province(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the province question
+    if not update.message.text or update.message.text not in PRODUCTS:
+        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
+        return ASK_PROVINCE
     produce = update.message.text.strip()
     user_data['produce'] = produce
 
@@ -75,6 +80,10 @@ def ask_city(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the province question
+    if not update.message.text or update.message.text not in PROVINCES:
+        update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
+        return ASK_CITY
+
     province = update.message.text.strip()
     user_data['province'] = province
 
@@ -86,7 +95,7 @@ def ask_area(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the city question
-    if not update.message.text:
+    if not update.message.text or update.message.text=="/start":
         update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
         return ASK_AREA
     
@@ -101,16 +110,20 @@ def ask_location(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the area question
-    if not update.message.text:
+    if not update.message.text or update.message.text=="/start":
         update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
         return ASK_LOCATION
     
     area = update.message.text.strip()
     user_data['area'] = area
+    text = """
+    لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما (https://t.me/agriweath/2) ارسال کنید.
 
-    # update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")  # add a screenshot
-    with open("./help.mp4", "rb") as gif:
-        update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
+👉  https://t.me/agriweath/2
+    """
+    update.message.reply_text(text)  # add a screenshot
+    # with open("./help.mp4", "rb") as gif:
+    #     update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
 
     return ASK_NAME
 
@@ -123,9 +136,15 @@ def ask_name(update: Update, context: CallbackContext):
     location = update.message.location
     # logger.info(f"location: {update.message.location}")
     if not location:
+        text = """
+    لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما (https://t.me/agriweath/2) ارسال کنید.
+
+👉  https://t.me/agriweath/2
+    """
+        update.message.reply_text(text) 
         # update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
-        with open("./help.mp4", "rb") as gif:
-            update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
+        # with open("./help.mp4", "rb") as gif:
+        #     update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
 
         return ASK_NAME
     user_data['location'] = {
@@ -141,7 +160,7 @@ def ask_phone(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the area question
-    if not update.message.text.strip():
+    if not update.message.text or update.message.text=="/start":
         update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
         return ASK_PHONE
     name = update.message.text.strip()
@@ -155,21 +174,21 @@ def handle_phone(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the area question
-    phone = update.message.text.strip()
-    if not phone or len(phone) != 11:
+    var = update.message.text
+    if not var or len(var) != 11 or var=="/start":
         update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
         return HANDLE_PHONE
+    phone = update.message.text.strip()
     user_data['phone'] = phone
 
     persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
     reply_text = """
-از ثبت نام شما در بات هواشناسی اینفورتک متشکریم.
+از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
 در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
 همراه ما باشید.
 راه‌های ارتباطی با ما:
-ادمین:
-شماره ثابت:
-شماره همراه:
+ادمین: @agriiadmin
+شماره ثابت: 02164063399
     """
     update.message.reply_text(reply_text)
     return ConversationHandler.END
@@ -204,7 +223,7 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
     for user_id in user_data:    
         if "phone" in user_data[user_id]:
             message = """
-از ثبت نام شما در بات هواشناسی اینفورتک متشکریم.
+از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
 در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
 همراه ما باشید.
 راه‌های ارتباطی با ما:
@@ -241,8 +260,8 @@ def main():
             ASK_AREA: [MessageHandler(Filters.all, ask_area)],
             ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
             ASK_NAME: [MessageHandler(Filters.all, ask_name)],
-            ASK_PHONE: [MessageHandler(Filters.text, ask_phone)],
-            HANDLE_PHONE: [MessageHandler(Filters.text, handle_phone)]
+            ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
+            HANDLE_PHONE: [MessageHandler(Filters.all, handle_phone)]
         },
         fallbacks=[CommandHandler('cancel', start)]
     )
@@ -255,7 +274,7 @@ def main():
     # Schedule periodic messages
     job_queue = updater.job_queue
     job_queue.run_repeating(lambda context: send_scheduled_messages(persistence, context.bot),
-                            interval=datetime.timedelta(seconds=15).total_seconds())
+                            interval=datetime.timedelta(weeks=4).total_seconds())
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
