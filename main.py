@@ -1,6 +1,7 @@
 import logging
 import json
 import datetime
+import pickle
 import geopandas as gpd
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, \
@@ -17,16 +18,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Constants for ConversationHandler states
-START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
+CHOOSING, STAT1, STAT2, BACK = range(4)
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_LOCATION, ASK_NAME, ASK_PHONE, HANDLE_PHONE = range(8)
 
-TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-PROXY_URL = "http://192.168.10.185:22222"
+TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
+PROXY_URL = "http://127.0.0.1:10809"
 
 persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
 PROVINCES = ['کرمان', 'خراسان رضوی', 'خراسان جنوبی', 'یزد', 'فارس', 'سمنان', 'سایر']
 PRODUCTS = ['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی', 'پسته بادامی', 'پسته فندقی', 'پسته کله قوچی', 'پسته ممتاز', 'سایر']
+ADMIN_LIST = [103465015, 31583686]
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
@@ -194,6 +196,57 @@ def handle_phone(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
+def bot_stats(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    update.message.reply_text("hello from stats")
+    logger.info(f"user_id: {user_id}")
+    if user_id in ADMIN_LIST:
+        # update.message.reply_text("چه اطلاعاتی لازم داری؟", reply_markup=stats_keyboard)
+    
+        update.message.reply_text(
+            'Please choose an option:',
+            reply_markup=stats_keyboard()
+        )
+
+    return CHOOSING
+
+
+def handle_stat_request(update: Update, context: CallbackContext):
+    stat = update.message.text
+    if stat == 'دریافت اکسل':
+        update.message.reply_text("در حال آماده‌سازی فایل اکسل", reply_markup=return_keyboard())
+        with open("bot_data.pickle", "rb") as f:
+            data = pickle.load(f)
+        user_data = data["user_data"]
+        # for i, key in enumerate(user_data):
+        #     if key not in["produce","province","city","area","location","name","phone"]:
+        #         try:
+        #             df.loc[i] = pd.Series({"produce":user_data[key]["produce"],"province": user_data[key]["province"],"city": user_data[key]["city
+        # "],"area": user_data[key]["area"],"location": user_data[key]["location"],"name": user_data[key]["name"],"phone": user_data[key]["phone"]})
+        
+        #         except KeyError:
+        #             df.loc[i] = pd.Series({"produce":key})
+                # df.to_excel("test.xlsx")
+
+    elif stat == 'تعداد کل اعضا':
+        update.message.reply_text("در حال دریافت تعداد اعضا", reply_markup=return_keyboard())
+
+    elif stat == "back":
+        update.message.reply_text(
+            'Please choose an option:',
+            reply_markup=stats_keyboard()
+        )
+        return CHOOSING
+    return ConversationHandler.END
+
+
+def stats_keyboard():
+    keyboard = [['دریافت اکسل', 'تعداد کل اعضا', 'back']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
+def return_keyboard():
+    keyboard = ["back"]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 # Function to get the multi-choice keyboard for provinces
 def get_province_keyboard():
     keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['سایر']]
@@ -243,6 +296,7 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
                 # logger.info(f"blocked: {user_data}")
                 # persistence.update_user_data(user_id=user_id, data = user_data)
 
+
 def main():
     # Create an instance of Updater and pass the bot token and persistence
     # updater = Updater(TOKEN, persistence=persistence, use_context=True)
@@ -265,9 +319,17 @@ def main():
         },
         fallbacks=[CommandHandler('cancel', start)]
     )
+    stats_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('stats', bot_stats)],
+        states={
+            CHOOSING: [MessageHandler(Filters.text, handle_stat_request)]
+        },
+        fallbacks=[]
+    )
 
     dp.add_handler(conv_handler)
-
+    dp.add_handler(stats_conv_handler)
+    # dp.add_handler(CommandHandler("stats", bot_stats, filters=Filters.user))
     # Start the bot
     updater.start_polling()
 
