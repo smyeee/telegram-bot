@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_LOCATION, ASK_NAME, ASK_PHONE, HANDLE_PHONE = range(8)
 
-TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-PROXY_URL = "http://192.168.10.185:22222"
+# TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
+TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
+PROXY_URL = "http://127.0.0.1:10809"
 
 persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
@@ -71,7 +72,9 @@ def ask_province(update: Update, context: CallbackContext):
         return ASK_PROVINCE
     produce = update.message.text.strip()
     user_data['produce'] = produce
-
+    user_data['username'] = update.effective_user.username
+    user_data['blocked'] = False
+    user_data['join-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
     return ASK_CITY
 
@@ -211,15 +214,6 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
     # Retrieve all user data
     user_data = persistence.get_user_data()
 
-    # Loop through all users
-    # for user_id in user_data.items():
-    #     user = bot.get_chat(user_id)
-        # if 'phone' in data:
-            # Customize the message based on user's data
-            # message = f"Hello {user.first_name}! This is a scheduled message from the bot.\n"
-            # message += f"Your phone number: {data['phone']}\n"
-            # message += f"Answer to Question 1: {data['province']}\n"
-            # message += f"Answer to Question 2: {data['city']}\n"
     for user_id in user_data:    
         if "phone" in user_data[user_id]:
             message = """
@@ -232,16 +226,24 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
     """
             try:
                 bot.send_message(user_id, message)
+
                 user_data[user_id]["blocked"] = False
+                # user = bot.get_chat(user_id)
+                # username = user.username
+                # user_data[user_id]["username"] = username
                 # logger.info(f"A message was sent to user id:{user_id}")
                 # logger.info(f"not blocked: {user_data}")
                 # persistence.update_user_data(user_id=user_id, data = user_data)
 
             except Unauthorized:
                 logger.info(f"user {user_id} blocked the bot")
-                # user_data[user_id]["blocked"] = True
-                # logger.info(f"blocked: {user_data}")
+                user_data[user_id]["blocked"] = True
+                # context.user_data['blocked'] = True
+                # context.dispatcher.persistence.flush()
                 # persistence.update_user_data(user_id=user_id, data = user_data)
+            # logger.info(f"user_data[{user_id}]: {user_data[user_id]}")
+            # persistence.update_user_data(user_id, data=user_data)
+            
 
 def main():
     # Create an instance of Updater and pass the bot token and persistence
@@ -274,8 +276,9 @@ def main():
     # Schedule periodic messages
     job_queue = updater.job_queue
     job_queue.run_repeating(lambda context: send_scheduled_messages(persistence, context.bot),
-                            interval=datetime.timedelta(weeks=4).total_seconds())
-
+                            interval=datetime.timedelta(minutes=1).total_seconds(),
+                            first=datetime.timedelta(seconds=0).total_seconds())
+    job_queue.run_once()
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
 
