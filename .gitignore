@@ -3,3 +3,4 @@ tutorial.py
 /.idea
 bot_data.pickle
 .vscode/
+job_data.pickle
