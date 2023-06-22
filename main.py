@@ -1,8 +1,10 @@
 import logging
 import json
 import datetime
+import pickle
 import geopandas as gpd
-from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Bot, KeyboardButton, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, \
     BasePersistence, ConversationHandler, PicklePersistence
 from telegram.error import BadRequest, Unauthorized
@@ -18,11 +20,11 @@ logger = logging.getLogger(__name__)
 
 # Constants for ConversationHandler states
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
-START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_LOCATION, ASK_NAME, ASK_PHONE, HANDLE_PHONE = range(8)
+START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
 
 # TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
-PROXY_URL = "http://127.0.0.1:10809"
+PROXY_URL = "http://127.0.0.1:8889"
 
 persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
@@ -35,6 +37,9 @@ def start(update: Update, context: CallbackContext):
     # update.message.reply_text(f"id: {user.id}, username: {user.username}")
     persistence_data = persistence.user_data # {103465015: {'produce': 'محصول 3', 'province': 'استان 4', 'city': 'اردستان', 'area': '۵۴۳۳۴۵۶', 'location': {'latitude': 35.762059, 'longitude': 51.476923}, 'name': 'امیررضا', 'phone': '۰۹۱۳۳۶۴۷۹۹۱'}})
     user_data = context.user_data # {'produce': 'محصول 3', 'province': 'استان 4', 'city': 'اردستان', 'area': '۵۴۳۳۴۵۶', 'location': {'latitude': 35.762059, 'longitude': 51.476923}, 'name': 'امیررضا', 'phone': '۰۹۱۳۳۶۴۷۹۹۱'}
+    user_data['username'] = update.effective_user.username
+    user_data['blocked'] = False
+    user_data['join-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # Check if the user has already signed up
     if user.id in persistence.user_data:
         if all(key in user_data and user_data[key] for key in REQUIRED_KEYS):
@@ -65,16 +70,13 @@ def start(update: Update, context: CallbackContext):
 
 def ask_province(update: Update, context: CallbackContext):
     user_data = context.user_data
-
+    logger.info(f"user_data: {context.user_data}")
     # Get the answer to the province question
     if not update.message.text or update.message.text not in PRODUCTS:
         update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
         return ASK_PROVINCE
     produce = update.message.text.strip()
     user_data['produce'] = produce
-    user_data['username'] = update.effective_user.username
-    user_data['blocked'] = False
-    user_data['join-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
     return ASK_CITY
 
@@ -106,6 +108,20 @@ def ask_area(update: Update, context: CallbackContext):
     user_data['city'] = city
 
     update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
+    return ASK_PHONE
+
+
+def ask_phone(update: Update, context: CallbackContext):
+    user_data = context.user_data
+
+    if not update.message.text or update.message.text=="/start":
+        update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
+        return ASK_PHONE
+    
+    area = update.message.text.strip()
+    user_data['area'] = area
+
+    update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
     return ASK_LOCATION
 
 
@@ -113,21 +129,20 @@ def ask_location(update: Update, context: CallbackContext):
     user_data = context.user_data
 
     # Get the answer to the area question
-    if not update.message.text or update.message.text=="/start":
-        update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
+    var = update.message.text
+    if not var or len(var) != 11 or var=="/start":
+        update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
         return ASK_LOCATION
-    
-    area = update.message.text.strip()
-    user_data['area'] = area
-    text = """
+    phone = update.message.text.strip()
+    user_data['phone'] = phone
+
+    # persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
+    reply_text = """
     لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما (https://t.me/agriweath/2) ارسال کنید.
 
 👉  https://t.me/agriweath/2
     """
-    update.message.reply_text(text)  # add a screenshot
-    # with open("./help.mp4", "rb") as gif:
-    #     update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
-
+    update.message.reply_text(reply_text)
     return ASK_NAME
 
 
@@ -156,35 +171,19 @@ def ask_name(update: Update, context: CallbackContext):
     }
 
     update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
-    return ASK_PHONE
-    
+    return HANDLE_NAME
 
-def ask_phone(update: Update, context: CallbackContext):
+
+def handle_name(update: Update, context: CallbackContext):
     user_data = context.user_data
 
-    # Get the answer to the area question
     if not update.message.text or update.message.text=="/start":
         update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
-        return ASK_PHONE
+        return HANDLE_NAME
+    
     name = update.message.text.strip()
     user_data['name'] = name
 
-    update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
-    return HANDLE_PHONE
-
-
-def handle_phone(update: Update, context: CallbackContext):
-    user_data = context.user_data
-
-    # Get the answer to the area question
-    var = update.message.text
-    if not var or len(var) != 11 or var=="/start":
-        update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
-        return HANDLE_PHONE
-    phone = update.message.text.strip()
-    user_data['phone'] = phone
-
-    persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
     reply_text = """
 از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
 در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
@@ -193,6 +192,7 @@ def handle_phone(update: Update, context: CallbackContext):
 ادمین: @agriiadmin
 شماره ثابت: 02164063399
     """
+    # persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
     update.message.reply_text(reply_text)
     return ConversationHandler.END
 
@@ -210,45 +210,51 @@ def get_produce_keyboard():
 
 
 # Function to send personalized scheduled messages
-def send_scheduled_messages(persistence: persistence, bot: Bot):
+def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
     # Retrieve all user data
     user_data = persistence.get_user_data()
-
-    for user_id in user_data:    
-        if "phone" in user_data[user_id]:
+    for user_id in user_data:
+            chat = context.bot.getChat(user_id)
+            username = chat.username
+            user_data[user_id]['username'] = username
+            logger.info(f"username: {username}")
+            # if not "location" in user_data[user_id]:
             message = """
-از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
-در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
-همراه ما باشید.
-راه‌های ارتباطی با ما:
-ادمین: @agriiadmin
-شماره ثابت: 02164063399
-    """
+باغدار عزیز برای ارسال توصیه‌های هواشناسی، به لوکیشن (موقعیت جغافیایی) باغ شما نیاز داریم.
+لطفا با ارسال لوکیشن باغ، ثبت نام خود را از طریق /start تکمیل کنید.
+
+برای راهنمایی به @agriiadmin پیام دهید.
+                """
             try:
-                bot.send_message(user_id, message)
-
+                bot.send_message(user_id, message) ##, parse_mode=telegram.ParseMode.MARKDOWN_V2)
                 user_data[user_id]["blocked"] = False
-                # user = bot.get_chat(user_id)
-                # username = user.username
-                # user_data[user_id]["username"] = username
-                # logger.info(f"A message was sent to user id:{user_id}")
-                # logger.info(f"not blocked: {user_data}")
-                # persistence.update_user_data(user_id=user_id, data = user_data)
-
+                user_data[user_id]['job-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
             except Unauthorized:
                 logger.info(f"user {user_id} blocked the bot")
                 user_data[user_id]["blocked"] = True
-                # context.user_data['blocked'] = True
-                # context.dispatcher.persistence.flush()
-                # persistence.update_user_data(user_id=user_id, data = user_data)
-            # logger.info(f"user_data[{user_id}]: {user_data[user_id]}")
-            # persistence.update_user_data(user_id, data=user_data)
+                user_data[user_id]['block-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open("job_data.pickle", "wb") as job_data:
+        pickle.dump(user_data, job_data)
             
 
+def location_command_handler(update: Update, context: CallbackContext):
+    location_keyboard = KeyboardButton(text="send_location", request_location=True)
+    contact_keyboard = KeyboardButton(text="send_contact", request_contact=True)
+    custom_keyboard = [[ location_keyboard, contact_keyboard ]]
+    reply_markup = ReplyKeyboardMarkup(custom_keyboard)
+    update.message.reply_text(text="Would you mind sharing your location and contact with me?", reply_markup=reply_markup)
+
+def location(update: Update, context: CallbackContext):
+    location = update.message.location
+    contact = update.message.contact
+    update.message.reply_text(
+        f"location: {location}"
+        f"contact: {contact}"
+    )
+    
 def main():
-    # Create an instance of Updater and pass the bot token and persistence
-    # updater = Updater(TOKEN, persistence=persistence, use_context=True)
-    updater = Updater(TOKEN, persistence=persistence, use_context=True, request_kwargs={'proxy_url': PROXY_URL})
+    updater = Updater(TOKEN, persistence=persistence, use_context=True)# , request_kwargs={'proxy_url': PROXY_URL})
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -260,28 +266,31 @@ def main():
             ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
             ASK_CITY: [MessageHandler(Filters.text, ask_city)],
             ASK_AREA: [MessageHandler(Filters.all, ask_area)],
+            ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
             ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
             ASK_NAME: [MessageHandler(Filters.all, ask_name)],
-            ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
-            HANDLE_PHONE: [MessageHandler(Filters.all, handle_phone)]
+            HANDLE_NAME: [MessageHandler(Filters.all, handle_name)]
         },
         fallbacks=[CommandHandler('cancel', start)]
     )
 
     dp.add_handler(conv_handler)
 
+    # dp.add_handler(CommandHandler('location', location_command_handler))
+    # Add the location handler for the received location
+    # dp.add_handler(MessageHandler(Filters.location, location_command_handler))
+
     # Start the bot
     updater.start_polling()
 
     # Schedule periodic messages
     job_queue = updater.job_queue
-    job_queue.run_repeating(lambda context: send_scheduled_messages(persistence, context.bot),
-                            interval=datetime.timedelta(minutes=1).total_seconds(),
-                            first=datetime.timedelta(seconds=0).total_seconds())
-    job_queue.run_once()
+    # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
+    #                         interval=datetime.timedelta(seconds=5).total_seconds())
+    job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
 
-
+    updater.co
 if __name__ == '__main__':
     main()
