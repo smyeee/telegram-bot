@@ -1,30 +1,32 @@
 import logging
-import json
+from logging.handlers import RotatingFileHandler
 import datetime
 import pickle
 import geopandas as gpd
 from telegram import Bot, KeyboardButton, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
-import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, \
-    BasePersistence, ConversationHandler, PicklePersistence
-from telegram.error import BadRequest, Unauthorized
+    BasePersistence, ConversationHandler, PicklePersistence, Dispatcher
+from telegram.error import BadRequest, Unauthorized, NetworkError
 import os
+
 
 
 # Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    handlers=[
+        RotatingFileHandler('bot_logs.log', maxBytes=512000, backupCount=5),  # File handler to write logs to a file
+        logging.StreamHandler()  # Stream handler to display logs in the console
+    ]
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("agriWeather-bot")
 
 # Constants for ConversationHandler states
 START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
 
-# TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
-PROXY_URL = "http://127.0.0.1:8889"
+TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 
 persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
@@ -40,6 +42,7 @@ def start(update: Update, context: CallbackContext):
     user_data['username'] = update.effective_user.username
     user_data['blocked'] = False
     user_data['join-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     # Check if the user has already signed up
     if user.id in persistence.user_data:
         if all(key in user_data and user_data[key] for key in REQUIRED_KEYS):
@@ -53,7 +56,7 @@ def start(update: Update, context: CallbackContext):
         """
             update.message.reply_text(reply_text)
             return ConversationHandler.END
-
+    logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) started the bot.")
     # reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
     reply_text = """
 باغدار عزیز سلام
@@ -70,7 +73,6 @@ def start(update: Update, context: CallbackContext):
 
 def ask_province(update: Update, context: CallbackContext):
     user_data = context.user_data
-    logger.info(f"user_data: {context.user_data}")
     # Get the answer to the province question
     if not update.message.text or update.message.text not in PRODUCTS:
         update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
@@ -183,7 +185,7 @@ def handle_name(update: Update, context: CallbackContext):
     
     name = update.message.text.strip()
     user_data['name'] = name
-
+    logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) Finished sign up.")
     reply_text = """
 از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
 در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
@@ -213,14 +215,14 @@ def get_produce_keyboard():
 def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
     # Retrieve all user data
     user_data = persistence.get_user_data()
+    i = 0
     for user_id in user_data:
             chat = context.bot.getChat(user_id)
             username = chat.username
             user_data[user_id]['username'] = username
-            logger.info(f"username: {username}")
             # if not "location" in user_data[user_id]:
             message = """
-باغدار عزیز برای ارسال توصیه‌های هواشناسی، به لوکیشن (موقعیت جغافیایی) باغ شما نیاز داریم.
+باغدار عزیز برای ارسال توصیه‌های هواشناسی، به لوکیشن (موقعیت جغرافیایی) باغ شما نیاز داریم.
 لطفا با ارسال لوکیشن باغ، ثبت نام خود را از طریق /start تکمیل کنید.
 
 برای راهنمایی به @agriiadmin پیام دهید.
@@ -228,13 +230,14 @@ def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
             try:
                 bot.send_message(user_id, message) ##, parse_mode=telegram.ParseMode.MARKDOWN_V2)
                 user_data[user_id]["blocked"] = False
-                user_data[user_id]['job-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                user_data[user_id]['send-location-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                i += 1
                 
             except Unauthorized:
-                logger.info(f"user {user_id} blocked the bot")
                 user_data[user_id]["blocked"] = True
                 user_data[user_id]['block-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open("job_data.pickle", "wb") as job_data:
+    logger.info(f"send_location_data succeeded for {i} out of {len(user_data)} users.")
+    with open("location_guide_data.pickle", "wb") as job_data:
         pickle.dump(user_data, job_data)
             
 
@@ -252,45 +255,56 @@ def location(update: Update, context: CallbackContext):
         f"location: {location}"
         f"contact: {contact}"
     )
-    
+
+
+def error_handler(update: Update, context: CallbackContext):
+    logger.error('Update "%s" caused error "%s"', update, context.error)
+
+
 def main():
-    updater = Updater(TOKEN, persistence=persistence, use_context=True)# , request_kwargs={'proxy_url': PROXY_URL})
+        updater = Updater(TOKEN, persistence=persistence, use_context=True)# , request_kwargs={'proxy_url': PROXY_URL})
 
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
+        # Get the dispatcher to register handlers
+        dp = updater.dispatcher
 
-    # Add handlers to the dispatcher
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
-        states={
-            ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
-            ASK_CITY: [MessageHandler(Filters.text, ask_city)],
-            ASK_AREA: [MessageHandler(Filters.all, ask_area)],
-            ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
-            ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
-            ASK_NAME: [MessageHandler(Filters.all, ask_name)],
-            HANDLE_NAME: [MessageHandler(Filters.all, handle_name)]
-        },
-        fallbacks=[CommandHandler('cancel', start)]
-    )
+        # Add handlers to the dispatcher
+        conv_handler = ConversationHandler(
+            entry_points=[CommandHandler('start', start)],
+            states={
+                ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
+                ASK_CITY: [MessageHandler(Filters.text, ask_city)],
+                ASK_AREA: [MessageHandler(Filters.all, ask_area)],
+                ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
+                ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
+                ASK_NAME: [MessageHandler(Filters.all, ask_name)],
+                HANDLE_NAME: [MessageHandler(Filters.all, handle_name)]
+            },
+            fallbacks=[CommandHandler('cancel', start)]
+        )
 
-    dp.add_handler(conv_handler)
+        dp.add_handler(conv_handler)
 
-    # dp.add_handler(CommandHandler('location', location_command_handler))
-    # Add the location handler for the received location
-    # dp.add_handler(MessageHandler(Filters.location, location_command_handler))
+        dp.add_error_handler(error_handler)
 
-    # Start the bot
-    updater.start_polling()
+        # dp.add_handler(CommandHandler('location', location_command_handler))
+        # Add the location handler for the received location
+        # dp.add_handler(MessageHandler(Filters.location, location_command_handler))
 
-    # Schedule periodic messages
-    job_queue = updater.job_queue
-    # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
-    #                         interval=datetime.timedelta(seconds=5).total_seconds())
-    job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)
-    # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
-    updater.idle()
+        # Start the bot
+        updater.start_polling()
 
-    updater.co
+        # Schedule periodic messages
+        job_queue = updater.job_queue
+        # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
+        #                         interval=datetime.timedelta(seconds=5).total_seconds())
+        job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)
+        # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
+        updater.idle()
+    
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except NetworkError:
+        logger.error("A network error was encountered!")
+    except ConnectionRefusedError:
+        logger.error("A ConnectionRefusedError was encountered!")
