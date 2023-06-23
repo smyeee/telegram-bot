@@ -1,7 +1,7 @@
 /env
 tutorial.py
 /.idea
-bot_data.pickle
 .vscode/
-location_guide_data.pickle
-bot_logs.log*
+bot_*
+.env
+*data.pickle
