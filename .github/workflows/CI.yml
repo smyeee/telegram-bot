@@ -54,5 +54,5 @@ jobs:
             sudo git pull 
             echo "FINSISHED UPDATING REPO"
             # docker-compose down
-            docker-compose up --build -d
-            docker-compose ps
+            sudo docker-compose up --build -d
+            sudo docker-compose ps
