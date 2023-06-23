@@ -50,7 +50,7 @@ jobs:
             sudo su
             ls -la
             cd telegram-bot
-            sudo echo agriweath_token=${{secrets.AGRIWEATHBOT_TOKEN}} >> .env
+            echo ${{ secrets.PRODUCTION_SERVER_PASSWORD }} | sudo -S echo agriweath_token=${{secrets.AGRIWEATHBOT_TOKEN}} > .env
             sudo git pull 
             echo "FINSISHED UPDATING REPO"
             # docker-compose down
