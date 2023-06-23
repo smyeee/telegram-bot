@@ -46,10 +46,11 @@ jobs:
           username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
           password: ${{ secrets.PRODUCTION_SERVER_PASSWORD }}   
           script: |
-            export agriweath_token=${{secrets.AGRIWEATHBOT_TOKEN}}
             ls -la
             cd telegram-bot
+            echo agriweath_token=${{secrets.AGRIWEATHBOT_TOKEN}} >> .env
             git pull 
+            echo "FINSISHED UPDATING REPO"
             # docker-compose down
             docker-compose up --build -d
             docker-compose ps
