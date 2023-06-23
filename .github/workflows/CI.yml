@@ -46,6 +46,7 @@ jobs:
           username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
           password: ${{ secrets.PRODUCTION_SERVER_PASSWORD }}   
           script: |
+            echo ${{ secrets.PRODUCTION_SERVER_PASSWORD }} | sudo -S su
             ls -la
             cd telegram-bot
             echo agriweath_token=${{secrets.AGRIWEATHBOT_TOKEN}} >> .env
