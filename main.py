@@ -241,8 +241,20 @@ def handle_stat_request(update: Update, context: CallbackContext):
 
 
 def stats_keyboard():
+    
+    keyboard = [
+    [
+        InlineKeyboardButton("تعداد اعضا", callback_data='3'),
+        InlineKeyboardButton("تعداد بلاک", callback_data='4'),
+    ]
+    [
+        InlineKeyboardButton("دانلود فایل اکسل", callback_data='1'),
+        InlineKeyboardButton("دیتای مربوط به پیام", callback_data='2'),
+    ],
+]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     keyboard = [['دریافت اکسل', 'تعداد کل اعضا', 'back']]
-    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    return reply_markup
 
 def return_keyboard():
     keyboard = ["back"]
@@ -300,7 +312,7 @@ def send_scheduled_messages(persistence: persistence, bot: Bot):
 def main():
     # Create an instance of Updater and pass the bot token and persistence
     # updater = Updater(TOKEN, persistence=persistence, use_context=True)
-    updater = Updater(TOKEN, persistence=persistence, use_context=True, request_kwargs={'proxy_url': PROXY_URL})
+    updater = Updater(TOKEN, persistence=persistence, use_context=True)#, request_kwargs={'proxy_url': PROXY_URL})
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher

@@ -1,3 +1,8 @@
 /env
 tutorial.py
 /.idea
+.vscode/
+bot_*
+.env
+*data.pickle
+__pycache__/
