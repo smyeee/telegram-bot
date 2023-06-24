@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  docker-build:
+  deploy-main-branch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -50,9 +50,12 @@ jobs:
             sudo su
             ls -la
             cd telegram-bot
-            echo ${{ secrets.PRODUCTION_SERVER_PASSWORD }} | sudo -S echo agriweath_token=${{secrets.AGRIWEATHBOT_TOKEN}} > .env
-            sudo git pull 
+            git update-index --assume-unchanged bot_*
+            git update-index --assume-unchanged .env
+            git update-index --assume-unchanged *data.pickle
+            git pull 
             echo "FINSISHED UPDATING REPO"
-            # docker-compose down
-            sudo docker-compose up --build -d
-            sudo docker-compose ps
+            docker-compose down
+            docker-compose up --build -d
+            sleep 5
+            docker-compose ps
