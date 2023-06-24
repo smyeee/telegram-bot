@@ -27,8 +27,8 @@ logger = logging.getLogger("agriWeather-bot")
 BROADCAST = 0
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
 
-TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-
+# TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
+TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
 persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
 PROVINCES = ['کرمان', 'خراسان رضوی', 'خراسان جنوبی', 'یزد', 'فارس', 'سمنان', 'سایر']
@@ -214,6 +214,9 @@ def broadcast(update: Update, context: CallbackContext):
     user_data = persistence.get_user_data()
     i = 0
     message = update.message.text
+    if message == "/cancel":
+        update.message.reply_text("عملیات کنسل شد!")
+        return ConversationHandler.END
     if not message:
         update.message.reply_text('لطفا پیام مورد نظرتان را بنویسید:',)
         return BROADCAST
@@ -228,6 +231,10 @@ def broadcast(update: Update, context: CallbackContext):
             logger.error(f"chat with {user_id} not found.")
     for id in ADMIN_LIST:
         context.bot.send_message(id, f"پیام برای {i} نفر از {len(user_data)} نفر ارسال شد.")
+    return ConversationHandler.END
+
+def cancel(update: Update, context: CallbackContext):
+    update.message.reply_text("عملیات کنسل شد!")
     return ConversationHandler.END
 
 def bot_stats(update: Update, context: CallbackContext):
@@ -374,7 +381,7 @@ def main():
                 ASK_NAME: [MessageHandler(Filters.all, ask_name)],
                 HANDLE_NAME: [MessageHandler(Filters.all, handle_name)]
             },
-            fallbacks=[CommandHandler('cancel', start)]
+            fallbacks=[CommandHandler('cancel', cancel)]
         )
 
 
@@ -383,7 +390,7 @@ def main():
             states={
                 BROADCAST: [MessageHandler(Filters.all, broadcast)],            
             },
-        fallbacks=[CommandHandler('cancel', start)]
+        fallbacks=[CommandHandler('cancel', cancel)]
         )
     
         dp.add_error_handler(error_handler)
