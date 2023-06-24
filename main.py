@@ -27,8 +27,8 @@ logger = logging.getLogger("agriWeather-bot")
 BROADCAST = 0
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
 
-# TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-TOKEN = "6004713690:AAHz8olZ6Z4qaODXt5fue3CvaF2VQzCQbms"
+TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
+
 persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
 PROVINCES = ['کرمان', 'خراسان رضوی', 'خراسان جنوبی', 'یزد', 'فارس', 'سمنان', 'سایر']
