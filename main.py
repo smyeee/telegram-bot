@@ -9,6 +9,8 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 from telegram.error import BadRequest, Unauthorized, NetworkError
 import os
 from data_utils import to_excel
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 # Enable logging
 logging.basicConfig(
@@ -375,14 +377,23 @@ def main():
             fallbacks=[CommandHandler('cancel', start)]
         )
 
-        dp.add_handler(conv_handler)
 
+        broadcast_handler = ConversationHandler(
+            entry_points=[CommandHandler('send', send)],
+            states={
+                BROADCAST: [MessageHandler(Filters.all, broadcast)],            
+            },
+        fallbacks=[CommandHandler('cancel', start)]
+        )
+    
         dp.add_error_handler(error_handler)
 
-        # dp.add_handler(CommandHandler('location', location_command_handler))
-        # Add the location handler for the received location
-        # dp.add_handler(MessageHandler(Filters.location, location_command_handler))
+        dp.add_handler(CommandHandler('stats', bot_stats))
+        dp.add_handler(CallbackQueryHandler(button))
 
+        dp.add_handler(conv_handler)
+        dp.add_handler(broadcast_handler)
+        # dp.add_handler(CommandHandler("stats", bot_stats, filters=Filters.user))
         # Start the bot
         updater.start_polling()
 
@@ -390,7 +401,7 @@ def main():
         job_queue = updater.job_queue
         # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
         #                         interval=datetime.timedelta(seconds=5).total_seconds())
-        job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
+        # job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
         job_queue.run_repeating(lambda context: get_member_count(persistence, context.bot), interval=3600, first=10)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()

@@ -50,12 +50,12 @@ jobs:
             sudo su
             ls -la
             cd telegram-bot
-            sudo git update-index --assume-unchanged bot_*
-            sudo git update-index --assume-unchanged .env
-            sudo git update-index --assume-unchanged *data.pickle
-            sudo git pull 
+            git update-index --assume-unchanged bot_*
+            git update-index --assume-unchanged .env
+            git update-index --assume-unchanged *data.pickle
+            git pull 
             echo "FINSISHED UPDATING REPO"
             docker-compose down
-            sudo docker-compose up --build -d
+            docker-compose up --build -d
             sleep 5
-            sudo docker-compose ps
+            docker-compose ps
