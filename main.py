@@ -354,8 +354,6 @@ def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
 
 def error_handler(update: Update, context: CallbackContext):
     logger.error('Update "%s" caused error "%s"', update, context.error)
-
-    
 def main():
         updater = Updater(TOKEN, persistence=persistence, use_context=True)# , request_kwargs={'proxy_url': PROXY_URL})
 
