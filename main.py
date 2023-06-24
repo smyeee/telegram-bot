@@ -8,9 +8,8 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
     BasePersistence, ConversationHandler, PicklePersistence, Dispatcher
 from telegram.error import BadRequest, Unauthorized, NetworkError
 import os
-
-
-
+from data_utils import to_excel
+import matplotlib.pyplot as plt
 # Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -23,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger("agriWeather-bot")
 
 # Constants for ConversationHandler states
-START, ASK_PHONE, ASK_QUESTION_1, ASK_QUESTION_2, ASK_LOCATION, HANDLE_LOCATION = range(6)
+BROADCAST = 0
 START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
 
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
@@ -32,6 +31,7 @@ persistence = PicklePersistence(filename='bot_data.pickle')
 REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
 PROVINCES = ['کرمان', 'خراسان رضوی', 'خراسان جنوبی', 'یزد', 'فارس', 'سمنان', 'سایر']
 PRODUCTS = ['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی', 'پسته بادامی', 'پسته فندقی', 'پسته کله قوچی', 'پسته ممتاز', 'سایر']
+ADMIN_LIST = [103465015, 31583686]
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
@@ -199,6 +199,96 @@ def handle_name(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
+def send(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if user_id in ADMIN_LIST:    
+        update.message.reply_text('لطفا پیام مورد نظرتان را بنویسید:',)
+        return BROADCAST
+    else:
+        return ConversationHandler.END
+
+
+def broadcast(update: Update, context: CallbackContext):
+    user_data = persistence.get_user_data()
+    i = 0
+    message = update.message.text
+    if not message:
+        update.message.reply_text('لطفا پیام مورد نظرتان را بنویسید:',)
+        return BROADCAST
+    for user_id in user_data:    
+        try:
+            context.bot.send_message(user_id, message)
+            user_data[user_id]["blocked"] = False
+            i += 1            
+        except Unauthorized:
+            logger.error(f"user {user_id} blocked the bot")
+        except BadRequest:
+            logger.error(f"chat with {user_id} not found.")
+    for id in ADMIN_LIST:
+        context.bot.send_message(id, f"پیام برای {i} نفر از {len(user_data)} نفر ارسال شد.")
+    return ConversationHandler.END
+
+def bot_stats(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if user_id in ADMIN_LIST:    
+        update.message.reply_text(
+            'آمار مورد نظر را انتخاب کنید',
+            reply_markup=stats_keyboard()
+        )
+    
+
+
+def button(update: Update, context: CallbackContext):
+    stat = update.callback_query
+    id = update.effective_user.id
+    if stat.data == "member_count":
+        with open("bot_members_data.pickle", "rb") as f:
+            member_count = pickle.load(f)
+        # stat.edit_message_text(text=f"تعداد کل اعضا: {member_count['member_count'][-1]}")
+        context.bot.send_message(chat_id=id, text=f"تعداد کل اعضا: {member_count['member_count'][-1]}")
+    elif stat.data == "member_count_change":
+        with open("bot_members_data.pickle", "rb") as f:
+            data = pickle.load(f)
+        if len(data['time']) < 15:
+            plt.plot(data['time'], data['member_count'], 'ro')
+        else:
+            plt.plot(data['time'][-15:], data['member_count'][-15:], 'r-')
+        plt.xlabel('Time')
+        plt.ylabel('Members')
+        plt.title('Bot Members Over Time')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("member-change.png")
+        photo = open("member-change.png", "rb")
+        context.bot.send_photo(chat_id=id, photo=photo)
+        photo.close()
+        os.remove("member-change.png")
+    elif stat.data == "excel_download":
+        input_file="location_guide_data.pickle"
+        output_file="member-data.xlsx"
+        to_excel(input_file, output_file)
+        doc = open(output_file, 'rb')
+        context.bot.send_document(chat_id=id, document=doc)
+        doc.close()
+        os.remove(output_file)
+
+
+def stats_keyboard():
+    keyboard = [
+    [
+        InlineKeyboardButton("تعداد اعضا", callback_data='member_count'),
+        InlineKeyboardButton("تغییرات تعداد اعضا", callback_data='member_count_change'),
+    ],
+    [
+        InlineKeyboardButton("دانلود فایل اکسل", callback_data='excel_download'),
+    ],
+]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    return reply_markup
+
+def return_keyboard():
+    keyboard = ["back"]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 # Function to get the multi-choice keyboard for provinces
 def get_province_keyboard():
     keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['سایر']]
@@ -209,6 +299,27 @@ def get_province_keyboard():
 def get_produce_keyboard():
     keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
+
+def get_member_count(persistence: persistence, bot: Bot):
+    user_data = persistence.get_user_data()
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    member_count = len(user_data)
+    try:
+        with open("bot_members_data.pickle", "rb") as f:
+            data = pickle.load(f)
+            logger.info("opened the file")
+    except FileNotFoundError:
+        data = {'time':[], 'member_count':[]}
+        logger.info("file doesn't exist")
+    # logger.info(f"old file: {data}")
+    data['time'].append(current_time)
+    data['member_count'].append(member_count)
+    logger.info(f"member count: {member_count}")
+    # logger.info(f"new file: {data}")
+    with open("bot_members_data.pickle", "wb") as f:
+        pickle.dump(data, f)
+    # Append new data to DataFrame
 
 
 # Function to send personalized scheduled messages
@@ -240,26 +351,6 @@ def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
     with open("location_guide_data.pickle", "wb") as job_data:
         pickle.dump(user_data, job_data)
             
-
-def location_command_handler(update: Update, context: CallbackContext):
-    location_keyboard = KeyboardButton(text="send_location", request_location=True)
-    contact_keyboard = KeyboardButton(text="send_contact", request_contact=True)
-    custom_keyboard = [[ location_keyboard, contact_keyboard ]]
-    reply_markup = ReplyKeyboardMarkup(custom_keyboard)
-    update.message.reply_text(text="Would you mind sharing your location and contact with me?", reply_markup=reply_markup)
-
-def location(update: Update, context: CallbackContext):
-    location = update.message.location
-    contact = update.message.contact
-    update.message.reply_text(
-        f"location: {location}"
-        f"contact: {contact}"
-    )
-
-
-def error_handler(update: Update, context: CallbackContext):
-    logger.error('Update "%s" caused error "%s"', update, context.error)
-
 
 def main():
         updater = Updater(TOKEN, persistence=persistence, use_context=True)# , request_kwargs={'proxy_url': PROXY_URL})
@@ -297,7 +388,8 @@ def main():
         job_queue = updater.job_queue
         # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
         #                         interval=datetime.timedelta(seconds=5).total_seconds())
-        job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)
+        job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
+        job_queue.run_repeating(lambda context: get_member_count(persistence, context.bot), interval=3600, first=10)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
     

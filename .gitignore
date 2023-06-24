@@ -5,3 +5,4 @@ tutorial.py
 bot_*
 .env
 *data.pickle
+__pycache__/
