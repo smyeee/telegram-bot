@@ -25,7 +25,7 @@ logger = logging.getLogger("agriWeather-bot")
 
 # Constants for ConversationHandler states
 BROADCAST = 0
-START, ASK_PROVINCE, ASK_CITY, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
+ASK_PROVINCE, ASK_CITY, ASK_VILLAGE, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
 
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 
@@ -97,19 +97,34 @@ def ask_city(update: Update, context: CallbackContext):
     user_data['province'] = province
 
     update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+    return ASK_VILLAGE
+
+
+def ask_village(update: Update, context: CallbackContext):
+    user_data = context.user_data
+
+    # Get the answer to the province question
+    if not update.message.text or update.message.text=="/start":
+        update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+        return ASK_VILLAGE
+    
+    city = update.message.text.strip()
+    user_data['city'] = city
+
+    update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
     return ASK_AREA
 
 
 def ask_area(update: Update, context: CallbackContext):
     user_data = context.user_data
 
-    # Get the answer to the city question
+    # Get the answer to the village question
     if not update.message.text or update.message.text=="/start":
-        update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+        update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
         return ASK_AREA
     
-    city = update.message.text.strip()
-    user_data['city'] = city
+    village = update.message.text.strip()
+    user_data['village'] = village
 
     update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
     return ASK_PHONE
@@ -137,16 +152,14 @@ def ask_location(update: Update, context: CallbackContext):
     if not var or len(var) != 11 or var=="/start":
         update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
         return ASK_LOCATION
-    phone = update.message.text.strip()
+    phone = var.strip()
     user_data['phone'] = phone
 
     # persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
-    reply_text = """
-    لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما (https://t.me/agriweath/2) ارسال کنید.
-
-👉  https://t.me/agriweath/2
-    """
-    update.message.reply_text(reply_text)
+    reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
+    keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
+                [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
+    update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
     return ASK_NAME
 
 
@@ -156,25 +169,30 @@ def ask_name(update: Update, context: CallbackContext):
 
     # Get the user's location
     location = update.message.location
+    text = update.message.text
     # logger.info(f"location: {update.message.location}")
-    if not location:
-        text = """
-    لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما (https://t.me/agriweath/2) ارسال کنید.
-
-👉  https://t.me/agriweath/2
-    """
-        update.message.reply_text(text) 
-        # update.message.reply_text("لطفا محل زمین خود را در نقشه با ما به اشتراک بگذارید:")
-        # with open("./help.mp4", "rb") as gif:
-        #     update.message.reply_animation(animation=gif, caption="لطفا موقعیت (لوکیشن) باغ خود را مطابق فیلم راهنما ارسال کنید")
+    if not location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
+        reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
+        keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
+                    [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
+        update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
 
         return ASK_NAME
+    elif text == "از نقشه (گوگل مپ) انتخاب میکنم":
+        reply_text = """
+        مطابق فیلم راهنما موقعیت لوکیشن باغ خود را انتخاب کنید
+        
+        👉  https://t.me/agriweath/2
+        """ 
+        update.message.reply_text(reply_text, reply_markup=ReplyKeyboardRemove())
+        return ASK_NAME
+
     user_data['location'] = {
         'latitude': location.latitude,
         'longitude': location.longitude
     }
 
-    update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
+    update.message.reply_text("نام و نام خانودگی خود را وارد کنید:", reply_markup=ReplyKeyboardRemove())
     return HANDLE_NAME
 
 
@@ -204,7 +222,7 @@ def handle_name(update: Update, context: CallbackContext):
 def send(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if user_id in ADMIN_LIST:    
-        update.message.reply_text('لطفا پیام مورد نظرتان را بنویسید:',)
+        update.message.reply_text('لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:',)
         return BROADCAST
     else:
         return ConversationHandler.END
@@ -307,7 +325,7 @@ def get_province_keyboard():
 # Function to get the multi-choice keyboard for produce
 def get_produce_keyboard():
     keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر']]
-    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, input_field_placeholder="salam")
 
 
 def get_member_count(persistence: persistence, bot: Bot):
@@ -375,6 +393,7 @@ def main():
             states={
                 ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
                 ASK_CITY: [MessageHandler(Filters.text, ask_city)],
+                ASK_VILLAGE: [MessageHandler(Filters.text, ask_village)],
                 ASK_AREA: [MessageHandler(Filters.all, ask_area)],
                 ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
                 ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
