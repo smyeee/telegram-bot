@@ -12,6 +12,9 @@ from data_utils import to_excel
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from fiona.errors import DriverError
+
+
 # Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -348,6 +351,23 @@ def get_member_count(persistence: persistence, bot: Bot):
         pickle.dump(data, f)
     # Append new data to DataFrame
 
+
+def send_advice(persistence: persistence, bot: Bot):
+    user_data = persistence.get_user_data()
+    current_day = datetime.datetime.now().strftime("%Y%m%d")
+    try:
+        advise_data = gpd.read_file(f"PestehAdviskerman{current_day}.geojson")
+    except DriverError:
+        for admin in ADMIN_LIST:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
+            bot.send_message(chat_id=admin, text=f"{time} file PestehAdviskerman{current_day}.geojson was not found!")
+    except:
+        for admin in ADMIN_LIST:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
+            bot.send_message(chat_id=admin, text=f"{time} unexpected error reading PestehAdviskerman{current_day}.geojson")        
+    for id in user_data:
+        if user_data[id]["location"]:
+            pass
 
 # Function to send personalized scheduled messages
 def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
