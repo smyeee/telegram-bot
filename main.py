@@ -1,9 +1,12 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import datetime
+# import jdatetime
 import pickle
 import geopandas as gpd
-from telegram import Bot, KeyboardButton, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from shapely.geometry import Point
+import pandas as pd
+from telegram import Bot, Location, KeyboardButton, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, \
     BasePersistence, ConversationHandler, PicklePersistence, Dispatcher
 from telegram.error import BadRequest, Unauthorized, NetworkError
@@ -13,7 +16,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from fiona.errors import DriverError
+import warnings
 
+warnings.filterwarnings("ignore", category=UserWarning)
 
 # Enable logging
 logging.basicConfig(
@@ -352,11 +357,64 @@ def get_member_count(persistence: persistence, bot: Bot):
     # Append new data to DataFrame
 
 
-def send_advice(persistence: persistence, bot: Bot):
+def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
     user_data = persistence.get_user_data()
     current_day = datetime.datetime.now().strftime("%Y%m%d")
+    villages = pd.read_excel("vilages.xlsx")
     try:
         advise_data = gpd.read_file(f"PestehAdviskerman{current_day}.geojson")
+        for id in user_data:
+            if user_data[id].get("province") == prov:
+                if id==103465015 or id==350606186:
+                    longitude = 55.64867451
+                    latitude = 30.53236301
+                elif id==117133536:
+                    latitude = 55.834766
+                    longitude = 29.265048
+                elif id==6210067446:  
+                    latitude = 56.7328547
+                    longitude = 30.3160766
+                elif id==147021441:  
+                    latitude = 56.74348157151028
+                    longitude = 30.583021105790174
+                elif user_data[id].get("location"):
+                    longitude = user_data[id]["location"]["longitude"]
+                    latitude = user_data[id]["location"]["latitude"]
+                elif not user_data[id].get("location") and user_data[id].get("village"):
+                    province = user_data[id]["province"]
+                    city = user_data[id]["city"]
+                    village = user_data[id]["village"]
+                    row = villages.loc[(villages["ProvincNam"] == province) & (villages["CityName"] == city) & (villages["NAME"] == village)]
+                    if not row.empty and len(row)==1:
+                        longitude = row["X"]
+                        latitude = row["Y"]
+                else:
+                    logger.info(f"Location of user:{id} was not found")
+                    latitude = None
+                    longitude = None
+                
+                if latitude is not None and longitude is not None: 
+                    # Find the nearest point to the user's lat/long
+                    point = Point(longitude, latitude)
+                    idx_min_dist = advise_data.geometry.distance(point).idxmin()
+                    advise = advise_data.iloc[idx_min_dist]["Adivse"]
+                    message = f"""
+باغدار عزیز سلام
+توصیه زیر با توجه به وضعیت آب و هوایی باغ شما ارسال می‌شود:
+
+{advise}
+                    """
+                    if not pd.isna(advise):
+                        try: 
+                            # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                            bot.send_message(chat_id=id, text=message)
+                            # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                        except Unauthorized:
+                            logger.info(f"user:{id} has blocked the bot!")
+                            for admin in ADMIN_LIST:
+                                bot.send_message(chat_id=admin, text=f"user: {id} has blocked the bot!")
+
+
     except DriverError:
         for admin in ADMIN_LIST:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
@@ -365,9 +423,10 @@ def send_advice(persistence: persistence, bot: Bot):
         for admin in ADMIN_LIST:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
             bot.send_message(chat_id=admin, text=f"{time} unexpected error reading PestehAdviskerman{current_day}.geojson")        
-    for id in user_data:
-        if user_data[id]["location"]:
-            pass
+    
+
+        
+        
 
 # Function to send personalized scheduled messages
 def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
@@ -449,6 +508,9 @@ def main():
         #                         interval=datetime.timedelta(seconds=5).total_seconds())
         # job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
         job_queue.run_repeating(lambda context: get_member_count(persistence, context.bot), interval=3600, first=10)
+        job_queue.run_repeating(lambda context: send_advice_to_province(persistence, context.bot, "کرمان"),
+                                interval=datetime.timedelta(days=1),
+                                first=datetime.timedelta(seconds=20))
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
     
