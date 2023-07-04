@@ -430,7 +430,9 @@ def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
             bot.send_message(chat_id=admin, text=f"{time} unexpected error reading PestehAdviskerman{current_day}.geojson")        
     
 
-        
+def send_up_notice(bot: Bot):
+    for admin in ADMIN_LIST:
+        bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد")      
         
 
 # Function to send personalized scheduled messages
@@ -516,6 +518,7 @@ def main():
         job_queue.run_repeating(lambda context: send_advice_to_province(persistence, context.bot, "کرمان"),
                                 interval=datetime.timedelta(days=1),
                                 first=datetime.timedelta(seconds=20))
+        job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
     
