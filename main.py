@@ -177,9 +177,12 @@ def ask_name(update: Update, context: CallbackContext):
 
     # Get the user's location
     location = update.message.location
+    if location:
+        logger.info(f"{update.effective_user.id} chose: ersal location online")
     text = update.message.text
     # logger.info(f"location: {update.message.location}")
     if not location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
+        logger.info(f"{update.effective_user.id} didn't send location successfully")
         reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
         keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
                     [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
@@ -187,6 +190,7 @@ def ask_name(update: Update, context: CallbackContext):
 
         return ASK_NAME
     elif text == "از نقشه (گوگل مپ) انتخاب میکنم":
+        logger.info(f"{update.effective_user.id} chose: az google map entekhab mikonam")
         reply_text = """
         مطابق فیلم راهنما موقعیت لوکیشن باغ خود را انتخاب کنید
         
