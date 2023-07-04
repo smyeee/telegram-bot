@@ -408,6 +408,7 @@ def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
                         try: 
                             # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                             bot.send_message(chat_id=id, text=message)
+                            logger.info(f"sent the following to {id}\n\n{message}")
                             # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                         except Unauthorized:
                             logger.info(f"user:{id} has blocked the bot!")
