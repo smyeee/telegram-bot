@@ -2,7 +2,7 @@ import pandas as pd
 import pickle
 
 def to_excel(input_file: str, output_file: str) -> None:
-    df = pd.DataFrame(columns=['id', 'username', 'product', 'province', 'city', 'village','area', 'phone', 'latitude', 'longitude', 'name', 'blocked'])
+    df = pd.DataFrame(columns=['id', 'username', 'product', 'province', 'city', 'village','area', 'phone', 'latitude', 'longitude', 'name'])
     
     with open(input_file, 'rb') as f:
         user_data = pickle.load(f)["user_data"]
@@ -27,7 +27,7 @@ def to_excel(input_file: str, output_file: str) -> None:
             'latitude': latitude,
             'longitude': longitude,
             'name': user_data.get(key, {}).get('name'),
-            'blocked': user_data.get(key, {}).get('blocked'),
+            # 'blocked': user_data.get(key, {}).get('blocked'),
         })
     
     df.to_excel(output_file)

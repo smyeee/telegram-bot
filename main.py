@@ -303,7 +303,7 @@ def button(update: Update, context: CallbackContext):
         photo.close()
         os.remove("member-change.png")
     elif stat.data == "excel_download":
-        input_file="location_guide_data.pickle"
+        input_file="bot_data.pickle"
         output_file="member-data.xlsx"
         to_excel(input_file, output_file)
         doc = open(output_file, 'rb')
@@ -367,20 +367,21 @@ def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
     villages = pd.read_excel("vilages.xlsx")
     try:
         advise_data = gpd.read_file(f"PestehAdviskerman{current_day}.geojson")
+        advise_data = advise_data.dropna(subset=['Adivse'])
         for id in user_data:
             if user_data[id].get("province") == prov:
                 if id==103465015 or id==350606186:
                     longitude = 55.64867451
                     latitude = 30.53236301
                 elif id==117133536:
-                    latitude = 55.834766
-                    longitude = 29.265048
+                    longitude = 55.834766
+                    latitude = 29.265048
                 elif id==6210067446:  
-                    latitude = 56.7328547
-                    longitude = 30.3160766
+                    longitude = 56.7328547
+                    latitude = 30.3160766
                 elif id==147021441:  
-                    latitude = 56.74348157151028
-                    longitude = 30.583021105790174
+                    longitude = 56.74348157151028
+                    latitude = 30.583021105790174
                 elif user_data[id].get("location"):
                     longitude = user_data[id]["location"]["longitude"]
                     latitude = user_data[id]["location"]["latitude"]
@@ -389,7 +390,10 @@ def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
                     city = user_data[id]["city"]
                     village = user_data[id]["village"]
                     row = villages.loc[(villages["ProvincNam"] == province) & (villages["CityName"] == city) & (villages["NAME"] == village)]
-                    if not row.empty and len(row)==1:
+                    if row.empty:
+                        longitude = None
+                        latitude = None
+                    elif not row.empty and len(row)==1:
                         longitude = row["X"]
                         latitude = row["Y"]
                 else:
@@ -408,16 +412,22 @@ def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
 
 {advise}
                     """
+                    logger.info(message)
+                    if pd.isna(advise):
+                        logger.info(f"No advice for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data"
+                                    f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}")
                     if not pd.isna(advise):
                         try: 
                             # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                             bot.send_message(chat_id=id, text=message)
-                            logger.info(f"sent the following to {id}\n\n{message}")
+                            logger.info(f"sent recommendation to {id}")
                             # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                         except Unauthorized:
                             logger.info(f"user:{id} has blocked the bot!")
                             for admin in ADMIN_LIST:
                                 bot.send_message(chat_id=admin, text=f"user: {id} has blocked the bot!")
+                        except BadRequest:
+                            logger.info(f"user:{id} chat was not found!")
 
 
     except DriverError:
