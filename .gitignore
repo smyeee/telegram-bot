@@ -6,5 +6,5 @@ bot_*
 .env
 *data.pickle
 __pycache__/
-.geojson
+*.geojson
 
