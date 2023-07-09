@@ -361,66 +361,76 @@ def get_member_count(persistence: persistence, bot: Bot):
     # Append new data to DataFrame
 
 
-def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
+def send_advice_to_users(persistence: persistence, bot: Bot):
     user_data = persistence.get_user_data()
     current_day = datetime.datetime.now().strftime("%Y%m%d")
     villages = pd.read_excel("vilages.xlsx")
+    message_count = 0
+    receiver_id = []
     try:
-        advise_data = gpd.read_file(f"PestehAdviskerman{current_day}.geojson")
-        advise_data = advise_data.dropna(subset=['Adivse'])
+        advise_data = gpd.read_file(f"Pesteh{current_day}.geojson")
+        # advise_data = advise_data.dropna(subset=['Adivse'])
         for id in user_data:
-            if user_data[id].get("province") == prov:
-                if id==103465015 or id==350606186:
-                    longitude = 55.64867451
-                    latitude = 30.53236301
-                elif id==117133536:
-                    longitude = 55.834766
-                    latitude = 29.265048
-                elif id==6210067446:  
-                    longitude = 56.7328547
-                    latitude = 30.3160766
-                elif id==147021441:  
-                    longitude = 56.74348157151028
-                    latitude = 30.583021105790174
-                elif user_data[id].get("location"):
-                    longitude = user_data[id]["location"]["longitude"]
-                    latitude = user_data[id]["location"]["latitude"]
-                elif not user_data[id].get("location") and user_data[id].get("village"):
-                    province = user_data[id]["province"]
-                    city = user_data[id]["city"]
-                    village = user_data[id]["village"]
-                    row = villages.loc[(villages["ProvincNam"] == province) & (villages["CityName"] == city) & (villages["NAME"] == village)]
-                    if row.empty:
-                        longitude = None
-                        latitude = None
-                    elif not row.empty and len(row)==1:
-                        longitude = row["X"]
-                        latitude = row["Y"]
-                else:
-                    logger.info(f"Location of user:{id} was not found")
-                    latitude = None
+            # if user_data[id].get("province") == prov:
+            if id==103465015 or id==350606186:
+                longitude = 55.64867451
+                latitude = 30.53236301
+            elif id==117133536:
+                longitude = 55.834766
+                latitude = 29.265048
+            elif id==6210067446:  
+                longitude = 56.7328547
+                latitude = 30.3160766
+            elif id==147021441:  
+                longitude = 56.74348157151028
+                latitude = 30.583021105790174
+            elif user_data[id].get("location"):
+                longitude = user_data[id]["location"]["longitude"]
+                latitude = user_data[id]["location"]["latitude"]
+            elif not user_data[id].get("location") and user_data[id].get("village"):
+                province = user_data[id]["province"]
+                city = user_data[id]["city"]
+                village = user_data[id]["village"]
+                row = villages.loc[(villages["ProvincNam"] == province) & (villages["CityName"] == city) & (villages["NAME"] == village)]
+                if row.empty:
                     longitude = None
-                
-                if latitude is not None and longitude is not None: 
-                    # Find the nearest point to the user's lat/long
-                    point = Point(longitude, latitude)
-                    idx_min_dist = advise_data.geometry.distance(point).idxmin()
+                    latitude = None
+                elif not row.empty and len(row)==1:
+                    longitude = row["X"]
+                    latitude = row["Y"]
+                    logger.info(f"village {village} was found in villages.xlsx")
+            else:
+                logger.info(f"Location of user:{id} was not found")
+                latitude = None
+                longitude = None
+            
+            if latitude is not None and longitude is not None: 
+                logger.info(f"Location of user:{id} was found")
+                # Find the nearest point to the user's lat/long
+                point = Point(longitude, latitude)
+                threshold = 0.1 # degrees
+                idx_min_dist = advise_data.geometry.distance(point).idxmin()
+                closest_coords = advise_data.geometry.iloc[idx_min_dist].coords[0]
+                if point.distance(Point(closest_coords)) <= threshold:
+                    logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
                     advise = advise_data.iloc[idx_min_dist]["Adivse"]
                     message = f"""
-باغدار عزیز سلام
-توصیه زیر با توجه به وضعیت آب و هوایی باغ شما ارسال می‌شود:
+                    باغدار عزیز سلام
+                    توصیه زیر با توجه به وضعیت آب و هوایی باغ شما ارسال می‌شود:
 
-{advise}
+                    {advise}
                     """
                     logger.info(message)
                     if pd.isna(advise):
-                        logger.info(f"No advice for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data"
+                        logger.info(f"No advice for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data "
                                     f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}")
                     if not pd.isna(advise):
                         try: 
                             # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                             bot.send_message(chat_id=id, text=message)
                             logger.info(f"sent recommendation to {id}")
+                            message_count += 1
+                            receiver_id.append(id)
                             # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                         except Unauthorized:
                             logger.info(f"user:{id} has blocked the bot!")
@@ -428,16 +438,19 @@ def send_advice_to_province(persistence: persistence, bot: Bot, prov: str):
                                 bot.send_message(chat_id=admin, text=f"user: {id} has blocked the bot!")
                         except BadRequest:
                             logger.info(f"user:{id} chat was not found!")
-
-
+                else:
+                    logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
+        for admin in ADMIN_LIST:
+            bot.send_message(chat_id=admin, text=f"توصیه به {message_count} کاربر ارسال شد")
+            bot.send_message(chat_id=admin, text=receiver_id)
     except DriverError:
         for admin in ADMIN_LIST:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
-            bot.send_message(chat_id=admin, text=f"{time} file PestehAdviskerman{current_day}.geojson was not found!")
-    except:
-        for admin in ADMIN_LIST:
-            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
-            bot.send_message(chat_id=admin, text=f"{time} unexpected error reading PestehAdviskerman{current_day}.geojson")        
+            bot.send_message(chat_id=admin, text=f"{time} file pesteh{current_day}.geojson was not found!")
+    # except:
+    #     for admin in ADMIN_LIST:
+    #         time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
+    #         bot.send_message(chat_id=admin, text=f"{time} unexpected error reading pesteh{current_day}.geojson")        
     
 
 def send_up_notice(bot: Bot):
@@ -478,7 +491,7 @@ def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
 def error_handler(update: Update, context: CallbackContext):
     logger.error('Update "%s" caused error "%s"', update, context.error)
 def main():
-        updater = Updater(TOKEN, persistence=persistence, use_context=True)# , request_kwargs={'proxy_url': PROXY_URL})
+        updater = Updater(TOKEN, persistence=persistence, use_context=True) # , request_kwargs={'proxy_url': PROXY_URL})
 
         # Get the dispatcher to register handlers
         dp = updater.dispatcher
@@ -525,7 +538,7 @@ def main():
         #                         interval=datetime.timedelta(seconds=5).total_seconds())
         # job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
         job_queue.run_repeating(lambda context: get_member_count(persistence, context.bot), interval=3600, first=10)
-        job_queue.run_repeating(lambda context: send_advice_to_province(persistence, context.bot, "کرمان"),
+        job_queue.run_repeating(lambda context: send_advice_to_users(persistence, context.bot),
                                 interval=datetime.timedelta(days=1),
                                 first=datetime.timedelta(seconds=20))
         job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
