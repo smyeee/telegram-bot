@@ -368,7 +368,7 @@ def send_advice_to_users(persistence: persistence, bot: Bot):
     message_count = 0
     receiver_id = []
     try:
-        advise_data = gpd.read_file(f"pesteh{current_day}.geojson")
+        advise_data = gpd.read_file(f"Pesteh{current_day}.geojson")
         # advise_data = advise_data.dropna(subset=['Adivse'])
         for id in user_data:
             # if user_data[id].get("province") == prov:
