@@ -1,3 +1,4 @@
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 import datetime
@@ -368,22 +369,15 @@ def send_advice_to_users(persistence: persistence, bot: Bot):
     message_count = 0
     receiver_id = []
     try:
-        advise_data = gpd.read_file(f"Pesteh{current_day}.geojson")
+        advise_data = gpd.read_file(f"pesteh{current_day}.geojson")
+        with open("manual_location.json", "r") as f:
+            manual_location_data = json.load(f)  
         # advise_data = advise_data.dropna(subset=['Adivse'])
         for id in user_data:
             # if user_data[id].get("province") == prov:
-            if id==103465015 or id==350606186:
-                longitude = 55.64867451
-                latitude = 30.53236301
-            elif id==117133536:
-                longitude = 55.834766
-                latitude = 29.265048
-            elif id==6210067446:  
-                longitude = 56.7328547
-                latitude = 30.3160766
-            elif id==147021441:  
-                longitude = 56.74348157151028
-                latitude = 30.583021105790174
+            if str(id) in manual_location_data:
+                longitude = manual_location_data[str(id)]['longitude']
+                latitude = manual_location_data[str(id)]['latitude']
             elif user_data[id].get("location"):
                 longitude = user_data[id]["location"]["longitude"]
                 latitude = user_data[id]["location"]["latitude"]
