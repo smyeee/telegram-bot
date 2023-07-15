@@ -1075,4 +1075,4 @@ devenv = ["black", "check-manifest", "flake8", "pyroma", "pytest (>=4.3)", "pyte
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8e4ed01b41ac53e79e5e4f25fce114e79beadbf7153a269a6571748908cc2cda"
+content-hash = "1b9e16fd4af52065b2056cc10bacbc4ed05ecff0af31d8a4cd708b6693573be3"
