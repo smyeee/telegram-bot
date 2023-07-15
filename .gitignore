@@ -7,3 +7,4 @@ bot_*
 *data.pickle
 __pycache__/
 *.geojson
+ftp*
