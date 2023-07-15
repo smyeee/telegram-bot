@@ -2,7 +2,7 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 import datetime
-# import jdatetime
+import jdatetime
 import pickle
 import geopandas as gpd
 from shapely.geometry import Point
@@ -12,10 +12,9 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
     BasePersistence, ConversationHandler, PicklePersistence, Dispatcher
 from telegram.error import BadRequest, Unauthorized, NetworkError
 import os
-from data_utils import to_excel
-# import matplotlib
-# matplotlib.use("Agg")
-# import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from fiona.errors import DriverError
 import warnings
 import database
@@ -40,39 +39,22 @@ ASK_PROVINCE, ASK_CITY, ASK_VILLAGE, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 
 db = database.Database()
-
-REQUIRED_KEYS = ['produce', 'province', 'city', 'area', 'location', 'name', 'phone']
+db.populate_mongodb_from_pickle()
+REQUIRED_KEYS = ['products', 'provinces', 'cities', 'villages', 'areas', 'locations', 'name', 'phone-number']
 PROVINCES = ['کرمان', 'خراسان رضوی', 'خراسان جنوبی', 'یزد', 'فارس', 'سمنان', 'سایر']
 PRODUCTS = ['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی', 'پسته بادامی', 'پسته فندقی', 'پسته کله قوچی', 'پسته ممتاز', 'سایر']
 ADMIN_LIST = [103465015, 31583686]
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
-    name = user.username
-    # update.message.reply_text(f"id: {user.id}, username: {user.username}")
-    # persistence_data = persistence.user_data # {103465015: {'produce': 'محصول 3', 'province': 'استان 4', 'city': 'اردستان', 'area': '۵۴۳۳۴۵۶', 'location': {'latitude': 35.762059, 'longitude': 51.476923}, 'name': 'امیررضا', 'phone': '۰۹۱۳۳۶۴۷۹۹۱'}})
-    user_data = context.user_data # {'produce': 'محصول 3', 'province': 'استان 4', 'city': 'اردستان', 'area': '۵۴۳۳۴۵۶', 'location': {'latitude': 35.762059, 'longitude': 51.476923}, 'name': 'امیررضا', 'phone': '۰۹۱۳۳۶۴۷۹۹۱'}
-    user_data['username'] = update.effective_user.username
-    user_data['blocked'] = False
-    user_data['first-seen'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+    user_data = context.user_data 
     # Check if the user has already signed up
-    if db.check_if_user_is_signed_up(user.id):
-    # if user.id in persistence.user_data:
-        if all(key in user_data and user_data[key] for key in REQUIRED_KEYS):
-            reply_text = """
-ثبت نام شما تکمیل شده است.
-در روزهای آینده توصیه‌های کاربردی هواشناسی محصولتان برای شما ارسال می‌شود.
-همراه ما باشید.
-راه‌های ارتباطی با ما:
-ادمین: @agriiadmin
-شماره ثابت: 02164063399
-        """
-            update.message.reply_text(reply_text)
-            return ConversationHandler.END
-    logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) started the bot.")
-    # reply_text = f"Hello, {user.first_name}! Please provide your ID, phone number, and answer the following questions."
-    reply_text = """
+    if not db.check_if_user_is_signed_up(user.id, REQUIRED_KEYS):
+        user_data['username'] = update.effective_user.username
+        user_data['blocked'] = False
+        db.add_new_user(user.id, user.username)
+        logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) started the bot.")
+        reply_text = """
 باغدار عزیز سلام
 از این که به ما اعتماد کردید متشکریم.
 برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … به سوالات پاسخ دهید.
@@ -80,94 +62,103 @@ def start(update: Update, context: CallbackContext):
 ادمین: @agriiadmin
 تلفن ثابت: 02164063399
                 """
-    update.message.reply_text(reply_text)
-    update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
-    return ASK_PROVINCE
+        update.message.reply_text(reply_text)
+        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
+        return ASK_PROVINCE
+    else:
+        reply_text = """
+ثبت نام شما تکمیل شده است.
+در روزهای آینده توصیه‌های کاربردی هواشناسی محصولتان برای شما ارسال می‌شود.
+همراه ما باشید.
+راه‌های ارتباطی با ما:
+ادمین: @agriiadmin
+شماره ثابت: 02164063399
+        """
+        update.message.reply_text(reply_text)
+        return ConversationHandler.END 
 
 
 def ask_province(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
     # Get the answer to the province question
     if not update.message.text or update.message.text not in PRODUCTS:
         update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
         return ASK_PROVINCE
-    produce = update.message.text.strip()
-    user_data['product'] = produce
+    product = update.message.text.strip()
+    user_data['product'] = product
     update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
     return ASK_CITY
 
 
 def ask_city(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
-
     # Get the answer to the province question
     if not update.message.text or update.message.text not in PROVINCES:
         update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
         return ASK_CITY
-
     province = update.message.text.strip()
     user_data['province'] = province
-
     update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
     return ASK_VILLAGE
 
 
 def ask_village(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
-
     # Get the answer to the province question
     if not update.message.text or update.message.text=="/start":
         update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
-        return ASK_VILLAGE
-    
+        return ASK_VILLAGE    
     city = update.message.text.strip()
     user_data['city'] = city
-
     update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
     return ASK_AREA
 
 
 def ask_area(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
-
     # Get the answer to the village question
     if not update.message.text or update.message.text=="/start":
         update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
-        return ASK_AREA
-    
+        return ASK_AREA 
     village = update.message.text.strip()
     user_data['village'] = village
-
     update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
     return ASK_PHONE
 
 
 def ask_phone(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
-
+    # Get the answer to the area question
     if not update.message.text or update.message.text=="/start":
         update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
-        return ASK_PHONE
-    
+        return ASK_PHONE  
     area = update.message.text.strip()
     user_data['area'] = area
-
+    db.set_user_attribute(user.id, 'products', user_data['product'], array=True)
+    db.set_user_attribute(user.id, 'provinces', user_data['province'], array=True)
+    db.set_user_attribute(user.id, 'cities', user_data['city'], array=True)
+    db.set_user_attribute(user.id, 'villages', user_data['village'], array=True)
+    db.set_user_attribute(user.id, 'areas', user_data['area'], array=True)
     update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
     return ASK_LOCATION
 
 
 def ask_location(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
-
-    # Get the answer to the area question
+    # Get the answer to the phone number question
     var = update.message.text
     if not var or len(var) != 11 or var=="/start":
         update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
         return ASK_LOCATION
     phone = var.strip()
     user_data['phone-number'] = phone
-
-    # persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
+    db.set_user_attribute(user.id, 'phone-number', phone)
     reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
     keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
                 [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
@@ -176,18 +167,16 @@ def ask_location(update: Update, context: CallbackContext):
 
 
 def ask_name(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
-    # update.message.reply_text("Please share your location!")
-
     # Get the user's location
     location = update.message.location
     if location:
         logger.info(f"{update.effective_user.id} chose: ersal location online")
     text = update.message.text
-    # logger.info(f"location: {update.message.location}")
     if not location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
         logger.info(f"{update.effective_user.id} didn't send location successfully")
-        reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
+        reply_text = "ارسال موقعیت باغ (لوکیشن باغ) با موفقیت انجام نشد."
         keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
                     [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
         update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
@@ -207,20 +196,22 @@ def ask_name(update: Update, context: CallbackContext):
         'latitude': location.latitude,
         'longitude': location.longitude
     }
-
+    db.set_user_attribute(user.id, 'locations', {'latitude': location.latitude, 'longitude': location.longitude}, array=True)
+    db.set_user_attribute(user.id, 'user-entered-location', True, array=True)
     update.message.reply_text("نام و نام خانودگی خود را وارد کنید:", reply_markup=ReplyKeyboardRemove())
     return HANDLE_NAME
 
 
 def handle_name(update: Update, context: CallbackContext):
+    user = update.effective_user
     user_data = context.user_data
-
     if not update.message.text or update.message.text=="/start":
         update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
         return HANDLE_NAME
-    
     name = update.message.text.strip()
     user_data['name'] = name
+    db.set_user_attribute(user.id, "name", name)
+    db.set_user_attribute(user.id, "finished-sign-up", datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
     logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) Finished sign up.")
     reply_text = """
 از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
@@ -232,9 +223,6 @@ def handle_name(update: Update, context: CallbackContext):
     """
     # persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
     update.message.reply_text(reply_text)
-    db.add_new_user(user_id=update.effective_user.id, username=user_data["username"], product=user_data["product"],
-                    province=user_data["province"], city=user_data["city"], village=user_data["village"],
-                    phone_number=user_data["phone-number"], name=user_data["name"], location=user_data["location"])
     return ConversationHandler.END
 
 
@@ -251,6 +239,7 @@ def broadcast(update: Update, context: CallbackContext):
     # user_data = db.user_collection.find()
     ids = db.user_collection.distinct("_id")
     i = 0
+    receivers = []
     message = update.message.text
     if message == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
@@ -261,12 +250,15 @@ def broadcast(update: Update, context: CallbackContext):
     for user_id in ids:    
         try:
             context.bot.send_message(user_id, message)
-            db.log_message_to_user(user_id=user_id, message=message)
+            username = db.user_collection.find_one( {"_id": user_id} )["username"]
+            db.log_new_message(user_id=user_id, username=username, message=message, function="broadcast")
+            receivers.append(user_id)
             i += 1            
         except Unauthorized:
             logger.error(f"user {user_id} blocked the bot")
         except BadRequest:
             logger.error(f"chat with {user_id} not found.")
+    db.log_sent_messages(receivers, "broadcast")
     for id in ADMIN_LIST:
         context.bot.send_message(id, f"پیام برای {i} نفر از {len(ids)} نفر ارسال شد.")
     return ConversationHandler.END
@@ -284,38 +276,31 @@ def bot_stats(update: Update, context: CallbackContext):
         )
     
 
-
 def button(update: Update, context: CallbackContext):
     stat = update.callback_query
     id = update.effective_user.id
     if stat.data == "member_count":
-        with open("bot_members_data.pickle", "rb") as f:
-            member_count = pickle.load(f)
-        # stat.edit_message_text(text=f"تعداد کل اعضا: {member_count['member_count'][-1]}")
-        context.bot.send_message(chat_id=id, text=f"تعداد کل اعضا: {member_count['member_count'][-1]}")
-    # elif stat.data == "member_count_change":
-    #     with open("bot_members_data.pickle", "rb") as f:
-    #         data = pickle.load(f)
-    #     if len(data['time']) < 15:
-    #         pass
-    #         plt.plot(data['time'], data['member_count'], 'ro')
-    #     else:
-    #         pass
-    #         # plt.plot(data['time'][-15:], data['member_count'][-15:], 'r-')
-    #     # plt.xlabel('Time')
-    #     # plt.ylabel('Members')
-    #     # plt.title('Bot Members Over Time')
-    #     # plt.xticks(rotation=45)
-    #     # plt.tight_layout()
-    #     # plt.savefig("member-change.png")
-    #     # photo = open("member-change.png", "rb")
-    #     # context.bot.send_photo(chat_id=id, photo=photo)
-    #     # photo.close()
-    #     # os.remove("member-change.png")
+        member_count = db.bot_collection.find_one()["num-members"][-1]
+        context.bot.send_message(chat_id=id, text=f"تعداد کل اعضا: {member_count}")
+    elif stat.data == "member_count_change":
+        members_doc = db.bot_collection.find_one()
+        if len(members_doc['time-stamp']) < 15:
+            plt.plot(members_doc['time-stamp'], members_doc['num-members'], 'r-')
+        else:
+            plt.plot(members_doc['time-stamp'][-15:], members_doc['num-members'][-15:], 'r-')
+        plt.xlabel('Time')
+        plt.ylabel('Members')
+        plt.title('Bot Members Over Time')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig("member-change.png")
+        photo = open("member-change.png", "rb")
+        context.bot.send_photo(chat_id=id, photo=photo)
+        photo.close()
+        os.remove("member-change.png")
     elif stat.data == "excel_download":
-        input_file="bot_data.pickle"
         output_file="member-data.xlsx"
-        to_excel(input_file, output_file)
+        db.to_excel(output_file=output_file)
         doc = open(output_file, 'rb')
         context.bot.send_document(chat_id=id, document=doc)
         doc.close()
@@ -351,50 +336,37 @@ def get_produce_keyboard():
 
 
 def get_member_count(bot: Bot):
-    user_data = db.user_collection.find()
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    user_data = db.user_collection.distinct("_id")
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     member_count = len(user_data)
-    try:
-        with open("bot_members_data.pickle", "rb") as f:
-            data = pickle.load(f)
-            logger.info("opened the file")
-    except FileNotFoundError:
-        data = {'time':[], 'member_count':[]}
-        logger.info("file doesn't exist")
-    # logger.info(f"old file: {data}")
-    data['time'].append(current_time)
-    data['member_count'].append(member_count)
-    logger.info(f"member count: {member_count}")
-    # logger.info(f"new file: {data}")
-    with open("bot_members_data.pickle", "wb") as f:
-        pickle.dump(data, f)
-    # Append new data to DataFrame
+    db.log_member_changes(members=member_count, time=current_time)
 
 
 def send_advice_to_users(bot: Bot):
-    user_data = db.user_collection.find()
     ids = db.user_collection.distinct("_id")
     current_day = datetime.datetime.now().strftime("%Y%m%d")
     villages = pd.read_excel("vilages.xlsx")
     message_count = 0
     receiver_id = []
     try:
-        advise_data = gpd.read_file(f"pesteh{current_day}.geojson")
+        advise_data = gpd.read_file(f"pesteh{current_day}_1.geojson")
         with open("manual_location.json", "r") as f:
             manual_location_data = json.load(f)  
         # advise_data = advise_data.dropna(subset=['Adivse'])
         for id in ids:
+            user_document = db.user_collection.find_one( {"_id": id} )
             # if user_data[id].get("province") == prov:
             if str(id) in manual_location_data:
                 longitude = manual_location_data[str(id)]['longitude']
                 latitude = manual_location_data[str(id)]['latitude']
-            elif user_data[id].get("location"):
-                longitude = user_data[id]["location"]["longitude"]
-                latitude = user_data[id]["location"]["latitude"]
-            elif not user_data[id].get("location") and user_data[id].get("village"):
-                province = user_data[id]["province"]
-                city = user_data[id]["city"]
-                village = user_data[id]["village"]
+            elif user_document.get("locations"):
+                logger.info(f"LOCATION: {user_document.get('locations')}")
+                longitude = user_document["locations"][0]["longitude"]
+                latitude = user_document["locations"][0]["latitude"]
+            elif not user_document.get("locations") and user_document.get("villages"):
+                province = user_document["provinces"][0]
+                city = user_document["cities"][0]
+                village = user_document["villages"][0]
                 row = villages.loc[(villages["ProvincNam"] == province) & (villages["CityName"] == city) & (villages["NAME"] == village)]
                 if row.empty:
                     longitude = None
@@ -419,8 +391,8 @@ def send_advice_to_users(bot: Bot):
                     logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
                     advise = advise_data.iloc[idx_min_dist]["Adivse"]
                     message = f"""
-                    باغدار عزیز سلام
-                    توصیه زیر با توجه به وضعیت آب و هوایی باغ شما ارسال می‌شود:
+                    باغدار عزیز 
+                    توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما ارسال می‌شود:
 
                     {advise}
                     """
@@ -432,12 +404,14 @@ def send_advice_to_users(bot: Bot):
                         try: 
                             # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                             bot.send_message(chat_id=id, text=message)
-                            db.log_new_message(user_id=id, message=message)
+                            username = db.user_collection.find_one({"_id": id})["username"]
+                            db.log_new_message(user_id=id, username=username, message=message, function="send_advice")
                             logger.info(f"sent recommendation to {id}")
                             message_count += 1
                             receiver_id.append(id)
                             # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
                         except Unauthorized:
+                            db.set_user_attribute(id, "blocked", True)
                             logger.info(f"user:{id} has blocked the bot!")
                             for admin in ADMIN_LIST:
                                 bot.send_message(chat_id=admin, text=f"user: {id} has blocked the bot!")
@@ -445,17 +419,218 @@ def send_advice_to_users(bot: Bot):
                             logger.info(f"user:{id} chat was not found!")
                 else:
                     logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
+        db.log_sent_messages(receiver_id, "send_advice_to_users")
         for admin in ADMIN_LIST:
             bot.send_message(chat_id=admin, text=f"توصیه به {message_count} کاربر ارسال شد")
             bot.send_message(chat_id=admin, text=receiver_id)
     except DriverError:
         for admin in ADMIN_LIST:
-            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             bot.send_message(chat_id=admin, text=f"{time} file pesteh{current_day}.geojson was not found!")
-    # except:
-    #     for admin in ADMIN_LIST:
-    #         time = datetime.datetime.now().strftime("%Y-%m-%d %H:%m")
-    #         bot.send_message(chat_id=admin, text=f"{time} unexpected error reading pesteh{current_day}.geojson")        
+    except KeyError:
+        for admin in ADMIN_LIST:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            bot.send_message(chat_id=admin, text=f"key error in file pesteh{current_day}_1.geojson!")
+    
+
+def send_todays_weather(bot: Bot):
+    ids = db.user_collection.distinct("_id")
+    current_day = datetime.datetime.now().strftime("%Y%m%d")
+    jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
+    villages = pd.read_excel("vilages.xlsx")
+    message_count = 0
+    receiver_id = []
+    try:
+        advise_data = gpd.read_file(f"pesteh{current_day}_1.geojson")
+        with open("manual_location.json", "r") as f:
+            manual_location_data = json.load(f)  
+        # advise_data = advise_data.dropna(subset=['Adivse'])
+        for id in ids:
+            user_document = db.user_collection.find_one( {"_id": id} )
+            # if user_data[id].get("province") == prov:
+            if str(id) in manual_location_data:
+                longitude = manual_location_data[str(id)]['longitude']
+                latitude = manual_location_data[str(id)]['latitude']
+            elif user_document.get("locations"):
+                logger.info(f"LOCATION: {user_document.get('locations')}")
+                longitude = user_document["locations"][0]["longitude"]
+                latitude = user_document["locations"][0]["latitude"]
+            elif not user_document.get("locations") and user_document.get("villages"):
+                province = user_document["provinces"][0]
+                city = user_document["cities"][0]
+                village = user_document["villages"][0]
+                row = villages.loc[(villages["ProvincNam"] == province) & (villages["CityName"] == city) & (villages["NAME"] == village)]
+                if row.empty:
+                    longitude = None
+                    latitude = None
+                elif not row.empty and len(row)==1:
+                    longitude = row["X"]
+                    latitude = row["Y"]
+                    logger.info(f"village {village} was found in villages.xlsx")
+            else:
+                logger.info(f"Location of user:{id} was not found")
+                latitude = None
+                longitude = None
+            
+            if latitude is not None and longitude is not None: 
+                logger.info(f"Location of user:{id} was found")
+                # Find the nearest point to the user's lat/long
+                point = Point(longitude, latitude)
+                threshold = 0.1 # degrees
+                idx_min_dist = advise_data.geometry.distance(point).idxmin()
+                closest_coords = advise_data.geometry.iloc[idx_min_dist].coords[0]
+                if point.distance(Point(closest_coords)) <= threshold:
+                    logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
+                    tmax = round(advise_data.iloc[idx_min_dist][f"tmax_Time={current_day}"], 2)
+                    tmin = round(advise_data.iloc[idx_min_dist][f"tmin_Time={current_day}"], 2)
+                    rh = round(advise_data.iloc[idx_min_dist][f"rh_Time={current_day}"], 2)
+                    spd = round(advise_data.iloc[idx_min_dist][f"spd_Time={current_day}"], 2)
+                    rain = round(advise_data.iloc[idx_min_dist][f"rain_Time={current_day}"], 2)
+                    message = f"""
+باغدار عزیز سلام
+وضعیت آب و هوای باغ شما امروز {jdate} بدین صورت خواهد بود:
+حداکثر دما: {tmax} درجه سانتیگراد
+حداقل دما: {tmin} درجه سانتیگراد
+رطوبت نسبی: {rh} 
+سرعت باد: {spd} کیلومتر بر ساعت
+احتمال بارش: {rain} درصد
+                    """
+                    # logger.info(message)
+                    # if pd.isna(advise):
+                    #     logger.info(f"No advice for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data "
+                    #                 f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}")
+                    # if not pd.isna(advise):
+                    try: 
+                        # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                        bot.send_message(chat_id=id, text=message)
+                        username = db.user_collection.find_one({"_id": id})["username"]
+                        db.log_new_message(user_id=id, username=username, message=message, function="send_weather")
+                        logger.info(f"sent recommendation to {id}")
+                        message_count += 1
+                        receiver_id.append(id)
+                        # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                    except Unauthorized:
+                        db.set_user_attribute(id, "blocked", True)
+                        logger.info(f"user:{id} has blocked the bot!")
+                        for admin in ADMIN_LIST:
+                            bot.send_message(chat_id=admin, text=f"user: {id} has blocked the bot!")
+                    except BadRequest:
+                        logger.info(f"user:{id} chat was not found!")
+                else:
+                    logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
+        db.log_sent_messages(receiver_id, "send_todays_weather")
+        for admin in ADMIN_LIST:
+            bot.send_message(chat_id=admin, text=f"وضعیت آب و هوای {message_count} کاربر ارسال شد")
+            bot.send_message(chat_id=admin, text=receiver_id)
+    except DriverError:
+        for admin in ADMIN_LIST:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            bot.send_message(chat_id=admin, text=f"{time} file pesteh{current_day}_1.geojson was not found!")
+    except KeyError:
+        for admin in ADMIN_LIST:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            bot.send_message(chat_id=admin, text=f"key error in file pesteh{current_day}_1.geojson!")
+    
+def send_tomorrows_weather(bot: Bot):
+    ids = db.user_collection.distinct("_id")
+    current_day = datetime.datetime.now().strftime("%Y%m%d")
+    tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
+    tomorrow = tomorrow.strftime("%Y%m%d")
+    jtomorrow = jdatetime.datetime.now() + jdatetime.timedelta(days=1)
+    jtomorrow = jtomorrow.strftime("%Y/%m/%d")
+    villages = pd.read_excel("vilages.xlsx")
+    message_count = 0
+    receiver_id = []
+    try:
+        advise_data = gpd.read_file(f"pesteh{current_day}_1.geojson")
+        with open("manual_location.json", "r") as f:
+            manual_location_data = json.load(f)  
+        # advise_data = advise_data.dropna(subset=['Adivse'])
+        for id in ids:
+            user_document = db.user_collection.find_one( {"_id": id} )
+            # if user_data[id].get("province") == prov:
+            if str(id) in manual_location_data:
+                longitude = manual_location_data[str(id)]['longitude']
+                latitude = manual_location_data[str(id)]['latitude']
+            elif user_document.get("locations"):
+                logger.info(f"LOCATION: {user_document.get('locations')}")
+                longitude = user_document["locations"][0]["longitude"]
+                latitude = user_document["locations"][0]["latitude"]
+            elif not user_document.get("locations") and user_document.get("villages"):
+                province = user_document["provinces"][0]
+                city = user_document["cities"][0]
+                village = user_document["villages"][0]
+                row = villages.loc[(villages["ProvincNam"] == province) & (villages["CityName"] == city) & (villages["NAME"] == village)]
+                if row.empty:
+                    longitude = None
+                    latitude = None
+                elif not row.empty and len(row)==1:
+                    longitude = row["X"]
+                    latitude = row["Y"]
+                    logger.info(f"village {village} was found in villages.xlsx")
+            else:
+                logger.info(f"Location of user:{id} was not found")
+                latitude = None
+                longitude = None
+            
+            if latitude is not None and longitude is not None: 
+                logger.info(f"Location of user:{id} was found")
+                # Find the nearest point to the user's lat/long
+                point = Point(longitude, latitude)
+                threshold = 0.1 # degrees
+                idx_min_dist = advise_data.geometry.distance(point).idxmin()
+                closest_coords = advise_data.geometry.iloc[idx_min_dist].coords[0]
+                if point.distance(Point(closest_coords)) <= threshold:
+                    logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
+                    tmax = round(advise_data.iloc[idx_min_dist][f"tmax_Time={tomorrow}"], 2)
+                    tmin = round(advise_data.iloc[idx_min_dist][f"tmin_Time={tomorrow}"], 2)
+                    rh = round(advise_data.iloc[idx_min_dist][f"rh_Time={tomorrow}"], 2)
+                    spd = round(advise_data.iloc[idx_min_dist][f"spd_Time={tomorrow}"], 2)
+                    rain = round(advise_data.iloc[idx_min_dist][f"rain_Time={tomorrow}"], 2)
+                    message = f"""
+باغدار عزیز 
+وضعیت آب و هوای باغ شما فردا {jtomorrow} بدین صورت خواهد بود:
+حداکثر دما: {tmax} درجه سانتیگراد
+حداقل دما: {tmin} درجه سانتیگراد
+رطوبت نسبی: {rh} 
+سرعت باد: {spd} کیلومتر بر ساعت
+احتمال بارش: {rain} درصد
+                    """
+                    # logger.info(message)
+                    # if pd.isna(advise):
+                    #     logger.info(f"No advice for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data "
+                    #                 f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}")
+                    # if not pd.isna(advise):
+                    try: 
+                        # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                        bot.send_message(chat_id=id, text=message)
+                        username = db.user_collection.find_one({"_id": id})["username"]
+                        db.log_new_message(user_id=id, username=username, message=message, function="send_weather")
+                        logger.info(f"sent recommendation to {id}")
+                        message_count += 1
+                        receiver_id.append(id)
+                        # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                    except Unauthorized:
+                        db.set_user_attribute(id, "blocked", True)
+                        logger.info(f"user:{id} has blocked the bot!")
+                        for admin in ADMIN_LIST:
+                            bot.send_message(chat_id=admin, text=f"user: {id} has blocked the bot!")
+                    except BadRequest:
+                        logger.info(f"user:{id} chat was not found!")
+                else:
+                    logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
+        db.log_sent_messages(receiver_id, "send_todays_weather")
+        for admin in ADMIN_LIST:
+            bot.send_message(chat_id=admin, text=f"وضعیت آب و هوای {message_count} کاربر ارسال شد")
+            bot.send_message(chat_id=admin, text=receiver_id)
+    except DriverError:
+        for admin in ADMIN_LIST:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            bot.send_message(chat_id=admin, text=f"{time} file pesteh{current_day}_1.geojson was not found!")
+    except KeyError:
+        for admin in ADMIN_LIST:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            bot.send_message(chat_id=admin, text=f"key error in file pesteh{current_day}_1.geojson!")
     
 
 def send_up_notice(bot: Bot):
@@ -481,12 +656,14 @@ def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
                 """
             try:
                 bot.send_message(user_id, message) ##, parse_mode=telegram.ParseMode.MARKDOWN_V2)
+                db.log_new_message(user_id, message)
                 # user_data[user_id]["blocked"] = False
                 # user_data[user_id]['send-location-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 i += 1
                 
             except Unauthorized:
                 logger.info(f"user {user_id} blocked the bot")
+                db.set_user_attribute(user_id, "blocked", True)
                 # user_data[user_id]["blocked"] = True
                 # user_data[user_id]['block-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     logger.info(f"send_location_data succeeded for {i} out of {len(ids)} users.")
@@ -527,7 +704,7 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)]
         )
     
-        dp.add_error_handler(error_handler)
+        # dp.add_error_handler(error_handler)
 
         dp.add_handler(CommandHandler('stats', bot_stats))
         dp.add_handler(CallbackQueryHandler(button))
@@ -543,10 +720,16 @@ def main():
         # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
         #                         interval=datetime.timedelta(seconds=5).total_seconds())
         # job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
-        job_queue.run_repeating(lambda context: get_member_count(context.bot), interval=3600, first=10)
+        job_queue.run_repeating(lambda context: get_member_count(context.bot), interval=7200, first=60)
+        job_queue.run_repeating(lambda context: send_todays_weather(context.bot),
+                                interval=datetime.timedelta(days=1),
+                                first=datetime.timedelta(seconds=43200))
+        job_queue.run_repeating(lambda context: send_tomorrows_weather(context.bot),
+                                interval=datetime.timedelta(days=1),
+                                first=datetime.timedelta(seconds=43220))
         job_queue.run_repeating(lambda context: send_advice_to_users(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.timedelta(seconds=20))
+                                first=datetime.timedelta(seconds=43240))
         job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
