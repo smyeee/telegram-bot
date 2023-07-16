@@ -178,6 +178,7 @@ class Database:
 
             if not self.check_if_user_exists(user_id=user_id):
                 self.user_collection.insert_one(user_dict)
+                print(f"added {user_id} to userCollection")
     def populate_mongodb_from_pickle(self):
         with open("bot_data.pickle", "rb") as f:
             user_data = pickle.load(f)["user_data"]

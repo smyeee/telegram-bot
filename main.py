@@ -359,11 +359,11 @@ def send_advice_to_users(bot: Bot):
             if str(id) in manual_location_data:
                 longitude = manual_location_data[str(id)]['longitude']
                 latitude = manual_location_data[str(id)]['latitude']
-            elif user_document.get("locations"):
+            elif user_document["locations"][0].get("longitude"):
                 logger.info(f"LOCATION: {user_document.get('locations')}")
                 longitude = user_document["locations"][0]["longitude"]
                 latitude = user_document["locations"][0]["latitude"]
-            elif not user_document.get("locations") and user_document.get("villages"):
+            elif not user_document["locations"][0].get("longitude") and user_document["villages"][0] != '':
                 province = user_document["provinces"][0]
                 city = user_document["cities"][0]
                 village = user_document["villages"][0]
@@ -420,6 +420,7 @@ def send_advice_to_users(bot: Bot):
                 else:
                     logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
         db.log_sent_messages(receiver_id, "send_advice_to_users")
+        logger.info(f"sent advice info to {message_count} people")
         for admin in ADMIN_LIST:
             bot.send_message(chat_id=admin, text=f"توصیه به {message_count} کاربر ارسال شد")
             bot.send_message(chat_id=admin, text=receiver_id)
@@ -451,11 +452,11 @@ def send_todays_weather(bot: Bot):
             if str(id) in manual_location_data:
                 longitude = manual_location_data[str(id)]['longitude']
                 latitude = manual_location_data[str(id)]['latitude']
-            elif user_document.get("locations"):
+            elif user_document["locations"][0].get("longitude"):
                 logger.info(f"LOCATION: {user_document.get('locations')}")
                 longitude = user_document["locations"][0]["longitude"]
                 latitude = user_document["locations"][0]["latitude"]
-            elif not user_document.get("locations") and user_document.get("villages"):
+            elif not user_document["locations"][0].get("longitude") and user_document["villages"][0]!='':
                 province = user_document["provinces"][0]
                 city = user_document["cities"][0]
                 village = user_document["villages"][0]
@@ -505,7 +506,7 @@ def send_todays_weather(bot: Bot):
                         bot.send_message(chat_id=id, text=message)
                         username = db.user_collection.find_one({"_id": id})["username"]
                         db.log_new_message(user_id=id, username=username, message=message, function="send_weather")
-                        logger.info(f"sent recommendation to {id}")
+                        logger.info(f"sent todays's weather info to {id}")
                         message_count += 1
                         receiver_id.append(id)
                         # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
@@ -519,6 +520,7 @@ def send_todays_weather(bot: Bot):
                 else:
                     logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
         db.log_sent_messages(receiver_id, "send_todays_weather")
+        logger.info(f"sent todays's weather info to {message_count} people")
         for admin in ADMIN_LIST:
             bot.send_message(chat_id=admin, text=f"وضعیت آب و هوای {message_count} کاربر ارسال شد")
             bot.send_message(chat_id=admin, text=receiver_id)
@@ -552,11 +554,11 @@ def send_tomorrows_weather(bot: Bot):
             if str(id) in manual_location_data:
                 longitude = manual_location_data[str(id)]['longitude']
                 latitude = manual_location_data[str(id)]['latitude']
-            elif user_document.get("locations"):
+            elif user_document["locations"][0].get("longitude"):
                 logger.info(f"LOCATION: {user_document.get('locations')}")
                 longitude = user_document["locations"][0]["longitude"]
                 latitude = user_document["locations"][0]["latitude"]
-            elif not user_document.get("locations") and user_document.get("villages"):
+            elif not user_document["locations"][0].get("longitude") and user_document["villages"][0]!='':
                 province = user_document["provinces"][0]
                 city = user_document["cities"][0]
                 village = user_document["villages"][0]
@@ -606,7 +608,7 @@ def send_tomorrows_weather(bot: Bot):
                         bot.send_message(chat_id=id, text=message)
                         username = db.user_collection.find_one({"_id": id})["username"]
                         db.log_new_message(user_id=id, username=username, message=message, function="send_weather")
-                        logger.info(f"sent recommendation to {id}")
+                        logger.info(f"sent tomorrow's weather info to {id}")
                         message_count += 1
                         receiver_id.append(id)
                         # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
@@ -620,6 +622,7 @@ def send_tomorrows_weather(bot: Bot):
                 else:
                     logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
         db.log_sent_messages(receiver_id, "send_todays_weather")
+        logger.info(f"sent tomorrow's weather info to {message_count} people")
         for admin in ADMIN_LIST:
             bot.send_message(chat_id=admin, text=f"وضعیت آب و هوای {message_count} کاربر ارسال شد")
             bot.send_message(chat_id=admin, text=receiver_id)
@@ -726,10 +729,10 @@ def main():
                                 first=datetime.timedelta(seconds=43200))
         job_queue.run_repeating(lambda context: send_tomorrows_weather(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.timedelta(seconds=43220))
+                                first=datetime.timedelta(seconds=43250))
         job_queue.run_repeating(lambda context: send_advice_to_users(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.timedelta(seconds=43240))
+                                first=datetime.timedelta(seconds=43300))
         job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
