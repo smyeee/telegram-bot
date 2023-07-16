@@ -35,5 +35,5 @@ paswd = "$Qq456"
 today = datetime.datetime.now().strftime("%Y%m%d")
 tomorrow = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y%m%d")
 
-download(server, port, user, paswd, local_file_path=f"../pesteh{today}_1.geojson", remote_file=f"pesteh{today}_1.geojson")
-download(server, port, user, paswd, local_file_path=f"../pesteh{tomorrow}_2.geojson", remote_file=f"pesteh{tomorrow}_2.geojson")
+download(server, port, user, paswd, local_file_path=f"pesteh{today}_1.geojson", remote_file=f"pesteh{today}_1.geojson")
+download(server, port, user, paswd, local_file_path=f"pesteh{tomorrow}_2.geojson", remote_file=f"pesteh{tomorrow}_2.geojson")
