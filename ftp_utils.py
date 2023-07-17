@@ -14,7 +14,7 @@ def upload(server: str, port: int, user: str, paswd: str, local_file_path: str, 
     ftp.connect(server, port)
     ftp.login(user, paswd)
     with open(local_file_path, 'rb') as f:
-        ftp.storbinary(f"STOR {upload_name}", f)
+        ftp.storbinary("STOR {}".format(upload_name), f)
     print(ftp.nlst())
     ftp.quit()
 
@@ -24,7 +24,7 @@ def download(server: str, port: int, user: str, paswd: str, local_file_path: str
     ftp.connect(server, port)
     ftp.login(user, paswd)
     with open(local_file_path, 'wb') as f:
-        ftp.retrbinary(f"RETR {remote_file}", f.write)
+        ftp.retrbinary("RETR {}".format(remote_file), f.write)
     ftp.quit()
 
 
