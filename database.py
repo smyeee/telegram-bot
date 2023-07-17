@@ -202,7 +202,7 @@ class Database:
         for i, user_id in enumerate(users):
             document = self.user_collection.find_one({"_id": user_id})
             location = document.get('locations')
-            if location:
+            if location[0].get("longitude"):
                 latitude = [loc['latitude'] for loc in location]
                 longitude = [loc['longitude'] for loc in location]
             else:
