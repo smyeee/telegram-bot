@@ -707,7 +707,7 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)]
         )
     
-        # dp.add_error_handler(error_handler)
+        dp.add_error_handler(error_handler)
 
         dp.add_handler(CommandHandler('stats', bot_stats))
         dp.add_handler(CallbackQueryHandler(button))
