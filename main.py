@@ -449,6 +449,11 @@ def send_todays_weather(bot: Bot):
         # advise_data = advise_data.dropna(subset=['Adivse'])
         for id in ids:
             user_document = db.user_collection.find_one( {"_id": id} )
+            try: 
+                user_document["locations"][0].get("longitude")
+            except IndexError:
+                db.set_user_attribute(id, "locations", {}, array=True)
+                logger.info(f"added an empty dict to {id} locations array")
             # if user_data[id].get("province") == prov:
             if str(id) in manual_location_data:
                 longitude = manual_location_data[str(id)]['longitude']
@@ -727,13 +732,13 @@ def main():
         job_queue.run_repeating(lambda context: get_member_count(context.bot), interval=7200, first=60)
         job_queue.run_repeating(lambda context: send_todays_weather(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(8, 55))
+                                first=datetime.time(10))
         job_queue.run_repeating(lambda context: send_tomorrows_weather(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(8, 56))
+                                first=datetime.time(10, 1))
         job_queue.run_repeating(lambda context: send_advice_to_users(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(8, 57))
+                                first=datetime.time(10, 2))
         job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
