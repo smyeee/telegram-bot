@@ -3,13 +3,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 import datetime
 import jdatetime
-import pickle
 import geopandas as gpd
 from shapely.geometry import Point
 import pandas as pd
-from telegram import Bot, Location, KeyboardButton, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext, \
-    BasePersistence, ConversationHandler, PicklePersistence, Dispatcher
+from telegram import Bot, Location, KeyboardButton, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext,\
+      ConversationHandler, PicklePersistence, Dispatcher
 from telegram.error import BadRequest, Unauthorized, NetworkError
 import os
 import matplotlib
@@ -18,7 +17,7 @@ import matplotlib.pyplot as plt
 from fiona.errors import DriverError
 import warnings
 import database
-
+from keyboards import start_keyboard, stats_keyboard, get_product_keyboard, get_province_keyboard, return_keyboard, farms_list
 warnings.filterwarnings("ignore", category=UserWarning)
 
 # Enable logging
@@ -35,7 +34,9 @@ logger = logging.getLogger("agriWeather-bot")
 
 # Constants for ConversationHandler states
 BROADCAST = 0
-ASK_PROVINCE, ASK_CITY, ASK_VILLAGE, ASK_AREA, ASK_PHONE, ASK_LOCATION, ASK_NAME, HANDLE_NAME = range(8)
+ASK_PROVINCE, ASK_CITY, ASK_VILLAGE, ASK_AREA, ASK_LOCATION, HANDLE_LOCATION = range(6)
+EDIT_PROVINCE, EDIT_CITY, EDIT_VILLAGE, EDIT_AREA, EDIT_LOCATION, HANDLE_LOCATION_EDIT = range(6)
+ASK_PHONE, HANDLE_PHONE = range(2)
 
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 
@@ -64,7 +65,7 @@ def start(update: Update, context: CallbackContext):
 تلفن ثابت: 02164063399
                 """
         update.message.reply_text(reply_text)
-        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
+        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_product_keyboard())
         return ASK_PROVINCE
     else:
         reply_text = """
@@ -77,130 +78,6 @@ def start(update: Update, context: CallbackContext):
         """
         update.message.reply_text(reply_text)
         return ConversationHandler.END 
-
-
-def ask_province(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    # Get the answer to the province question
-    if not update.message.text or update.message.text not in PRODUCTS:
-        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_produce_keyboard())
-        return ASK_PROVINCE
-    product = update.message.text.strip()
-    user_data['product'] = product
-    update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
-    return ASK_CITY
-
-
-def ask_city(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    # Get the answer to the province question
-    if not update.message.text or update.message.text not in PROVINCES:
-        update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
-        return ASK_CITY
-    province = update.message.text.strip()
-    user_data['province'] = province
-    update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
-    return ASK_VILLAGE
-
-
-def ask_village(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    # Get the answer to the province question
-    if not update.message.text or update.message.text=="/start":
-        update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
-        return ASK_VILLAGE    
-    city = update.message.text.strip()
-    user_data['city'] = city
-    update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
-    return ASK_AREA
-
-
-def ask_area(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    # Get the answer to the village question
-    if not update.message.text or update.message.text=="/start":
-        update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
-        return ASK_AREA 
-    village = update.message.text.strip()
-    user_data['village'] = village
-    update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
-    return ASK_PHONE
-
-
-def ask_phone(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    # Get the answer to the area question
-    if not update.message.text or update.message.text=="/start":
-        update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
-        return ASK_PHONE  
-    area = update.message.text.strip()
-    user_data['area'] = area
-    db.set_user_attribute(user.id, 'products', user_data['product'], array=True)
-    db.set_user_attribute(user.id, 'provinces', user_data['province'], array=True)
-    db.set_user_attribute(user.id, 'cities', user_data['city'], array=True)
-    db.set_user_attribute(user.id, 'villages', user_data['village'], array=True)
-    db.set_user_attribute(user.id, 'areas', user_data['area'], array=True)
-    update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
-    return ASK_LOCATION
-
-
-def ask_location(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    # Get the answer to the phone number question
-    var = update.message.text
-    if not var or len(var) != 11 or var=="/start":
-        update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
-        return ASK_LOCATION
-    phone = var.strip()
-    user_data['phone-number'] = phone
-    db.set_user_attribute(user.id, 'phone-number', phone)
-    reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
-    keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
-                [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
-    update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
-    return ASK_NAME
-
-
-def ask_name(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    # Get the user's location
-    location = update.message.location
-    if location:
-        logger.info(f"{update.effective_user.id} chose: ersal location online")
-    text = update.message.text
-    if not location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
-        logger.info(f"{update.effective_user.id} didn't send location successfully")
-        reply_text = "ارسال موقعیت باغ (لوکیشن باغ) با موفقیت انجام نشد."
-        keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
-                    [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
-        update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
-
-        return ASK_NAME
-    elif text == "از نقشه (گوگل مپ) انتخاب میکنم":
-        logger.info(f"{update.effective_user.id} chose: az google map entekhab mikonam")
-        reply_text = """
-        مطابق فیلم راهنما موقعیت لوکیشن باغ خود را انتخاب کنید
-        
-        👉  https://t.me/agriweath/2
-        """ 
-        update.message.reply_text(reply_text, reply_markup=ReplyKeyboardRemove())
-        return ASK_NAME
-
-    user_data['location'] = {
-        'latitude': location.latitude,
-        'longitude': location.longitude
-    }
-    db.set_user_attribute(user.id, 'locations', {'latitude': location.latitude, 'longitude': location.longitude}, array=True)
-    db.set_user_attribute(user.id, 'user-entered-location', True, array=True)
-    update.message.reply_text("نام و نام خانودگی خود را وارد کنید:", reply_markup=ReplyKeyboardRemove())
-    return HANDLE_NAME
 
 
 def handle_name(update: Update, context: CallbackContext):
@@ -308,32 +185,6 @@ def button(update: Update, context: CallbackContext):
         os.remove(output_file)
 
 
-def stats_keyboard():
-    keyboard = [
-    [
-        InlineKeyboardButton("تعداد اعضا", callback_data='member_count'),
-        InlineKeyboardButton("تغییرات تعداد اعضا", callback_data='member_count_change'),
-    ],
-    [
-        InlineKeyboardButton("دانلود فایل اکسل", callback_data='excel_download'),
-    ],
-]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    return reply_markup
-
-def return_keyboard():
-    keyboard = ["back"]
-    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-# Function to get the multi-choice keyboard for provinces
-def get_province_keyboard():
-    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['سایر']]
-    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-
-
-# Function to get the multi-choice keyboard for produce
-def get_produce_keyboard():
-    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر']]
-    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, input_field_placeholder="salam")
 
 
 def get_member_count(bot: Bot):
@@ -682,66 +533,218 @@ def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
 
 def error_handler(update: Update, context: CallbackContext):
     logger.error('Update "%s" caused error "%s"', update, context.error)
+
+# START OF REGISTER CONVERSATION
+def register(update: Update, context: CallbackContext):
+    update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید")
+    return ASK_PHONE
+
+def ask_phone(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the answer to the area question
+    if not update.message.text or update.message.text=="/start":
+        update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید")
+        return ASK_PHONE  
+    name = update.message.text.strip()
+    user_data['name'] = name
+
+    # db.set_user_attribute(user.id, 'products', user_data['product'], array=True)
+    # db.set_user_attribute(user.id, 'provinces', user_data['province'], array=True)
+    # db.set_user_attribute(user.id, 'cities', user_data['city'], array=True)
+    # db.set_user_attribute(user.id, 'villages', user_data['village'], array=True)
+    # db.set_user_attribute(user.id, 'areas', user_data['area'], array=True)
+    update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
+    return HANDLE_PHONE
+
+def handle_phone(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the answer to the area question
+    phone = update.message.text
+    if not phone or len(phone)!=11 or phone=="/start":
+        update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
+        return HANDLE_PHONE  
+    user_data['phone'] = phone
+    db.add_new_user(user_id=user.id, username=user.username, phone=phone)
+    return ConversationHandler.END
+
+# START OF ADD_FARM CONVERSATION
+def add(update: Update, context: CallbackContext):
+    user = update.effective_user.id
+
+    if not db.check_if_user_is_signed_up(user_id=user.id):
+        update.message.reply_text("لطفا پیش از افزودن باغ از طریق /register ثبت نام کنید", reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
+    update.message.reply_text("لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard())
+    return ASK_PROVINCE
+
+def ask_province(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the answer to the province question
+    if not update.message.text or update.message.text not in PRODUCTS:
+        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_product_keyboard())
+        return ASK_PROVINCE
+    product = update.message.text.strip()
+    user_data['product'] = product
+    update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
+    return ASK_CITY
+
+def ask_city(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the answer to the province question
+    if not update.message.text or update.message.text not in PROVINCES:
+        update.message.reply_text("لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard())
+        return ASK_CITY
+    province = update.message.text.strip()
+    user_data['province'] = province
+    update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+    return ASK_VILLAGE
+
+def ask_village(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the answer to the province question
+    if not update.message.text or update.message.text=="/start":
+        update.message.reply_text("لطفا شهرستان محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+        return ASK_VILLAGE    
+    city = update.message.text.strip()
+    user_data['city'] = city
+    update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+    return ASK_AREA
+
+def ask_area(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the answer to the village question
+    if not update.message.text or update.message.text=="/start":
+        update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=ReplyKeyboardRemove())
+        return ASK_AREA 
+    village = update.message.text.strip()
+    user_data['village'] = village
+    update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
+    return ASK_LOCATION
+
+def ask_location(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the answer to the phone number question
+    if not update.message.text or update.message.text=="/start":
+        update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:")
+        return ASK_LOCATION  
+    area = update.message.text.strip()
+    user_data['area'] = area
+    reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
+    keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
+                [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
+    update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+    return HANDLE_LOCATION
+
+def handle_location(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_data = context.user_data
+    # Get the user's location
+    location = update.message.location
+    if location:
+        logger.info(f"{update.effective_user.id} chose: ersal location online")
+    text = update.message.text
+    if not location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
+        logger.info(f"{update.effective_user.id} didn't send location successfully")
+        reply_text = "ارسال موقعیت باغ (لوکیشن باغ) با موفقیت انجام نشد."
+        keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
+                    [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
+        update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+
+        return HANDLE_LOCATION
+    elif text == "از نقشه (گوگل مپ) انتخاب میکنم":
+        logger.info(f"{update.effective_user.id} chose: az google map entekhab mikonam")
+        reply_text = """
+        مطابق فیلم راهنما موقعیت لوکیشن باغ خود را انتخاب کنید
+        
+        👉  https://t.me/agriweath/2
+        """ 
+        update.message.reply_text(reply_text, reply_markup=ReplyKeyboardRemove())
+        return HANDLE_LOCATION
+
+    user_data['location'] = {
+        'latitude': location.latitude,
+        'longitude': location.longitude
+    }
+    # db.set_user_attribute(user.id, 'locations', {'latitude': location.latitude, 'longitude': location.longitude}, array=True)
+    # db.set_user_attribute(user.id, 'user-entered-location', True, array=True)
+    update.message.reply_text("باغ با موفقیت ثبت شد:", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+
+
 def main():
-        updater = Updater(TOKEN, use_context=True) # , request_kwargs={'proxy_url': PROXY_URL})
+    updater = Updater(TOKEN, use_context=True) # , request_kwargs={'proxy_url': PROXY_URL})
 
-        # Get the dispatcher to register handlers
-        dp = updater.dispatcher
+    # Get the dispatcher to register handlers
+    dp = updater.dispatcher
 
-        # Add handlers to the dispatcher
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler('start', start)],
-            states={
-                ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
-                ASK_CITY: [MessageHandler(Filters.text, ask_city)],
-                ASK_VILLAGE: [MessageHandler(Filters.text, ask_village)],
-                ASK_AREA: [MessageHandler(Filters.all, ask_area)],
-                ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
-                ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
-                ASK_NAME: [MessageHandler(Filters.all, ask_name)],
-                HANDLE_NAME: [MessageHandler(Filters.all, handle_name)]
-            },
-            fallbacks=[CommandHandler('cancel', cancel)]
-        )
-
-
-        broadcast_handler = ConversationHandler(
-            entry_points=[CommandHandler('send', send)],
-            states={
-                BROADCAST: [MessageHandler(Filters.all, broadcast)],            
-            },
+    # Add handlers to the dispatcher
+    signup_conv = ConversationHandler(
+        entry_points=[CommandHandler('register', register)],
+        states={
+            ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
+            HANDLE_PHONE: [MessageHandler(Filters.all, handle_phone)]
+        },
         fallbacks=[CommandHandler('cancel', cancel)]
-        )
-    
-        dp.add_error_handler(error_handler)
+    )
+    dp. add_handler(signup_conv)
 
-        dp.add_handler(CommandHandler('stats', bot_stats))
-        dp.add_handler(CallbackQueryHandler(button))
+    add_conv = ConversationHandler(
+        entry_points=[CommandHandler('add', add)],
+        states={
+            ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
+            ASK_CITY: [MessageHandler(Filters.text, ask_city)],
+            ASK_VILLAGE: [MessageHandler(Filters.text, ask_village)],
+            ASK_AREA: [MessageHandler(Filters.all, ask_area)],
+            ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
+            HANDLE_LOCATION: [MessageHandler(Filters.all, handle_location)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+    dp. add_handler(add_conv)
 
-        dp.add_handler(conv_handler)
-        dp.add_handler(broadcast_handler)
-        # dp.add_handler(CommandHandler("stats", bot_stats, filters=Filters.user))
-        # Start the bot
-        updater.start_polling()
+    broadcast_handler = ConversationHandler(
+        entry_points=[CommandHandler('send', send)],
+        states={
+            BROADCAST: [MessageHandler(Filters.all, broadcast)],            
+        },
+    fallbacks=[CommandHandler('cancel', cancel)]
+    )
 
-        # Schedule periodic messages
-        job_queue = updater.job_queue
-        # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
-        #                         interval=datetime.timedelta(seconds=5).total_seconds())
-        # job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
-        job_queue.run_repeating(lambda context: get_member_count(context.bot), interval=7200, first=60)
-        job_queue.run_repeating(lambda context: send_todays_weather(context.bot),
-                                interval=datetime.timedelta(days=1),
-                                first=datetime.time(10, 25))
-        job_queue.run_repeating(lambda context: send_tomorrows_weather(context.bot),
-                                interval=datetime.timedelta(days=1),
-                                first=datetime.time(10, 26))
-        job_queue.run_repeating(lambda context: send_advice_to_users(context.bot),
-                                interval=datetime.timedelta(days=1),
-                                first=datetime.time(10, 27))
-        job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
-        # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
-        updater.idle()
+    dp.add_error_handler(error_handler)
+
+    dp.add_handler(CommandHandler('stats', bot_stats))
+    dp.add_handler(CallbackQueryHandler(button))
+
+    dp.add_handler(broadcast_handler)
+    # dp.add_handler(CommandHandler("stats", bot_stats, filters=Filters.user))
+    # Start the bot
+    updater.start_polling()
+
+    # Schedule periodic messages
+    job_queue = updater.job_queue
+    # job_queue.run_repeating(lambda context: send_scheduled_messages(updater, context, context.bot), 
+    #                         interval=datetime.timedelta(seconds=5).total_seconds())
+    # job_queue.run_once(lambda context: send_location_guide(updater, context, context.bot), when=60)    
+    job_queue.run_repeating(lambda context: get_member_count(context.bot), interval=7200, first=60)
+    job_queue.run_repeating(lambda context: send_todays_weather(context.bot),
+                            interval=datetime.timedelta(days=1),
+                            first=datetime.time(10, 25))
+    job_queue.run_repeating(lambda context: send_tomorrows_weather(context.bot),
+                            interval=datetime.timedelta(days=1),
+                            first=datetime.time(10, 26))
+    job_queue.run_repeating(lambda context: send_advice_to_users(context.bot),
+                            interval=datetime.timedelta(days=1),
+                            first=datetime.time(10, 27))
+    job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
+    # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
+    updater.idle()
     
 if __name__ == '__main__':
     try:
