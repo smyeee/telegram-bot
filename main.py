@@ -24,6 +24,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    encoding='utf-8',
     level=logging.INFO,
     handlers=[
         RotatingFileHandler('bot_logs.log', maxBytes=512000, backupCount=5),  # File handler to write logs to a file
@@ -391,12 +392,12 @@ def send_advice_to_users(bot: Bot):
                     logger.info(f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}")
                     advise = advise_data.iloc[idx_min_dist]["Adivse"]
                     message = f"""
-                    باغدار عزیز 
-                    توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما ارسال می‌شود:
+باغدار عزیز 
+توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما ارسال می‌شود:
 
-                    {advise}
+{advise}
                     """
-                    logger.info(message)
+                    # logger.info(message)
                     if pd.isna(advise):
                         logger.info(f"No advice for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data "
                                     f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}")
@@ -726,13 +727,13 @@ def main():
         job_queue.run_repeating(lambda context: get_member_count(context.bot), interval=7200, first=60)
         job_queue.run_repeating(lambda context: send_todays_weather(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(7, 30))
+                                first=datetime.time(8, 55))
         job_queue.run_repeating(lambda context: send_tomorrows_weather(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(7, 31))
+                                first=datetime.time(8, 56))
         job_queue.run_repeating(lambda context: send_advice_to_users(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(7, 32))
+                                first=datetime.time(8, 57))
         job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
