@@ -7,13 +7,8 @@ import os
 REQUIRED_FIELDS = [
     "_id",
     "username",
-    "product",
-    "province",
-    "city",
-    "village",
-    "phone",
     "name",
-    "location",
+    "phone",
     "user_journey",
 ]
 
@@ -64,14 +59,7 @@ class Database:
             "_id": user_id,
             "username": username,
             "first-seen": first_seen,
-            "products": [],
-            "provinces": [],
-            "cities": [],
-            "villages": [],
-            "areas": [],
             "phone-number": "",
-            "locations": [],
-            "user-entered-location": [],
             "name": "",
             "blocked": False
         }
@@ -146,6 +134,20 @@ class Database:
             self.bot_collection.insert_one(bot_members_dict)
         else:
             self.bot_collection.update_one({}, {"$push": {"num-members": members, "time-stamp": time}})
+
+    def get_farms(self, user_id):
+        if not self.check_if_user_is_signed_up(user_id=user_id, required_keys=[REQUIRED_FIELDS]):
+            return []
+        user = self.user_collection.find_one( {"_id": user_id} )
+        provinces = user.get("provinces")
+        cities = user.get("cities")
+        villages = user.get("villages")
+        areas = user.get("areas")
+        locations = user.get("locations")
+        equality = len(provinces) == len(cities) == len(villages) == len(areas) == len(locations)
+
+        return len(provinces)
+
 
     def populate_user_collection(
             self,
