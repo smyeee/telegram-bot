@@ -732,13 +732,13 @@ def main():
         job_queue.run_repeating(lambda context: get_member_count(context.bot), interval=7200, first=60)
         job_queue.run_repeating(lambda context: send_todays_weather(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(8, 55))
+                                first=datetime.time(10))
         job_queue.run_repeating(lambda context: send_tomorrows_weather(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(8, 56))
+                                first=datetime.time(10, 1))
         job_queue.run_repeating(lambda context: send_advice_to_users(context.bot),
                                 interval=datetime.timedelta(days=1),
-                                first=datetime.time(8, 57))
+                                first=datetime.time(10, 2))
         job_queue.run_once(lambda context: send_up_notice(context.bot), when=5)
         # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
         updater.idle()
