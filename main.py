@@ -449,6 +449,11 @@ def send_todays_weather(bot: Bot):
         # advise_data = advise_data.dropna(subset=['Adivse'])
         for id in ids:
             user_document = db.user_collection.find_one( {"_id": id} )
+            try: 
+                user_document["locations"][0].get("longitude")
+            except IndexError:
+                db.set_user_attribute(id, "locations", {}, array=True)
+                logger.info(f"added an empty dict to {id} locations array")
             # if user_data[id].get("province") == prov:
             if str(id) in manual_location_data:
                 longitude = manual_location_data[str(id)]['longitude']
