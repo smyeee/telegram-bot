@@ -34,14 +34,14 @@ logger = logging.getLogger("agriWeather-bot")
 
 # Constants for ConversationHandler states
 BROADCAST = 0
-ASK_PROVINCE, ASK_CITY, ASK_VILLAGE, ASK_AREA, ASK_LOCATION, HANDLE_LOCATION = range(6)
+ASK_PRODUCT, ASK_PROVINCE, ASK_CITY, ASK_VILLAGE, ASK_AREA, ASK_LOCATION, HANDLE_LOCATION = range(7)
 EDIT_PROVINCE, EDIT_CITY, EDIT_VILLAGE, EDIT_AREA, EDIT_LOCATION, HANDLE_LOCATION_EDIT = range(6)
 ASK_PHONE, HANDLE_PHONE = range(2)
 
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 
 db = database.Database()
-db.populate_mongodb_from_pickle()
+# db.populate_mongodb_from_pickle()
 REQUIRED_KEYS = ['products', 'provinces', 'cities', 'villages', 'areas', 'locations', 'name', 'phone-number']
 PROVINCES = ['کرمان', 'خراسان رضوی', 'خراسان جنوبی', 'یزد', 'فارس', 'سمنان', 'سایر']
 PRODUCTS = ['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی', 'پسته بادامی', 'پسته فندقی', 'پسته کله قوچی', 'پسته ممتاز', 'سایر']
@@ -51,57 +51,60 @@ def start(update: Update, context: CallbackContext):
     user = update.effective_user
     user_data = context.user_data 
     # Check if the user has already signed up
-    if not db.check_if_user_is_signed_up(user.id, REQUIRED_KEYS):
-        user_data['username'] = update.effective_user.username
+    if not db.check_if_user_exists(user_id=user.id):
+        user_data['username'] = user.username
         user_data['blocked'] = False
-        db.add_new_user(user.id, user.username)
-        logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) started the bot.")
+        db.add_new_user(user_id=user.id, username=user.username)
+        logger.info(f"{user.username} (id: {user.id}) started the bot.")
         reply_text = """
 باغدار عزیز سلام
 از این که به ما اعتماد کردید متشکریم.
-برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … به سوالات پاسخ دهید.
+برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … با استفاده
+از /register اقدام به ثبت نام کنید.
+سپس با /add باغ خود را ثبت کنید.
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
 تلفن ثابت: 02164063399
                 """
-        update.message.reply_text(reply_text)
-        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_product_keyboard())
+        update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ASK_PROVINCE
     else:
         reply_text = """
-ثبت نام شما تکمیل شده است.
-در روزهای آینده توصیه‌های کاربردی هواشناسی محصولتان برای شما ارسال می‌شود.
-همراه ما باشید.
+راهنما:
+ثبت نام در بات هواشناسی کشاورزی /register
+اضافه کردن باغ  /add
+ویرایش باغ‌های ثبت شده /edit
+حذف باغ /delete
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
 شماره ثابت: 02164063399
         """
-        update.message.reply_text(reply_text)
+        update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END 
 
 
-def handle_name(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_data = context.user_data
-    if not update.message.text or update.message.text=="/start":
-        update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
-        return HANDLE_NAME
-    name = update.message.text.strip()
-    user_data['name'] = name
-    db.set_user_attribute(user.id, "name", name)
-    db.set_user_attribute(user.id, "finished-sign-up", datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
-    logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) Finished sign up.")
-    reply_text = """
-از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
-در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
-همراه ما باشید.
-راه‌های ارتباطی با ما:
-ادمین: @agriiadmin
-شماره ثابت: 02164063399
-    """
-    # persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
-    update.message.reply_text(reply_text)
-    return ConversationHandler.END
+# def handle_name_old(update: Update, context: CallbackContext):
+#     user = update.effective_user
+#     user_data = context.user_data
+#     if not update.message.text or update.message.text=="/start":
+#         update.message.reply_text("نام و نام خانودگی خود را وارد کنید:")
+#         return HANDLE_NAME
+#     name = update.message.text.strip()
+#     user_data['name'] = name
+#     db.set_user_attribute(user.id, "name", name)
+#     db.set_user_attribute(user.id, "finished-sign-up", datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+#     logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) Finished sign up.")
+#     reply_text = """
+# از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
+# در روزهای آینده توصیه‌های کاربردی هواشناسی محصول پسته برای شما ارسال می‌شود.
+# همراه ما باشید.
+# راه‌های ارتباطی با ما:
+# ادمین: @agriiadmin
+# شماره ثابت: 02164063399
+#     """
+#     # persistence.update_user_data(user_id=update.effective_user.id, data = user_data)
+#     update.message.reply_text(reply_text)
+#     return ConversationHandler.END
 
 
 def send(update: Update, context: CallbackContext):
@@ -111,7 +114,6 @@ def send(update: Update, context: CallbackContext):
         return BROADCAST
     else:
         return ConversationHandler.END
-
 
 def broadcast(update: Update, context: CallbackContext):
     # user_data = db.user_collection.find()
@@ -153,7 +155,6 @@ def bot_stats(update: Update, context: CallbackContext):
             reply_markup=stats_keyboard()
         )
     
-
 def button(update: Update, context: CallbackContext):
     stat = update.callback_query
     id = update.effective_user.id
@@ -183,9 +184,6 @@ def button(update: Update, context: CallbackContext):
         context.bot.send_document(chat_id=id, document=doc)
         doc.close()
         os.remove(output_file)
-
-
-
 
 def get_member_count(bot: Bot):
     user_data = db.user_collection.distinct("_id")
@@ -536,10 +534,16 @@ def error_handler(update: Update, context: CallbackContext):
 
 # START OF REGISTER CONVERSATION
 def register(update: Update, context: CallbackContext):
-    update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید")
+    user = update.effective_user
+    if db.check_if_user_is_registered(user_id=user.id):
+        update.message.reply_text("شما قبلا ثبت نام کرده‌اید. می‌توانید با استفاده از /add به ثبت باغ‌های خود اقدام کنید")
+        return ConversationHandler.END
+    logger.info("entered register")
+    update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید", reply_markup=ReplyKeyboardRemove())
     return ASK_PHONE
 
 def ask_phone(update: Update, context: CallbackContext):
+    logger.info("entered ask_phone")
     user = update.effective_user
     user_data = context.user_data
     # Get the answer to the area question
@@ -548,7 +552,7 @@ def ask_phone(update: Update, context: CallbackContext):
         return ASK_PHONE  
     name = update.message.text.strip()
     user_data['name'] = name
-
+    db.set_user_attribute(user_id=user.id, key="name", value=name)
     # db.set_user_attribute(user.id, 'products', user_data['product'], array=True)
     # db.set_user_attribute(user.id, 'provinces', user_data['province'], array=True)
     # db.set_user_attribute(user.id, 'cities', user_data['city'], array=True)
@@ -566,16 +570,54 @@ def handle_phone(update: Update, context: CallbackContext):
         update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
         return HANDLE_PHONE  
     user_data['phone'] = phone
-    db.add_new_user(user_id=user.id, username=user.username, phone=phone)
+    db.set_user_attribute(user_id=user.id, key="phone-number", value=phone)
+    reply_text = """
+از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
+لطفا با استفاده از /add نسبت به ثبت باغ‌های خود اقدام کنید.
+راه‌های ارتباطی با ما:
+ادمین: @agriiadmin
+شماره ثابت: 02164063399
+    """
+    update.message.reply_text(reply_text)
     return ConversationHandler.END
 
 # START OF ADD_FARM CONVERSATION
 def add(update: Update, context: CallbackContext):
-    user = update.effective_user.id
-
-    if not db.check_if_user_is_signed_up(user_id=user.id):
+    user = update.effective_user
+    logger.info(db.check_if_user_exists(user.id))
+    if not db.check_if_user_is_registered(user_id=user.id):
         update.message.reply_text("لطفا پیش از افزودن باغ از طریق /register ثبت نام کنید", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
+    reply_text = """
+لطفا برای تشخیص این باغ یک نام انتخاب کنید:
+مثلا باغ شماره 1
+"""
+    update.message.reply_text(reply_text, reply_markup=ReplyKeyboardRemove())
+    # 
+    return ASK_PRODUCT
+
+def ask_product(update: Update, context: CallbackContext): # HANDLES THE NAME RECEIVED FROM USER
+    user = update.effective_user
+    user_data = context.user_data
+    if db.user_collection.find_one({"_id": user.id}).get("farms"):
+        used_farm_names = db.user_collection.find_one({"_id": user.id})["farms"].keys()
+    if not update.message.text or update.message.text=="/start":
+        reply_text = """
+لطفا برای دسترسی ساده‌تر به این باغ یک نام انتخاب کنید:
+مثلا باغ شماره 1
+"""
+        update.message.reply_text(reply_text)
+        return ASK_PRODUCT
+    elif update.message.text in used_farm_names:
+        reply_text = "شما قبلا از این نام استفاده کرده‌اید. لطفا یک نام جدید انتخاب کنید."
+        update.message.reply_text(reply_text)
+        return ASK_PRODUCT
+    name = update.message.text.strip()
+
+    user_data['farm_name'] = name
+    # db.set_user_attribute(user.id, "name", name)
+    # db.set_user_attribute(user.id, "finished-sign-up", datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    # logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) Finished sign up.")
     update.message.reply_text("لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard())
     return ASK_PROVINCE
 
@@ -584,7 +626,7 @@ def ask_province(update: Update, context: CallbackContext):
     user_data = context.user_data
     # Get the answer to the province question
     if not update.message.text or update.message.text not in PRODUCTS:
-        update.message.reply_text("لطفا نوع محصول خود را انتخاب کنید:", reply_markup=get_product_keyboard())
+        update.message.reply_text("لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard())
         return ASK_PROVINCE
     product = update.message.text.strip()
     user_data['product'] = product
@@ -645,18 +687,56 @@ def ask_location(update: Update, context: CallbackContext):
 def handle_location(update: Update, context: CallbackContext):
     user = update.effective_user
     user_data = context.user_data
+    farm_name = user_data["farm_name"]
+    farm_product = user_data["product"]
+    farm_province = user_data["province"]
+    farm_city = user_data["city"]
+    farm_village = user_data["village"]
+    farm_area = user_data["area"]
+    
     # Get the user's location
     location = update.message.location
+    text = update.message.text
     if location:
         logger.info(f"{update.effective_user.id} chose: ersal location online")
-    text = update.message.text
+        user_data['location'] = {
+        'latitude': location.latitude,
+        'longitude': location.longitude
+    }
+        farm_location = user_data["location"]
+        new_farm_dict = {
+            'product': farm_product,
+            'province': farm_province,
+            'city': farm_city,
+            'village': farm_village,
+            'area': farm_area,
+            'location': farm_location
+        }
+        db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm= new_farm_dict)
+        reply_text = f"""
+باغ شما با نام <{farm_name}> با موفقیت ثبت شد.
+توصیه‌های مرتبط با شرایط آب‌و‌هوایی از روزهای آینده برای شما ارسال خواهد  
+برای ویرایش اطلاعات باغ از /edit استفاده کنید.
+"""
+        update.message.reply_text(reply_text, reply_markup=start_keyboard())
+        return ConversationHandler.END
     if not location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
         logger.info(f"{update.effective_user.id} didn't send location successfully")
         reply_text = "ارسال موقعیت باغ (لوکیشن باغ) با موفقیت انجام نشد."
+        user_data['location'] = ''
+        farm_location = user_data["location"]
+        new_farm_dict = {
+            'product': farm_product,
+            'province': farm_province,
+            'city': farm_city,
+            'village': farm_village,
+            'area': farm_area,
+            'location': farm_location
+        }
+        db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm= new_farm_dict)
         keyboard = [[KeyboardButton("ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True)],
                     [KeyboardButton("از نقشه (گوگل مپ) انتخاب میکنم")]]
         update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
-
         return HANDLE_LOCATION
     elif text == "از نقشه (گوگل مپ) انتخاب میکنم":
         logger.info(f"{update.effective_user.id} chose: az google map entekhab mikonam")
@@ -668,36 +748,30 @@ def handle_location(update: Update, context: CallbackContext):
         update.message.reply_text(reply_text, reply_markup=ReplyKeyboardRemove())
         return HANDLE_LOCATION
 
-    user_data['location'] = {
-        'latitude': location.latitude,
-        'longitude': location.longitude
-    }
-    # db.set_user_attribute(user.id, 'locations', {'latitude': location.latitude, 'longitude': location.longitude}, array=True)
-    # db.set_user_attribute(user.id, 'user-entered-location', True, array=True)
-    update.message.reply_text("باغ با موفقیت ثبت شد:", reply_markup=ReplyKeyboardRemove())
-    return ConversationHandler.END
-
 
 def main():
     updater = Updater(TOKEN, use_context=True) # , request_kwargs={'proxy_url': PROXY_URL})
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
-
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("register", register))
+    # dp.add_handler(CommandHandler("add", add))
     # Add handlers to the dispatcher
-    signup_conv = ConversationHandler(
-        entry_points=[CommandHandler('register', register)],
+    register_conv = ConversationHandler(
+        entry_points=[MessageHandler(Filters.regex('ثبت نام'), register)],
         states={
-            ASK_PHONE: [MessageHandler(Filters.all, ask_phone)],
-            HANDLE_PHONE: [MessageHandler(Filters.all, handle_phone)]
+            ASK_PHONE: [MessageHandler(Filters.text & ~Filters.command, ask_phone)],
+            HANDLE_PHONE: [MessageHandler(Filters.text & ~Filters.command, handle_phone)]
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )
-    dp. add_handler(signup_conv)
+    dp. add_handler(register_conv)
 
     add_conv = ConversationHandler(
-        entry_points=[CommandHandler('add', add)],
+        entry_points=[MessageHandler(Filters.regex('اضافه کردن باغ'), add)],
         states={
+            ASK_PRODUCT: [MessageHandler(Filters.text, ask_product)],
             ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
             ASK_CITY: [MessageHandler(Filters.text, ask_city)],
             ASK_VILLAGE: [MessageHandler(Filters.text, ask_village)],
@@ -707,7 +781,22 @@ def main():
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )
-    dp. add_handler(add_conv)
+    dp.add_handler(add_conv)
+
+    add_conv2 = ConversationHandler(
+        entry_points=[MessageHandler(Filters.regex('add'), add)],
+        states={
+            ASK_PRODUCT: [MessageHandler(Filters.text, ask_product)],
+            ASK_PROVINCE: [MessageHandler(Filters.text, ask_province)],
+            ASK_CITY: [MessageHandler(Filters.text, ask_city)],
+            ASK_VILLAGE: [MessageHandler(Filters.text, ask_village)],
+            ASK_AREA: [MessageHandler(Filters.all, ask_area)],
+            ASK_LOCATION: [MessageHandler(Filters.all, ask_location)],
+            HANDLE_LOCATION: [MessageHandler(Filters.all, handle_location)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+    dp.add_handler(add_conv2)
 
     broadcast_handler = ConversationHandler(
         entry_points=[CommandHandler('send', send)],
