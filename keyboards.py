@@ -39,7 +39,7 @@ def get_province_keyboard():
 # Function to get the multi-choice keyboard for produce
 def start_keyboard():
     keyboard = [['ثبت نام'], ['اضافه کردن باغ'],  ['حذف باغ'], ['ویرایش باغ های ثبت شده'], ['درخواست اطلاعات هواشناسی باغ ها']]
-    return ReplyKeyboardMarkup()
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, input_field_placeholder="ثبت نام در بات با /register")
 
 def get_product_keyboard():
     keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر']]
