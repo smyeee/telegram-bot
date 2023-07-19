@@ -8,15 +8,14 @@ REQUIRED_FIELDS = [
     "_id",
     "username",
     "name",
-    "phone",
-    "user_journey",
+    "phone-number",
 ]
 
 
 class Database:
     def __init__(self) -> None:
         self.client = pymongo.MongoClient(os.environ["MONGODB_URI"])
-        self.db = self.client["agriweathBot"]  # database name
+        self.db = self.client["test2"]  # database name
         self.user_collection = self.db["userCollection"]
         self.bot_collection = self.db["botCollection"]
         self.dialog_collection = self.db["dialogCollection"]
@@ -30,7 +29,7 @@ class Database:
             else:
                 return False
 
-    def check_if_user_is_signed_up(self, user_id: int, required_keys: list):
+    def check_if_user_is_registered(self, user_id: int, required_keys: list = REQUIRED_FIELDS):
         if not self.check_if_user_exists(user_id=user_id):
             return False
         else:
@@ -59,14 +58,20 @@ class Database:
             "_id": user_id,
             "username": username,
             "first-seen": first_seen,
-            "phone-number": "",
-            "name": "",
+            # "phone-number": "",
+            # "name": "",
             "blocked": False
         }
 
         if not self.check_if_user_exists(user_id=user_id):
             self.user_collection.insert_one(user_dict)
 
+
+    def add_new_farm(self, user_id, farm_name: str, new_farm: dict):
+        self.user_collection.update_one(
+            {"_id": user_id},
+            {"$set": {f"farms.{farm_name}": new_farm}}
+        )
 
     def get_user_attribute(self, user_id: int, key: str):
         self.check_if_user_exists(user_id=user_id, raise_exception=True)
@@ -136,17 +141,17 @@ class Database:
             self.bot_collection.update_one({}, {"$push": {"num-members": members, "time-stamp": time}})
 
     def get_farms(self, user_id):
-        if not self.check_if_user_is_signed_up(user_id=user_id, required_keys=[REQUIRED_FIELDS]):
+        if not self.check_if_user_is_registered(user_id=user_id):
             return []
         user = self.user_collection.find_one( {"_id": user_id} )
-        provinces = user.get("provinces")
-        cities = user.get("cities")
-        villages = user.get("villages")
-        areas = user.get("areas")
-        locations = user.get("locations")
-        equality = len(provinces) == len(cities) == len(villages) == len(areas) == len(locations)
-
-        return len(provinces)
+        # provinces = user.get("provinces")
+        # cities = user.get("cities")
+        # villages = user.get("villages")
+        # areas = user.get("areas")
+        # locations = user.get("locations")
+        # equality = len(provinces) == len(cities) == len(villages) == len(areas) == len(locations)
+        farms = user.get("farms")
+        return farms
 
 
     def populate_user_collection(
