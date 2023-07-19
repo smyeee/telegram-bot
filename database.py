@@ -15,7 +15,7 @@ REQUIRED_FIELDS = [
 class Database:
     def __init__(self) -> None:
         self.client = pymongo.MongoClient(os.environ["MONGODB_URI"])
-        self.db = self.client["test2"]  # database name
+        self.db = self.client["agriweathBot"]  # database name
         self.user_collection = self.db["userCollection"]
         self.bot_collection = self.db["botCollection"]
         self.dialog_collection = self.db["dialogCollection"]
