@@ -356,6 +356,7 @@ def button(update: Update, context: CallbackContext):
 
 def view_farm_keyboard(update: Update, context: CallbackContext):
     user = update.effective_user
+    db.log_activity(user.id, "chose view farms")
     user_farms = db.get_farms(user.id)
     if user_farms:
         context.bot.send_message(
@@ -379,6 +380,7 @@ def view_farm(update: Update, context: CallbackContext):
     user_farms = db.get_farms(user.id)
     user_farms_names = list(db.get_farms(user.id).keys())
     if farm not in user_farms_names and farm != "↩️ بازگشت":
+        db.log_activity(user.id, "error - chose wrong farm to view")
         context.bot.send_message(
             chat_id=user.id,
             text="یکی از باغ های خود را انتخاب کنید",
@@ -386,6 +388,7 @@ def view_farm(update: Update, context: CallbackContext):
         )
         return VIEW_FARM
     if farm == "↩️ بازگشت":
+        db.log_activity(user.id, "back")
         context.bot.send_message(
             chat_id=user.id, text="عملیات کنسل شد!", reply_markup=start_keyboard()
         )
@@ -419,6 +422,7 @@ def view_farm(update: Update, context: CallbackContext):
                 "می توانید از طریق گزینه ویرایش باغ موقعیت آن را ثبت کنید.",
                 reply_markup=farms_list_reply(db, user.id),
             )
+        db.log_activity(user.id, "viewed a farm")
     except KeyError:
         logger.info(f"key {farm} doesn't exist.")
         return ConversationHandler.END
