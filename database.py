@@ -119,6 +119,7 @@ class Database:
         users = [str(user) for user in users]
         log_dict = {
             "time-sent": current_time,
+            "type": "sent messages",
             "function-used": function,
             "number-of-receivers": len(users),
             "receivers": dict(zip(users, usernames))
@@ -143,6 +144,7 @@ class Database:
     def log_activity(self, user_id: int, user_activity: str):
         activity = {
             "user_activity": user_activity,
+            "type": "activity logs",
             "userID": user_id,
             "username": self.user_collection.find_one({"_id": user_id})["username"],
             "timestamp": datetime.now().strftime("%Y%m%d %H:%M")
