@@ -7,14 +7,8 @@ import os
 REQUIRED_FIELDS = [
     "_id",
     "username",
-    "product",
-    "province",
-    "city",
-    "village",
-    "phone",
     "name",
-    "location",
-    "user_journey",
+    "phone-number",
 ]
 
 
@@ -22,7 +16,7 @@ class Database:
     def __init__(self) -> None:
         self.client = pymongo.MongoClient(os.environ["MONGODB_URI"])
         self.db = self.client["agriweathBot"]  # database name
-        self.user_collection = self.db["userCollection"]
+        self.user_collection = self.db["newUserCollection"]
         self.bot_collection = self.db["botCollection"]
         self.dialog_collection = self.db["dialogCollection"]
 
@@ -35,7 +29,7 @@ class Database:
             else:
                 return False
 
-    def check_if_user_is_signed_up(self, user_id: int, required_keys: list):
+    def check_if_user_is_registered(self, user_id: int, required_keys: list = REQUIRED_FIELDS):
         if not self.check_if_user_exists(user_id=user_id):
             return False
         else:
@@ -64,21 +58,20 @@ class Database:
             "_id": user_id,
             "username": username,
             "first-seen": first_seen,
-            "products": [],
-            "provinces": [],
-            "cities": [],
-            "villages": [],
-            "areas": [],
-            "phone-number": "",
-            "locations": [],
-            "user-entered-location": [],
-            "name": "",
+            # "phone-number": "",
+            # "name": "",
             "blocked": False
         }
 
         if not self.check_if_user_exists(user_id=user_id):
             self.user_collection.insert_one(user_dict)
 
+
+    def add_new_farm(self, user_id, farm_name: str, new_farm: dict):
+        self.user_collection.update_one(
+            {"_id": user_id},
+            {"$set": {f"farms.{farm_name}": new_farm}}
+        )
 
     def get_user_attribute(self, user_id: int, key: str):
         self.check_if_user_exists(user_id=user_id, raise_exception=True)
@@ -87,7 +80,7 @@ class Database:
         if key not in user_dict:
             return None
         return user_dict[key]
-
+    
     def set_user_attribute(self, user_id: int, key: str, value: any, array: bool = False):
         self.check_if_user_exists(user_id=user_id, raise_exception=True)
         if not array:
@@ -146,6 +139,29 @@ class Database:
             self.bot_collection.insert_one(bot_members_dict)
         else:
             self.bot_collection.update_one({}, {"$push": {"num-members": members, "time-stamp": time}})
+
+    def log_activity(self, user_id: int, user_activity: str):
+        activity = {
+            "user_activity": user_activity,
+            "userID": user_id,
+            "username": self.user_collection.find_one({"_id": user_id})["username"],
+            "timestamp": datetime.now().strftime("%Y%m%d %H:%M")
+        }
+        self.bot_collection.insert_one(activity)
+
+    def get_farms(self, user_id):
+        if not self.check_if_user_is_registered(user_id=user_id):
+            return []
+        user = self.user_collection.find_one( {"_id": user_id} )
+        # provinces = user.get("provinces")
+        # cities = user.get("cities")
+        # villages = user.get("villages")
+        # areas = user.get("areas")
+        # locations = user.get("locations")
+        # equality = len(provinces) == len(cities) == len(villages) == len(areas) == len(locations)
+        farms = user.get("farms")
+        return farms
+
 
     def populate_user_collection(
             self,
@@ -224,5 +240,3 @@ class Database:
             })
         
         user_df.to_excel(output_file)
-
-
