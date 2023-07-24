@@ -16,7 +16,7 @@ class Database:
     def __init__(self) -> None:
         self.client = pymongo.MongoClient(os.environ["MONGODB_URI"])
         self.db = self.client["agriweathBot"]  # database name
-        self.user_collection = self.db["userCollection"]
+        self.user_collection = self.db["newUserCollection"]
         self.bot_collection = self.db["botCollection"]
         self.dialog_collection = self.db["dialogCollection"]
 
@@ -80,7 +80,7 @@ class Database:
         if key not in user_dict:
             return None
         return user_dict[key]
-
+    
     def set_user_attribute(self, user_id: int, key: str, value: any, array: bool = False):
         self.check_if_user_exists(user_id=user_id, raise_exception=True)
         if not array:
@@ -139,6 +139,15 @@ class Database:
             self.bot_collection.insert_one(bot_members_dict)
         else:
             self.bot_collection.update_one({}, {"$push": {"num-members": members, "time-stamp": time}})
+
+    def log_activity(self, user_id: int, user_activity: str):
+        activity = {
+            "user_activity": user_activity,
+            "userID": user_id,
+            "username": self.user_collection.find_one({"_id": user_id})["username"],
+            "timestamp": datetime.now().strftime("%Y%m%d %H:%M")
+        }
+        self.bot_collection.insert_one(activity)
 
     def get_farms(self, user_id):
         if not self.check_if_user_is_registered(user_id=user_id):
@@ -231,5 +240,3 @@ class Database:
             })
         
         user_df.to_excel(output_file)
-
-
