@@ -347,12 +347,15 @@ def button(update: Update, context: CallbackContext):
         photo.close()
         os.remove("member-change.png")
     elif stat.data == "excel_download":
-        output_file = "member-data.xlsx"
-        db.to_excel(output_file=output_file)
-        doc = open(output_file, "rb")
-        context.bot.send_document(chat_id=id, document=doc)
-        doc.close()
-        os.remove(output_file)
+        try:
+            output_file = "member-data.xlsx"
+            db.to_excel(output_file=output_file)
+            doc = open(output_file, "rb")
+            context.bot.send_document(chat_id=id, document=doc)
+            doc.close()
+            os.remove(output_file)
+        except:
+            logger.info("encountered error during excel download!")
 
 def view_farm_keyboard(update: Update, context: CallbackContext):
     user = update.effective_user
