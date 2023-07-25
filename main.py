@@ -1266,7 +1266,11 @@ def recv_weather(update: Update, context: CallbackContext):
         db.log_activity(user.id, "back")
         update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
         return ConversationHandler.END
-    db.log_activity(user.id, "error - chose farm for weather report")
+    if farm not in list(user_farms.keys()):
+        db.log_activity(user.id, "error - chose farm for weather report")
+        update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    db.log_activity(user.id, "chose farm for weather report")
     longitude = user_farms[farm]["location"]["longitude"]
     latitude = user_farms[farm]["location"]["latitude"]
     
@@ -1468,7 +1472,7 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     dp.add_handler(set_location_handler)
-    # dp.add_error_handler(error_handler)
+    dp.add_error_handler(error_handler)
 
     dp.add_handler(CommandHandler("stats", bot_stats))
     dp.add_handler(CallbackQueryHandler(button))
