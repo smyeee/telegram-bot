@@ -196,40 +196,6 @@ def broadcast(update: Update, context: CallbackContext):
         context.bot.send_message(id, f"پیام برای {i} نفر از {len(ids)} نفر ارسال شد.")
     return ConversationHandler.END
 
-def broadcast(update: Update, context: CallbackContext):
-    # user_data = db.user_collection.find()
-    ids = db.user_collection.distinct("_id")
-    i = 0
-    receivers = []
-    message = update.message.text
-    if message == "/cancel":
-        update.message.reply_text("عملیات کنسل شد!")
-        return ConversationHandler.END
-    if not message:
-        update.message.reply_text(
-            "لطفا پیام مورد نظرتان را بنویسید:",
-        )
-        return BROADCAST
-    for user_id in ids:
-        try:
-            context.bot.send_message(user_id, message)
-            username = db.user_collection.find_one({"_id": user_id})["username"]
-            db.log_new_message(
-                user_id=user_id,
-                username=username,
-                message=message,
-                function="broadcast",
-            )
-            receivers.append(user_id)
-            i += 1
-        except Unauthorized:
-            logger.error(f"user {user_id} blocked the bot")
-        except BadRequest:
-            logger.error(f"chat with {user_id} not found.")
-    db.log_sent_messages(receivers, "broadcast")
-    for id in ADMIN_LIST:
-        context.bot.send_message(id, f"پیام برای {i} نفر از {len(ids)} نفر ارسال شد.")
-    return ConversationHandler.END
 
 def set_loc(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
@@ -303,6 +269,8 @@ def handle_lat_long(update: Update, context: CallbackContext):
     db.set_user_attribute(int(user_data["target"]), f"farms.{user_data['farm_name']}.location.longitude", float(user_data["long"]))
     db.set_user_attribute(int(user_data["target"]), f"farms.{user_data['farm_name']}.location.latitude", float(user_data["lat"]))
     context.bot.send_location(chat_id=user.id, latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
+    context.bot.send_message(chat_id=int(user_data["target"]), text=f"لوکیشن باغ شما با نام {user_data['farm_name']} ثبت شد.")
+    context.bot.send_location(chat_id=int(user_data["target"]), latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
     return ConversationHandler.END
 
 
@@ -541,13 +509,13 @@ def edit_farm(update: Update, context: CallbackContext):
         user_data["attr"] = attr
         text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
         keyboard = [
+            [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
             [
                 KeyboardButton(
                     "ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True
                 )
             ],
             [KeyboardButton("از نقشه داخل تلگرام انتخاب میکنم")],
-            [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
             [KeyboardButton("بازگشت")]
         ]
         context.bot.send_message(
@@ -674,7 +642,7 @@ def handle_edit(update: Update, context: CallbackContext):
                 chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
             )
             return ConversationHandler.END
-        if not new_location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
+        if not new_location and text != "از نقشه داخل تلگرام انتخاب میکنم":
             logger.info(
                 f"{update.effective_user.id} didn't send new_location successfully"
             )
@@ -684,7 +652,7 @@ def handle_edit(update: Update, context: CallbackContext):
                 chat_id=user.id, text=reply_text, reply_markup=edit_keyboard_reply()
             )
             return EDIT_FARM
-        elif text == "از نقشه (گوگل مپ) انتخاب میکنم":
+        elif text == "از نقشه داخل تلگرام انتخاب میکنم":
             db.log_activity(user.id, "chose to send location from map")
             logger.info(
                 f"{update.effective_user.id} chose: az google map entekhab mikonam"
@@ -712,13 +680,13 @@ def handle_edit_link(update: Update, context: CallbackContext):
         db.log_activity(user.id, "back")
         reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
         keyboard = [
+        [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [
             KeyboardButton(
                 "ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True
             )
         ],
         [KeyboardButton("از نقشه داخل تلگرام انتخاب میکنم")],
-        [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [KeyboardButton("بازگشت")]
         ]
         update.message.reply_text(
@@ -1112,13 +1080,13 @@ def ask_location(update: Update, context: CallbackContext):
     db.log_activity(user.id, "entered area")
     reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
     keyboard = [
+        [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [
             KeyboardButton(
                 "ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True
             )
         ],
         [KeyboardButton("از نقشه داخل تلگرام انتخاب میکنم")],
-        [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [KeyboardButton("بازگشت")]
     ]
     update.message.reply_text(
@@ -1176,7 +1144,7 @@ def handle_location(update: Update, context: CallbackContext):
 """
         update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
-    if not location and text != "از نقشه (گوگل مپ) انتخاب میکنم":
+    if not location and text != "از نقشه داخل تلگرام انتخاب میکنم":
         db.log_activity(user.id, "error - location")
         logger.info(f"{update.effective_user.id} didn't send location successfully")
         reply_text = "ارسال موقعیت باغ با موفقیت انجام نشد. می توانید از طریق ویرایش باغ موقعیت آن را ثبت کنید"
@@ -1198,7 +1166,7 @@ def handle_location(update: Update, context: CallbackContext):
         db.log_activity(user.id, "finish add farm - no location")
         update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
-    elif text == "از نقشه (گوگل مپ) انتخاب میکنم":
+    elif text == "از نقشه داخل تلگرام انتخاب میکنم":
         db.log_activity(user.id, "chose to send location from map")
         logger.info(f"{update.effective_user.id} chose: az google map entekhab mikonam")
         reply_text = """
@@ -1227,13 +1195,13 @@ def handle_link(update: Update, context: CallbackContext):
         db.log_activity(user.id, "back")
         reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
         keyboard = [
+        [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [
             KeyboardButton(
                 "ارسال لوکیشن آنلاین (الان در باغ هستم)", request_location=True
             )
         ],
         [KeyboardButton("از نقشه داخل تلگرام انتخاب میکنم")],
-        [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [KeyboardButton("بازگشت")]
         ]
         update.message.reply_text(
@@ -1242,7 +1210,7 @@ def handle_link(update: Update, context: CallbackContext):
         return HANDLE_LOCATION
     else:
         db.log_activity(user.id, "sent location link")
-        reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد."
+        reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا تا بررسی ادمین منتظر بمانید. از شکیبایی شما سپاسگزاریم."
         user_data["location"] = {
             "latitude": None,
             "longitude": None,
@@ -1305,7 +1273,7 @@ def recv_weather(update: Update, context: CallbackContext):
     if longitude is not None:
         try:
             if datetime.time(6, 0).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(8, 30).strftime("%H%M"):    
-                weather_data = gpd.read_file(f"pesteh{today}_1.geojson")
+                weather_data = gpd.read_file(f"data/pesteh{today}_1.geojson")
                 point = Point(longitude, latitude)
                 threshold = 0.1  # degrees
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
@@ -1362,7 +1330,7 @@ def recv_weather(update: Update, context: CallbackContext):
                     db.log_activity(user.id, "received 2 weather reports")
                     return ConversationHandler.END
             else:
-                weather_data = gpd.read_file(f"pesteh{yesterday}_1.geojson")
+                weather_data = gpd.read_file(f"data/pesteh{yesterday}_1.geojson")
                 point = Point(longitude, latitude)
                 threshold = 0.1  # degrees
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
