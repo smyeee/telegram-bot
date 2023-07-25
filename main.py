@@ -1272,7 +1272,7 @@ def recv_weather(update: Update, context: CallbackContext):
     
     if longitude is not None:
         try:
-            if datetime.time(6, 0).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(8, 30).strftime("%H%M"):    
+            if datetime.time(7, 0).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(20, 30).strftime("%H%M"):    
                 weather_data = gpd.read_file(f"data/pesteh{today}_1.geojson")
                 point = Point(longitude, latitude)
                 threshold = 0.1  # degrees
