@@ -1333,6 +1333,9 @@ def recv_weather(update: Update, context: CallbackContext):
                     context.bot.send_message(chat_id=user.id, text=weather_tomorrow, reply_markup=start_keyboard())
                     db.log_activity(user.id, "received 2 weather reports")
                     return ConversationHandler.END
+                else:
+                    context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
+                    return ConversationHandler.END
             else:
                 weather_data = gpd.read_file(f"data/pesteh{yesterday}_1.geojson")
                 point = Point(longitude, latitude)
@@ -1364,6 +1367,9 @@ def recv_weather(update: Update, context: CallbackContext):
                                 """
                     context.bot.send_message(chat_id=user.id, text=weather_today, reply_markup=start_keyboard())
                     db.log_activity(user.id, "received 1 weather reports")
+                    return ConversationHandler.END
+                else:
+                    context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
                     return ConversationHandler.END
         except DriverError:
             logger.info(f"{user.id} requested today's weather. pesteh{today}_1.geojson was not found!")
