@@ -116,7 +116,7 @@ PRODUCTS = [
     "پسته ممتاز",
     "سایر",
 ]
-ADMIN_LIST = [103465015, 31583686]
+ADMIN_LIST = [103465015, 31583686, 216033407]
 
 
 def start(update: Update, context: CallbackContext):
@@ -1498,7 +1498,7 @@ def main():
         lambda context: send_todays_data(context.bot, ADMIN_LIST, logger),
         interval=datetime.timedelta(days=1),
         # first=10
-        first=datetime.time(7, 0),
+        first=datetime.time(7, 30),
     )
 
     # job_queue.run_repeating(
