@@ -12,7 +12,15 @@ def table(
     output: str = "table.png",
 ) -> None:
     if not len(days) == len(tmin) == len(tmax) == len(rh) == len(wind) == len(rain):
-        raise ValueError("All lists must be the same length.")
+        raise ValueError(f"""
+All lists must be the same length.
+days: {len(days)}
+tmin: {len(tmin)}
+tmax: {len(tmax)}
+rh: {len(rh)}
+wind: {len(wind)}
+rain: {len(rain)}
+""")
     rows = len(days)
     style = """
 <style type="text/css">
