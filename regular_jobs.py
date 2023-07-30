@@ -44,7 +44,6 @@ def send_todays_data(bot: Bot, admin_list, logger):
                     latitude = farms[farm]["location"]["latitude"]
                     logger.info(f"Location of farm:{farm} belonging to user:{id} --_-- lon:{longitude}, lat:{latitude}")
                     if longitude is None and farms[farm]["village"]:
-                        logger.info("\n\n ENTERED VILLAGE.XLSX\n\n")
                         province = farms[farm]["province"]
                         city = farms[farm]["city"]
                         village = farms[farm]["village"]
@@ -61,9 +60,9 @@ def send_todays_data(bot: Bot, admin_list, logger):
                             latitude = row["Y"]
                             logger.info(f"village {village} was found in villages.xlsx, lon:{longitude}, lat: {latitude}")
                     elif longitude is None:
-                        logger.info(f"\n\nLocation of farm:{farm} belonging to user:{id} was not found\n\n")
+                        logger.info(f"\nLocation of farm:{farm} belonging to user:{id} was not found\n")
                     if latitude is not None and longitude is not None:
-                        logger.info(f"Location of farm:{farm} belonging to user:{id} was found")
+                        logger.info(f"\nLocation of farm:{farm} belonging to user:{id} was found\n")
                         # Find the nearest point to the user's lat/long
                         point = Point(longitude, latitude)
                         threshold = 0.1  # degrees
@@ -79,15 +78,15 @@ def send_todays_data(bot: Bot, admin_list, logger):
                             tmin_values, tmax_values, rh_values, spd_values, rain_values = [], [], [], [], []
                             for key, value in row.items():
                                 if "tmin_Time=" in key:
-                                    tmin_values.append(round(value, 2))
+                                    tmin_values.append(round(value, 1))
                                 elif "tmax_Time=" in key:
-                                    tmax_values.append(round(value, 2))
+                                    tmax_values.append(round(value, 1))
                                 elif "rh_Time=" in key:
-                                    rh_values.append(round(value, 2))
+                                    rh_values.append(round(value, 1))
                                 elif "spd_Time=" in key:
-                                    spd_values.append(round(value, 2))
+                                    spd_values.append(round(value, 1))
                                 elif "rain_Time=" in key:
-                                    rain_values.append(round(value, 2))
+                                    rain_values.append(round(value, 1))
                             caption = f"""
 باغدار عزیز 
 وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
