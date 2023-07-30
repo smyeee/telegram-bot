@@ -191,6 +191,7 @@ def broadcast(update: Update, context: CallbackContext):
             i += 1
         except Unauthorized:
             logger.error(f"user {user_id} blocked the bot")
+            db.set_user_attribute(user_id, "blocked", True)
         except BadRequest:
             logger.error(f"chat with {user_id} not found.")
     db.log_sent_messages(receivers, "broadcast")
@@ -1293,61 +1294,15 @@ def recv_weather(update: Update, context: CallbackContext):
                     tmin_values , tmax_values , rh_values , spd_values , rain_values = [], [], [], [], []
                     for key, value in row.items():
                         if "tmin_Time=" in key:
-                            tmin_values.append(round(value, 2))
+                            tmin_values.append(round(value, 1))
                         elif "tmax_Time=" in key:
-                            tmax_values.append(round(value, 2))
+                            tmax_values.append(round(value, 1))
                         elif "rh_Time=" in key:
-                            rh_values.append(round(value, 2))
+                            rh_values.append(round(value, 1))
                         elif "spd_Time=" in key:
-                            spd_values.append(round(value, 2))
+                            spd_values.append(round(value, 1))
                         elif "rain_Time=" in key:
-                            rain_values.append(round(value, 2))
-                    # tmax_today = round(
-                    #     weather_data.iloc[idx_min_dist][f"tmax_Time={today}"], 2
-                    # )
-                    # tmin_today = round(
-                    #     weather_data.iloc[idx_min_dist][f"tmin_Time={today}"], 2
-                    # )
-                    # rh_today = round(
-                    #     weather_data.iloc[idx_min_dist][f"rh_Time={today}"], 2
-                    # )
-                    # spd_today = round(
-                    #     weather_data.iloc[idx_min_dist][f"spd_Time={today}"], 2
-                    # )
-                    # rain_today = round(
-                    #     weather_data.iloc[idx_min_dist][f"rain_Time={today}"], 2
-                    # )
-                    # tmax_day2 = round(
-                    #     weather_data.iloc[idx_min_dist][f"tmax_Time={day2}"], 2
-                    # )
-                    # tmin_day2 = round(
-                    #     weather_data.iloc[idx_min_dist][f"tmin_Time={day2}"], 2
-                    # )
-                    # rh_day2 = round(weather_data.iloc[idx_min_dist][f"rh_Time={day2}"], 2)
-                    # spd_day2 = round(
-                    #     weather_data.iloc[idx_min_dist][f"spd_Time={day2}"], 2
-                    # )
-                    # rain_day2 = round(
-                    #     weather_data.iloc[idx_min_dist][f"rain_Time={day2}"], 2
-                    # )
-#                     weather_today = f"""
-# باغدار عزیز سلام
-# وضعیت آب و هوای باغ شما با نام <{farm}> امروز {jtoday} بدین صورت خواهد بود:
-# حداکثر دما: {tmax_today} درجه سانتیگراد
-# حداقل دما: {tmin_today} درجه سانتیگراد
-# رطوبت نسبی: {rh_today} 
-# سرعت باد: {spd_today} کیلومتر بر ساعت
-# احتمال بارش: {rain_today} درصد
-#                                 """
-#                     weather_day2 = f"""
-# باغدار عزیز 
-# وضعیت آب و هوای باغ شما با نام <{farm}> فردا {jday2} بدین صورت خواهد بود:
-# حداکثر دما: {tmax_day2} درجه سانتیگراد
-# حداقل دما: {tmin_day2} درجه سانتیگراد
-# رطوبت نسبی: {rh_day2} 
-# سرعت باد: {spd_day2} کیلومتر بر ساعت
-# احتمال بارش: {rain_day2} درصد
-#                                 """
+                            rain_values.append(round(value, 1))
                     caption = f"""
 باغدار عزیز 
 وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
@@ -1355,8 +1310,6 @@ def recv_weather(update: Update, context: CallbackContext):
                     table([jtoday, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values)
                     with open('table.png', 'rb') as image_file:
                         context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard())
-                    # context.bot.send_message(chat_id=user.id, text=weather_today)
-                    # context.bot.send_message(chat_id=user.id, text=weather_tomorrow, reply_markup=start_keyboard())
                     db.log_activity(user.id, "received 2 weather reports")
                     return ConversationHandler.END
                 else:
@@ -1373,38 +1326,15 @@ def recv_weather(update: Update, context: CallbackContext):
                     tmin_values , tmax_values , rh_values , spd_values , rain_values = [], [], [], [], []
                     for key, value in row.items():
                         if "tmin_Time=" in key:
-                            tmin_values.append(round(value, 2))
+                            tmin_values.append(round(value, 1))
                         elif "tmax_Time=" in key:
-                            tmax_values.append(round(value, 2))
+                            tmax_values.append(round(value, 1))
                         elif "rh_Time=" in key:
-                            rh_values.append(round(value, 2))
+                            rh_values.append(round(value, 1))
                         elif "spd_Time=" in key:
-                            spd_values.append(round(value, 2))
+                            spd_values.append(round(value, 1))
                         elif "rain_Time=" in key:
-                            rain_values.append(round(value, 2))
-
-                    tmax_today = round(
-                        weather_data.iloc[idx_min_dist][f"tmax_Time={today}"], 2
-                    )
-                    tmin_today = round(
-                        weather_data.iloc[idx_min_dist][f"tmin_Time={today}"], 2
-                    )
-                    rh_today = round(weather_data.iloc[idx_min_dist][f"rh_Time={today}"], 2)
-                    spd_today = round(
-                        weather_data.iloc[idx_min_dist][f"spd_Time={today}"], 2
-                    )
-                    rain_today = round(
-                        weather_data.iloc[idx_min_dist][f"rain_Time={today}"], 2
-                    )
-#                     weather_today = f"""
-# باغدار عزیز 
-# وضعیت آب و هوای باغ شما با نام <{farm}> در تاریخ {jtoday} بدین صورت خواهد بود:
-# حداکثر دما: {tmax_today} درجه سانتیگراد
-# حداقل دما: {tmin_today} درجه سانتیگراد
-# رطوبت نسبی: {rh_today} 
-# سرعت باد: {spd_today} کیلومتر بر ساعت
-# احتمال بارش: {rain_today} درصد
-#                                 """
+                            rain_values.append(round(value, 1))
                     caption = f"""
 باغدار عزیز 
 وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
@@ -1550,16 +1480,6 @@ def main():
         first=datetime.time(7, 30),
     )
 
-    # job_queue.run_repeating(
-    #     lambda context: send_tomorrows_weather(context.bot),
-    #     interval=datetime.timedelta(days=1),
-    #     first=datetime.time(10, 26),
-    # )
-    # job_queue.run_repeating(
-    #     lambda context: send_advice_to_users(context.bot),
-    #     interval=datetime.timedelta(days=1),
-    #     first=datetime.time(10, 27),
-    # )
     job_queue.run_once(lambda context: send_up_notice(context.bot, ADMIN_LIST, logger), when=5)
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
