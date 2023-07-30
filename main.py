@@ -48,6 +48,8 @@ from keyboards import (
     conf_del_keyboard,
     back_button,
 )
+from table_generator import table
+
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -1258,10 +1260,14 @@ def recv_weather(update: Update, context: CallbackContext):
     farm = update.message.text
     user_farms = db.get_farms(user.id)
     today = datetime.datetime.now().strftime("%Y%m%d")
-    tomorrow = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y%m%d")
+    day2 = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y%m%d")
+    day3 = (datetime.datetime.now() + datetime.timedelta(days=2)).strftime("%Y%m%d")
+    day4 = (datetime.datetime.now() + datetime.timedelta(days=3)).strftime("%Y%m%d")
     yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y%m%d")
     jtoday = jdatetime.datetime.now().strftime("%Y/%m/%d")
-    jtomorrow = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
+    jday2 = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
+    jday3 = (jdatetime.datetime.now() + jdatetime.timedelta(days=2)).strftime("%Y/%m/%d")
+    jday4 = (jdatetime.datetime.now() + jdatetime.timedelta(days=3)).strftime("%Y/%m/%d")
     if farm == '↩️ بازگشت':
         db.log_activity(user.id, "back")
         update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
@@ -1283,54 +1289,74 @@ def recv_weather(update: Update, context: CallbackContext):
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
                 closest_coords = weather_data.geometry.iloc[idx_min_dist].coords[0]
                 if point.distance(Point(closest_coords)) <= threshold:
-                    tmax_today = round(
-                        weather_data.iloc[idx_min_dist][f"tmax_Time={today}"], 2
-                    )
-                    tmin_today = round(
-                        weather_data.iloc[idx_min_dist][f"tmin_Time={today}"], 2
-                    )
-                    rh_today = round(
-                        weather_data.iloc[idx_min_dist][f"rh_Time={today}"], 2
-                    )
-                    spd_today = round(
-                        weather_data.iloc[idx_min_dist][f"spd_Time={today}"], 2
-                    )
-                    rain_today = round(
-                        weather_data.iloc[idx_min_dist][f"rain_Time={today}"], 2
-                    )
-                    tmax_tomorrow = round(
-                        weather_data.iloc[idx_min_dist][f"tmax_Time={tomorrow}"], 2
-                    )
-                    tmin_tomorrow = round(
-                        weather_data.iloc[idx_min_dist][f"tmin_Time={tomorrow}"], 2
-                    )
-                    rh_tomorrow = round(weather_data.iloc[idx_min_dist][f"rh_Time={tomorrow}"], 2)
-                    spd_tomorrow = round(
-                        weather_data.iloc[idx_min_dist][f"spd_Time={tomorrow}"], 2
-                    )
-                    rain_tomorrow = round(
-                        weather_data.iloc[idx_min_dist][f"rain_Time={tomorrow}"], 2
-                    )
-                    weather_today = f"""
-باغدار عزیز سلام
-وضعیت آب و هوای باغ شما با نام <{farm}> امروز {jtoday} بدین صورت خواهد بود:
-حداکثر دما: {tmax_today} درجه سانتیگراد
-حداقل دما: {tmin_today} درجه سانتیگراد
-رطوبت نسبی: {rh_today} 
-سرعت باد: {spd_today} کیلومتر بر ساعت
-احتمال بارش: {rain_today} درصد
-                                """
-                    weather_tomorrow = f"""
+                    row = weather_data.iloc[idx_min_dist]
+                    tmin_values , tmax_values , rh_values , spd_values , rain_values = [], [], [], [], []
+                    for key, value in row.items():
+                        if "tmin_Time=" in key:
+                            tmin_values.append(round(value, 2))
+                        elif "tmax_Time=" in key:
+                            tmax_values.append(round(value, 2))
+                        elif "rh_Time=" in key:
+                            rh_values.append(round(value, 2))
+                        elif "spd_Time=" in key:
+                            spd_values.append(round(value, 2))
+                        elif "rain_Time=" in key:
+                            rain_values.append(round(value, 2))
+                    # tmax_today = round(
+                    #     weather_data.iloc[idx_min_dist][f"tmax_Time={today}"], 2
+                    # )
+                    # tmin_today = round(
+                    #     weather_data.iloc[idx_min_dist][f"tmin_Time={today}"], 2
+                    # )
+                    # rh_today = round(
+                    #     weather_data.iloc[idx_min_dist][f"rh_Time={today}"], 2
+                    # )
+                    # spd_today = round(
+                    #     weather_data.iloc[idx_min_dist][f"spd_Time={today}"], 2
+                    # )
+                    # rain_today = round(
+                    #     weather_data.iloc[idx_min_dist][f"rain_Time={today}"], 2
+                    # )
+                    # tmax_day2 = round(
+                    #     weather_data.iloc[idx_min_dist][f"tmax_Time={day2}"], 2
+                    # )
+                    # tmin_day2 = round(
+                    #     weather_data.iloc[idx_min_dist][f"tmin_Time={day2}"], 2
+                    # )
+                    # rh_day2 = round(weather_data.iloc[idx_min_dist][f"rh_Time={day2}"], 2)
+                    # spd_day2 = round(
+                    #     weather_data.iloc[idx_min_dist][f"spd_Time={day2}"], 2
+                    # )
+                    # rain_day2 = round(
+                    #     weather_data.iloc[idx_min_dist][f"rain_Time={day2}"], 2
+                    # )
+#                     weather_today = f"""
+# باغدار عزیز سلام
+# وضعیت آب و هوای باغ شما با نام <{farm}> امروز {jtoday} بدین صورت خواهد بود:
+# حداکثر دما: {tmax_today} درجه سانتیگراد
+# حداقل دما: {tmin_today} درجه سانتیگراد
+# رطوبت نسبی: {rh_today} 
+# سرعت باد: {spd_today} کیلومتر بر ساعت
+# احتمال بارش: {rain_today} درصد
+#                                 """
+#                     weather_day2 = f"""
+# باغدار عزیز 
+# وضعیت آب و هوای باغ شما با نام <{farm}> فردا {jday2} بدین صورت خواهد بود:
+# حداکثر دما: {tmax_day2} درجه سانتیگراد
+# حداقل دما: {tmin_day2} درجه سانتیگراد
+# رطوبت نسبی: {rh_day2} 
+# سرعت باد: {spd_day2} کیلومتر بر ساعت
+# احتمال بارش: {rain_day2} درصد
+#                                 """
+                    caption = f"""
 باغدار عزیز 
-وضعیت آب و هوای باغ شما با نام <{farm}> فردا {jtomorrow} بدین صورت خواهد بود:
-حداکثر دما: {tmax_tomorrow} درجه سانتیگراد
-حداقل دما: {tmin_tomorrow} درجه سانتیگراد
-رطوبت نسبی: {rh_tomorrow} 
-سرعت باد: {spd_tomorrow} کیلومتر بر ساعت
-احتمال بارش: {rain_tomorrow} درصد
-                                """
-                    context.bot.send_message(chat_id=user.id, text=weather_today)
-                    context.bot.send_message(chat_id=user.id, text=weather_tomorrow, reply_markup=start_keyboard())
+وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
+"""
+                    table([jtoday, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values)
+                    with open('table.png', 'rb') as image_file:
+                        context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard())
+                    # context.bot.send_message(chat_id=user.id, text=weather_today)
+                    # context.bot.send_message(chat_id=user.id, text=weather_tomorrow, reply_markup=start_keyboard())
                     db.log_activity(user.id, "received 2 weather reports")
                     return ConversationHandler.END
                 else:
@@ -1343,6 +1369,20 @@ def recv_weather(update: Update, context: CallbackContext):
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
                 closest_coords = weather_data.geometry.iloc[idx_min_dist].coords[0]
                 if point.distance(Point(closest_coords)) <= threshold:
+                    row = weather_data.iloc[idx_min_dist]
+                    tmin_values , tmax_values , rh_values , spd_values , rain_values = [], [], [], [], []
+                    for key, value in row.items():
+                        if "tmin_Time=" in key:
+                            tmin_values.append(round(value, 2))
+                        elif "tmax_Time=" in key:
+                            tmax_values.append(round(value, 2))
+                        elif "rh_Time=" in key:
+                            rh_values.append(round(value, 2))
+                        elif "spd_Time=" in key:
+                            spd_values.append(round(value, 2))
+                        elif "rain_Time=" in key:
+                            rain_values.append(round(value, 2))
+
                     tmax_today = round(
                         weather_data.iloc[idx_min_dist][f"tmax_Time={today}"], 2
                     )
@@ -1356,16 +1396,23 @@ def recv_weather(update: Update, context: CallbackContext):
                     rain_today = round(
                         weather_data.iloc[idx_min_dist][f"rain_Time={today}"], 2
                     )
-                    weather_today = f"""
+#                     weather_today = f"""
+# باغدار عزیز 
+# وضعیت آب و هوای باغ شما با نام <{farm}> در تاریخ {jtoday} بدین صورت خواهد بود:
+# حداکثر دما: {tmax_today} درجه سانتیگراد
+# حداقل دما: {tmin_today} درجه سانتیگراد
+# رطوبت نسبی: {rh_today} 
+# سرعت باد: {spd_today} کیلومتر بر ساعت
+# احتمال بارش: {rain_today} درصد
+#                                 """
+                    caption = f"""
 باغدار عزیز 
-وضعیت آب و هوای باغ شما با نام <{farm}> در تاریخ {jtoday} بدین صورت خواهد بود:
-حداکثر دما: {tmax_today} درجه سانتیگراد
-حداقل دما: {tmin_today} درجه سانتیگراد
-رطوبت نسبی: {rh_today} 
-سرعت باد: {spd_today} کیلومتر بر ساعت
-احتمال بارش: {rain_today} درصد
-                                """
-                    context.bot.send_message(chat_id=user.id, text=weather_today, reply_markup=start_keyboard())
+وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
+"""
+                    table([jday2, jday3, jday4], tmin_values[1:], tmax_values[1:], rh_values[1:], spd_values[1:], rain_values[1:])
+                    with open('table.png', 'rb') as image_file:
+                        context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard())
+                    # context.bot.send_message(chat_id=user.id, text=weather_today, reply_markup=start_keyboard())
                     db.log_activity(user.id, "received 1 weather reports")
                     return ConversationHandler.END
                 else:
@@ -1373,6 +1420,8 @@ def recv_weather(update: Update, context: CallbackContext):
                     return ConversationHandler.END
         except DriverError:
             logger.info(f"{user.id} requested today's weather. pesteh{today}_1.geojson was not found!")
+        finally:
+            os.system("rm table.png")
     else:
         context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست اطلاعات هواشناسی نسبت به ثبت موققعیت اقدام فرمایید.",
                                  reply_markup=start_keyboard())
