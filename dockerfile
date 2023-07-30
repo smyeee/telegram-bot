@@ -13,4 +13,4 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN python3 -u main.py
+# RUN python3 -u main.py
