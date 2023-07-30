@@ -8,4 +8,4 @@ bot_*
 __pycache__/
 *.geojson
 ftp*
-
+*.png

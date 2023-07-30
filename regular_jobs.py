@@ -1,4 +1,6 @@
 import database
+from table_generator import table
+from keyboards import start_keyboard
 import pandas as pd
 import geopandas as gpd
 from shapely import Point
@@ -16,15 +18,14 @@ def send_todays_data(bot: Bot, admin_list, logger):
     ids = db.user_collection.distinct("_id")
     current_day = datetime.datetime.now().strftime("%Y%m%d")
     jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
-    tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
-    tomorrow = tomorrow.strftime("%Y%m%d")
-    jtomorrow = jdatetime.datetime.now() + jdatetime.timedelta(days=1)
-    jtomorrow = jtomorrow.strftime("%Y/%m/%d")
+    tomorrow = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y%m%d")
+    jtomorrow = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
+    jday2 = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
+    jday3 = (jdatetime.datetime.now() + jdatetime.timedelta(days=2)).strftime("%Y/%m/%d")
+    jday4 = (jdatetime.datetime.now() + jdatetime.timedelta(days=3)).strftime("%Y/%m/%d")
     villages = pd.read_excel("vilages.xlsx")
-    weather_today_receiver_id = []
-    weather_today_count = 0
-    weather_tomorrow_receiver_id = []
-    weather_tomorrow_count = 0
+    weather_report_receiver_id = []
+    weather_report_count = 0
     advise_today_receiver_id = []
     advise_today_count = 0
     advise_tomorrow_receiver_id = []
@@ -43,7 +44,6 @@ def send_todays_data(bot: Bot, admin_list, logger):
                     latitude = farms[farm]["location"]["latitude"]
                     logger.info(f"Location of farm:{farm} belonging to user:{id} --_-- lon:{longitude}, lat:{latitude}")
                     if longitude is None and farms[farm]["village"]:
-                        logger.info("\n\n ENTERED VILLAGE.XLSX\n\n")
                         province = farms[farm]["province"]
                         city = farms[farm]["city"]
                         village = farms[farm]["village"]
@@ -60,9 +60,9 @@ def send_todays_data(bot: Bot, admin_list, logger):
                             latitude = row["Y"]
                             logger.info(f"village {village} was found in villages.xlsx, lon:{longitude}, lat: {latitude}")
                     elif longitude is None:
-                        logger.info(f"\n\nLocation of farm:{farm} belonging to user:{id} was not found\n\n")
+                        logger.info(f"\nLocation of farm:{farm} belonging to user:{id} was not found\n")
                     if latitude is not None and longitude is not None:
-                        logger.info(f"Location of farm:{farm} belonging to user:{id} was found")
+                        logger.info(f"\nLocation of farm:{farm} belonging to user:{id} was found\n")
                         # Find the nearest point to the user's lat/long
                         point = Point(longitude, latitude)
                         threshold = 0.1  # degrees
@@ -74,83 +74,53 @@ def send_todays_data(bot: Bot, admin_list, logger):
                             logger.info(
                                 f"user's {farm} location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}"
                             )
-                            tmax_today = round(
-                                advise_data.iloc[idx_min_dist][f"tmax_Time={current_day}"], 2
-                            )
-                            tmin_today = round(
-                                advise_data.iloc[idx_min_dist][f"tmin_Time={current_day}"], 2
-                            )
-                            rh_today = round(
-                                advise_data.iloc[idx_min_dist][f"rh_Time={current_day}"], 2
-                            )
-                            spd_today = round(
-                                advise_data.iloc[idx_min_dist][f"spd_Time={current_day}"], 2
-                            )
-                            rain_today = round(
-                                advise_data.iloc[idx_min_dist][f"rain_Time={current_day}"], 2
-                            )
-                            tmax_tomorrow = round(
-                                advise_data.iloc[idx_min_dist][f"tmax_Time={tomorrow}"], 2
-                            )
-                            tmin_tomorrow = round(
-                                advise_data.iloc[idx_min_dist][f"tmin_Time={tomorrow}"], 2
-                            )
-                            rh_tomorrow = round(advise_data.iloc[idx_min_dist][f"rh_Time={tomorrow}"], 2)
-                            spd_tomorrow = round(
-                                advise_data.iloc[idx_min_dist][f"spd_Time={tomorrow}"], 2
-                            )
-                            rain_tomorrow = round(
-                                advise_data.iloc[idx_min_dist][f"rain_Time={tomorrow}"], 2
-                            )
-                            weather_today = f"""
-        باغدار عزیز سلام
-        وضعیت آب و هوای باغ شما با نام <{farm}> امروز {jdate} بدین صورت خواهد بود:
-        حداکثر دما: {tmax_today} درجه سانتیگراد
-        حداقل دما: {tmin_today} درجه سانتیگراد
-        رطوبت نسبی: {rh_today} 
-        سرعت باد: {spd_today} کیلومتر بر ساعت
-        احتمال بارش: {rain_today} درصد
-                            """
-                            weather_tomorrow = f"""
-        باغدار عزیز 
-        وضعیت آب و هوای باغ شما با نام <{farm}> فردا {jtomorrow} بدین صورت خواهد بود:
-        حداکثر دما: {tmax_tomorrow} درجه سانتیگراد
-        حداقل دما: {tmin_tomorrow} درجه سانتیگراد
-        رطوبت نسبی: {rh_tomorrow} 
-        سرعت باد: {spd_tomorrow} کیلومتر بر ساعت
-        احتمال بارش: {rain_tomorrow} درصد
-                            """
-                            
+                            row = advise_data.iloc[idx_min_dist]
+                            tmin_values, tmax_values, rh_values, spd_values, rain_values = [], [], [], [], []
+                            for key, value in row.items():
+                                if "tmin_Time=" in key:
+                                    tmin_values.append(round(value, 1))
+                                elif "tmax_Time=" in key:
+                                    tmax_values.append(round(value, 1))
+                                elif "rh_Time=" in key:
+                                    rh_values.append(round(value, 1))
+                                elif "spd_Time=" in key:
+                                    spd_values.append(round(value, 1))
+                                elif "rain_Time=" in key:
+                                    rain_values.append(round(value, 1))
+                            caption = f"""
+باغدار عزیز 
+وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
+"""
+                            weather_report = f"""
+مقادیر ارسالی 
+وضعیت آب و هوای باغ با نام <{farm}> بین {jdate}-{jday4} بدین صورت بود:
+حداکثر دما: {tmax_values} درجه سانتیگراد
+حداقل دما: {tmin_values} درجه سانتیگراد
+رطوبت نسبی: {rh_values} 
+سرعت باد: {spd_values} کیلومتر بر ساعت
+احتمال بارش: {rain_values} درصد
+"""
+                            table([jdate, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values, "job-table.png")
                             advise = advise_data.iloc[idx_min_dist]["Adivse"]
                             advise_today = f"""
-        باغدار عزیز 
-        توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما با نام <{farm}> ارسال می‌شود:
+باغدار عزیز 
+توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما با نام <{farm}> ارسال می‌شود:
 
-        {advise}
+{advise}
                             """
                             try:
-                                bot.send_message(chat_id=id, text=weather_today)
+                                with open('job-table.png', 'rb') as image_file:
+                                    bot.send_photo(chat_id=id, photo=image_file, caption=caption, reply_markup=start_keyboard())
                                 username = db.user_collection.find_one({"_id": id})["username"]
                                 db.log_new_message(
                                     user_id=id,
                                     username=username,
-                                    message=weather_today,
-                                    function="send_weather_today",
+                                    message=weather_report,
+                                    function="send_weather_report",
                                 )
                                 logger.info(f"sent todays's weather info to {id}")
-                                weather_today_count += 1
-                                weather_today_receiver_id.append(id)
-
-                                bot.send_message(chat_id=id, text=weather_tomorrow)
-                                db.log_new_message(
-                                    user_id=id,
-                                    username=username,
-                                    message=weather_tomorrow,
-                                    function="send_weather",
-                                )
-                                logger.info(f"sent tomorrow's weather info to {id}")
-                                weather_tomorrow_count += 1
-                                weather_tomorrow_receiver_id.append(id)
+                                weather_report_count += 1
+                                weather_report_receiver_id.append(id)
                             except Unauthorized:
                                 db.set_user_attribute(id, "blocked", True)
                                 logger.info(f"user:{id} has blocked the bot!")
@@ -203,10 +173,10 @@ def send_todays_data(bot: Bot, admin_list, logger):
                             )
                             advise = advise_data_tomorrow.iloc[idx_min_dist_tomorrow]["Adivse"]
                             advise_tomorrow = f"""
-        باغدار عزیز 
-        توصیه زیر با توجه به وضعیت آب و هوایی فردای باغ شما با نام <{farm}> ارسال می‌شود:
+باغدار عزیز 
+توصیه زیر با توجه به وضعیت آب و هوایی فردای باغ شما با نام <{farm}> ارسال می‌شود:
 
-        {advise}
+{advise}
                             """
                             
                             if pd.isna(advise):
@@ -246,24 +216,17 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                 f"user's location: ({longitude},{latitude}) | closest point in TOMORROW's dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
                             )
             
-        db.log_sent_messages(weather_today_receiver_id, "send_todays_weather")
-        logger.info(f"sent todays's weather info to {weather_today_count} people")
-        db.log_sent_messages(weather_tomorrow_receiver_id, "send_todays_weather")
-        logger.info(f"sent tomorrow's weather info to {weather_tomorrow_count} people")
+        db.log_sent_messages(weather_report_receiver_id, "send_weather_report")
+        logger.info(f"sent weather report to {weather_report_count} people")
         db.log_sent_messages(advise_today_receiver_id, "send_advice_to_users")
         logger.info(f"sent advice info to {advise_today_count} people")
         db.log_sent_messages(advise_tomorrow_receiver_id, "send_tomorrow_advice_to_users")
         logger.info(f"sent tomorrow's advice info to {advise_tomorrow_count} people")
         for admin in admin_list:
             bot.send_message(
-                chat_id=admin, text=f"وضعیت آب و هوای امروز {weather_today_count} کاربر ارسال شد"
+                chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} کاربر ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=weather_today_receiver_id)
-
-            bot.send_message(
-                chat_id=admin, text=f"وضعیت آب و هوای فردای {weather_tomorrow_count} کاربر ارسال شد"
-            )
-            bot.send_message(chat_id=admin, text=weather_tomorrow_receiver_id)
+            bot.send_message(chat_id=admin, text=weather_report_receiver_id)
 
             bot.send_message(
                 chat_id=admin, text=f"توصیه به {advise_today_count} کاربر ارسال شد"

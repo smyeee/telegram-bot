@@ -382,6 +382,20 @@ requests = ["requests (>=2.16.2)", "urllib3 (>=1.24.2)"]
 timezone = ["pytz"]
 
 [[package]]
+name = "imgkit"
+version = "1.2.3"
+description = "Wkhtmltopdf python wrapper to convert html to image using the webkit rendering engine and qt"
+optional = false
+python-versions = "*"
+files = [
+    {file = "imgkit-1.2.3-py3-none-any.whl", hash = "sha256:cba8e3f67da6e0a5c87345a8b41605337851f9b9b75719500fa6810ecff84791"},
+    {file = "imgkit-1.2.3.tar.gz", hash = "sha256:c9ade93d0281277c898b983c959f11f0cc1cb4a5fed144560dfa4d273fb50cd8"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "jdatetime"
 version = "4.1.1"
 description = "Jalali datetime binding for python"
@@ -1075,4 +1089,4 @@ devenv = ["black", "check-manifest", "flake8", "pyroma", "pytest (>=4.3)", "pyte
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "1b9e16fd4af52065b2056cc10bacbc4ed05ecff0af31d8a4cd708b6693573be3"
+content-hash = "ef838e396d124e3f6ad69d7aefc2163ac23a910b84dd1aef6f75f881e070b77e"

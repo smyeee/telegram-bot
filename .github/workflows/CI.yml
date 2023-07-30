@@ -42,17 +42,19 @@ jobs:
       - name: Deploy to Staging
         uses: appleboy/ssh-action@v0.1.10        
         with:
-          host: ${{ secrets.PRODUCTION_SERVER_HOST }}
-          username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
-          password: ${{ secrets.PRODUCTION_SERVER_PASSWORD }}   
+          host: ${{ secrets.PA_VPS_HOST }}
+          username: ${{ secrets.PA_VPS_USERNAME }}
+          password: ${{ secrets.PA_VPS_PASSWORD }}   
+          port: ${{ secrets.PA_VPS_PORT }}
           script: |
-            echo ${{ secrets.PRODUCTION_SERVER_PASSWORD }} | sudo -S su
-            sudo su
-            ls -la
+            pwd
             cd telegram-bot
-            git pull 
-            echo "FINSISHED UPDATING REPO"
             docker-compose down
+            sleep 15
+            git fetch
+            git pull --no-edit
+            echo "FINSISHED UPDATING REPO"
+            ls -lh
             docker-compose up --build -d
-            sleep 5
+            sleep 15
             docker-compose ps
