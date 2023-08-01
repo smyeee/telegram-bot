@@ -253,7 +253,6 @@ class Database:
             })
             elif len(farms) == 1:
                 farm_name = list(farms.keys())[0]
-                print(farms[farm_name])
                 user_df.loc[i] = pd.Series({
                     'id': user_id,
                     'username': document.get('username'),
@@ -272,9 +271,7 @@ class Database:
                 })
                 i += 1
             elif len(farms) > 1:
-                print(farms)
                 for key in farms:
-                    print(farms[key])
                     user_df.loc[i] = pd.Series({
                         'id': user_id,
                         'username': document.get('username'),
