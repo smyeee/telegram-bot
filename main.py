@@ -1497,14 +1497,6 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     
-    query_handler = ConversationHandler(
-        entry_points=[CommandHandler("query", query)],
-        states={
-            BROADCAST: [MessageHandler(Filters.all, handle_query)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
-    
     set_location_handler = ConversationHandler(
         entry_points=[CommandHandler("set", set_loc)],
         states={
@@ -1516,7 +1508,7 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     dp.add_handler(set_location_handler)
-    # dp.add_error_handler(error_handler)
+    dp.add_error_handler(error_handler)
 
     dp.add_handler(CommandHandler("stats", bot_stats))
     dp.add_handler(CallbackQueryHandler(button))
