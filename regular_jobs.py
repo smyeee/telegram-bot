@@ -250,10 +250,10 @@ def send_todays_data(bot: Bot, admin_list, logger):
                 chat_id=admin, text=f"key error in file pesteh{current_day}_1.geojson!"
             )
 
-def send_up_notice(bot: Bot, admin_list, logger):
+def send_up_notice(bot: Bot, admin_list, logger, message: str):
     logger.info("Sent up notice to admins...")
     for admin in admin_list:
-        bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد")
+        bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد"+"\n"+ message)
 
 def get_member_count(bot: Bot, logger):
     user_data = db.user_collection.distinct("_id")

@@ -65,7 +65,13 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger("agriWeather-bot")
-
+update_message = """
+تغییرات:
+اضافه شدن رول های جدید به /send
+    با /send میتونیم نظرسنجی یا پیام با تصویر، گیف و ... ارسال کنیم.
+اضافه شدن آپشن های جدید به /stats
+دانلود اکسل دوباره کار میکند
+"""
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, BROADCAST = range(2)
 HANDLE_QUERY = 0
@@ -118,7 +124,7 @@ PRODUCTS = [
     "پسته ممتاز",
     "سایر",
 ]
-ADMIN_LIST = [103465015, 31583686, 391763080]#, 216033407]
+ADMIN_LIST = [103465015, 31583686, 391763080, 216033407]
 
 
 def start(update: Update, context: CallbackContext):
@@ -1541,7 +1547,7 @@ def main():
         first=datetime.time(7, 30),
     )
 
-    job_queue.run_once(lambda context: send_up_notice(context.bot, ADMIN_LIST, logger), when=5)
+    job_queue.run_once(lambda context: send_up_notice(context.bot, ADMIN_LIST, logger, update_message), when=5)
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
 
