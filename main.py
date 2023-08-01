@@ -118,7 +118,7 @@ PRODUCTS = [
     "پسته ممتاز",
     "سایر",
 ]
-ADMIN_LIST = [103465015, 31583686, 216033407]
+ADMIN_LIST = [103465015, 31583686]#, 216033407]
 
 
 def start(update: Update, context: CallbackContext):
@@ -168,23 +168,30 @@ def broadcast(update: Update, context: CallbackContext):
     ids = db.user_collection.distinct("_id")
     i = 0
     receivers = []
-    message = update.message.text
-    if message == "/cancel":
+    message_text = update.message.text
+    message_poll = update.message.poll
+    chat_id = update.message.chat_id
+    message_id = update.message.message_id
+    if message_text == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
         return ConversationHandler.END
-    if not message:
-        update.message.reply_text(
-            "لطفا پیام مورد نظرتان را بنویسید:",
-        )
-        return BROADCAST
+    # if not message:
+    #     update.message.reply_text(
+    #         "لطفا پیام مورد نظرتان را بنویسید:",
+    #     )
+    #     return BROADCAST
     for user_id in ids:
         try:
-            context.bot.send_message(user_id, message)
+            if message_poll:
+                context.bot.forward_message(chat_id=user_id, from_chat_id=chat_id, message_id=message_id)
+            else:
+                context.bot.copy_message(chat_id=user_id, from_chat_id=chat_id, message_id=message_id)
+            # context.bot.send_message(user_id, message)
             username = db.user_collection.find_one({"_id": user_id})["username"]
             db.log_new_message(
                 user_id=user_id,
                 username=username,
-                message=message,
+                message=message_text,
                 function="broadcast",
             )
             receivers.append(user_id)
@@ -1457,7 +1464,7 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     dp.add_handler(set_location_handler)
-    dp.add_error_handler(error_handler)
+    # dp.add_error_handler(error_handler)
 
     dp.add_handler(CommandHandler("stats", bot_stats))
     dp.add_handler(CallbackQueryHandler(button))
