@@ -292,5 +292,4 @@ class Database:
                         'location method': farms[key].get('location-method'),
                     })
                     i += 1
-        print(user_df.head)
         user_df.to_excel(output_file)
