@@ -104,6 +104,10 @@ def conf_del_keyboard():
     keyboard = [['بله'], ['خیر'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
+def choose_role():
+    keyboard = [['تمام کاربران'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)
+
 def back_button():
     keyboard = [['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)

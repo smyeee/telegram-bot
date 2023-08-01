@@ -41,12 +41,11 @@ from keyboards import (
     stats_keyboard,
     get_product_keyboard,
     get_province_keyboard,
-    return_keyboard,
     farms_list_reply,
     edit_keyboard_reply,
-    farms_list_inline,
     conf_del_keyboard,
     back_button,
+    choose_role
 )
 from table_generator import table
 
@@ -158,6 +157,8 @@ def send(update: Update, context: CallbackContext):
     if user_id in ADMIN_LIST:
         update.message.reply_text(
             "لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:",
+            reply_markup=choose_role()
+
         )
         return BROADCAST
     else:
