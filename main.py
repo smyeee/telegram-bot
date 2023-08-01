@@ -345,7 +345,9 @@ def button(update: Update, context: CallbackContext):
     id = update.effective_user.id
     if stat.data == "member_count":
         member_count = db.bot_collection.find_one()["num-members"][-1]
-        context.bot.send_message(chat_id=id, text=f"تعداد کل اعضا: {member_count}")
+        blocked_count = db.number_of_blocks()
+        count = member_count - blocked_count
+        context.bot.send_message(chat_id=id, text=f"تعداد اعضا: {count}")
     elif stat.data == "member_count_change":
         members_doc = db.bot_collection.find_one()
         if len(members_doc["time-stamp"]) < 15:
@@ -374,7 +376,15 @@ def button(update: Update, context: CallbackContext):
             os.remove(output_file)
         except:
             logger.info("encountered error during excel download!")
-
+    elif stat.data == "block_count":
+        blocked_count = db.number_of_blocks()
+        context.bot.send_message(chat_id=id, text=f"تعداد بلاک‌ها: {blocked_count}")
+    elif stat.data == "no_location_count":
+        no_location_users = db.get_users_without_location()
+        context.bot.send_message(chat_id=id, text=f"تعداد بدون لوکیشن: {len(no_location_users)}")
+    elif stat.data == "no_phone_count":
+        no_phone_users = db.get_users_without_phone()
+        context.bot.send_message(chat_id=id, text=f"تعداد بدون شماره تلفن: {len(no_phone_users)}")
 def view_farm_keyboard(update: Update, context: CallbackContext):
     user = update.effective_user
     db.log_activity(user.id, "chose view farms")
