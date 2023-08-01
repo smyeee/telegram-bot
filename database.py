@@ -164,6 +164,24 @@ class Database:
         farms = user.get("farms")
         return farms
 
+    def get_users_without_location(self):
+        pipeline = [
+            { "$addFields": { "farmsArray": { "$objectToArray": "$farms" } } },
+            { "$match": { "farmsArray.v.location.latitude": None, "farmsArray.v.location.longitude": None } },
+            { "$project": { "_id": 1 } }
+        ]
+        cursor = self.user_collection.aggregate(pipeline) # users who have atleast one farm with no location
+        users = [user["_id"] for user in cursor]
+        return users
+
+    def get_users_without_phone(self):
+        pipeline = [
+            { "$match": {"$or": [ {"phone-number": None}, {"phone-number": ""} ] } },
+            { "$project": { "_id": 1 } }
+        ]
+        cursor = self.user_collection.aggregate(pipeline) # users with no phone number
+        users = [user["_id"] for user in cursor]
+        return users
 
     def populate_user_collection(
             self,

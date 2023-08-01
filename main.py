@@ -67,7 +67,8 @@ logging.basicConfig(
 logger = logging.getLogger("agriWeather-bot")
 
 # Constants for ConversationHandler states
-BROADCAST = 0
+CHOOSE_RECEIVERS, BROADCAST = range(2)
+HANDLE_QUERY = 0
 (
     ASK_PRODUCT,
     ASK_PROVINCE,
@@ -117,7 +118,7 @@ PRODUCTS = [
     "پسته ممتاز",
     "سایر",
 ]
-ADMIN_LIST = [103465015, 31583686]#, 216033407]
+ADMIN_LIST = [103465015, 31583686, 391763080]#, 216033407]
 
 
 def start(update: Update, context: CallbackContext):
@@ -156,57 +157,98 @@ def send(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if user_id in ADMIN_LIST:
         update.message.reply_text(
-            "لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:",
+            "گیرنده پیام کیست؟",
             reply_markup=choose_role()
-
         )
-        return BROADCAST
+        return CHOOSE_RECEIVERS
     else:
         return ConversationHandler.END
 
-def broadcast(update: Update, context: CallbackContext):
+def choose_receivers(update: Update, context: CallbackContext):
     # user_data = db.user_collection.find()
-    ids = db.user_collection.distinct("_id")
-    i = 0
-    receivers = []
+    user_data = context.user_data
+    message_text = update.message.text
+    if not message_text:
+        update.message.reply_text(
+            "گیرنده پیام کیست؟",
+            reply_markup=choose_role()
+        )
+        return CHOOSE_RECEIVERS
+    elif message_text == "/cancel":
+        update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif message_text == "بازگشت":
+        update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif message_text == "تمام کاربران":
+        user_data["receiver_list"] = db.user_collection.distinct("_id")
+        user_data["receiver_type"] = "to All Users"
+        update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+                                  reply_markup=back_button())
+        return BROADCAST
+    elif message_text == "بدون لوکیشن":
+        users = db.get_users_without_location()
+        user_data["receiver_list"] = users
+        user_data["receiver_type"] = "to Users W/O Location"
+        update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+                                  reply_markup=back_button())
+        return BROADCAST
+    elif message_text == "بدون شماره تلفن":
+        users = db.get_users_without_phone()
+        user_data["receiver_list"] = users
+        user_data["receiver_type"] = "to Users W/O Phone Number"
+        update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+                                  reply_markup=back_button())
+        return BROADCAST
+    else:
+        update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        return ConversationHandler.END
+
+def broadcast(update: Update, context: CallbackContext):
+    user_data = context.user_data
     message_text = update.message.text
     message_poll = update.message.poll
     chat_id = update.message.chat_id
     message_id = update.message.message_id
+    receiver_list = user_data['receiver_list']
+    i = 0
+    receivers = []
     if message_text == "/cancel":
-        update.message.reply_text("عملیات کنسل شد!")
+        update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
         return ConversationHandler.END
-    # if not message:
-    #     update.message.reply_text(
-    #         "لطفا پیام مورد نظرتان را بنویسید:",
-    #     )
-    #     return BROADCAST
-    for user_id in ids:
-        try:
-            if message_poll:
-                context.bot.forward_message(chat_id=user_id, from_chat_id=chat_id, message_id=message_id)
-            else:
-                context.bot.copy_message(chat_id=user_id, from_chat_id=chat_id, message_id=message_id)
-            # context.bot.send_message(user_id, message)
-            username = db.user_collection.find_one({"_id": user_id})["username"]
-            db.log_new_message(
-                user_id=user_id,
-                username=username,
-                message=message_text,
-                function="broadcast",
-            )
-            receivers.append(user_id)
-            i += 1
-        except Unauthorized:
-            logger.error(f"user {user_id} blocked the bot")
-            db.set_user_attribute(user_id, "blocked", True)
-        except BadRequest:
-            logger.error(f"chat with {user_id} not found.")
-    db.log_sent_messages(receivers, "broadcast")
+    elif message_text == "بازگشت":
+        update.message.reply_text(
+            "گیرنده پیام کیست؟",
+            reply_markup=choose_role()
+        )
+        return CHOOSE_RECEIVERS
+    else:
+        for user_id in receiver_list:
+            try:
+                if message_poll:
+                    context.bot.forward_message(chat_id=user_id, from_chat_id=chat_id, message_id=message_id)
+                else:
+                    context.bot.copy_message(chat_id=user_id, from_chat_id=chat_id, message_id=message_id)
+                # context.bot.send_message(user_id, message)
+                username = db.user_collection.find_one({"_id": user_id})["username"]
+                db.log_new_message(
+                    user_id=user_id,
+                    username=username,
+                    message=message_text,
+                    function=f"broadcast {user_data['receiver_type']}"
+                )
+                receivers.append(user_id)
+                i += 1
+            except Unauthorized:
+                logger.error(f"user {user_id} blocked the bot")
+                db.set_user_attribute(user_id, "blocked", True)
+            except BadRequest:
+                logger.error(f"chat with {user_id} not found.")
+    db.log_sent_messages(receivers, f"broadcast {user_data['receiver_type']}")
     for id in ADMIN_LIST:
-        context.bot.send_message(id, f"پیام برای {i} نفر از {len(ids)} نفر ارسال شد.")
+        context.bot.send_message(id, f"پیام برای {i} نفر از {len(receiver_list)} نفر ارسال شد."
+                                 , reply_markup=start_keyboard())
     return ConversationHandler.END
-
 
 def set_loc(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
@@ -1449,7 +1491,16 @@ def main():
     broadcast_handler = ConversationHandler(
         entry_points=[CommandHandler("send", send)],
         states={
+            CHOOSE_RECEIVERS: [MessageHandler(Filters.all, choose_receivers)],
             BROADCAST: [MessageHandler(Filters.all, broadcast)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+    
+    query_handler = ConversationHandler(
+        entry_points=[CommandHandler("query", query)],
+        states={
+            BROADCAST: [MessageHandler(Filters.all, handle_query)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
