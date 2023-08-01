@@ -7,11 +7,20 @@ def stats_keyboard():
     keyboard = [
     [
         InlineKeyboardButton("تعداد اعضا", callback_data='member_count'),
-        InlineKeyboardButton("تغییرات تعداد اعضا", callback_data='member_count_change'),
+        InlineKeyboardButton("تغییرات تعداد اعضا", callback_data='member_count_change')
+    ],
+    [
+        InlineKeyboardButton("تعداد بلاک‌ها", callback_data='block_count'),
+        InlineKeyboardButton("تعداد اعضای بدون لوکیشن", callback_data='no_location_count'),
+        
     ],
     [
         InlineKeyboardButton("دانلود فایل اکسل", callback_data='excel_download'),
+        InlineKeyboardButton("تعداد اعضای بدون تلفن", callback_data='no_phone_count'),
     ],
+    # [
+    #     InlineKeyboardButton("پراکندگی لوکیشن اعضا", callback_data='html_map'),
+    # ],
 ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     return reply_markup
@@ -103,6 +112,10 @@ def get_product_keyboard():
 def conf_del_keyboard():
     keyboard = [['بله'], ['خیر'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
+def choose_role():
+    keyboard = [['تمام کاربران'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)
 
 def back_button():
     keyboard = [['بازگشت']]
