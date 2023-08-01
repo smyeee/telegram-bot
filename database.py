@@ -183,6 +183,10 @@ class Database:
         users = [user["_id"] for user in cursor]
         return users
 
+    def number_of_blocks(self):
+        blocked_users = self.user_collection.count_documents({"blocked": True})
+        return blocked_users
+    
     def populate_user_collection(
             self,
             user_id,
@@ -233,30 +237,60 @@ class Database:
 
 
     def to_excel(self, output_file: str) -> None:
-        user_df = pd.DataFrame(columns=['id', 'username', 'product', 'province', 'city', 'village','area', 'phone', 'latitude', 'longitude', 'name', 'blocked'])
+        user_df = pd.DataFrame(columns=['id', 'username', 'phone', 'name', 'blocked', 'farm name', 'product', 'province', 'city', 'village','area', 'latitude', 'longitude', 'location method'])
         users = self.user_collection.distinct("_id")
-        for i, user_id in enumerate(users):
+        i = 0
+        for user_id in users:
             document = self.user_collection.find_one({"_id": user_id})
-            location = document.get('locations')
-            if location[0].get("longitude"):
-                latitude = [loc['latitude'] for loc in location]
-                longitude = [loc['longitude'] for loc in location]
-            else:
-                latitude = None
-                longitude = None
-            user_df.loc[i] = pd.Series({
+            farms = self.get_farms(user_id=user_id)
+            if not farms:
+                user_df.loc[i] = pd.Series({
                 'id': user_id,
                 'username': document.get('username'),
-                'product': document.get('products'),
-                'province': document.get('provinces'),
-                'city': document.get('cities'),
-                'village': document.get('villages'),
-                'area': document.get('areas'),
                 'phone': document.get('phone-number'),
-                'latitude': latitude,
-                'longitude': longitude,
                 'name': document.get('name'),
                 'blocked': document.get('blocked'),
             })
-        
+            elif len(farms) == 1:
+                farm_name = list(farms.keys())[0]
+                print(farms[farm_name])
+                user_df.loc[i] = pd.Series({
+                    'id': user_id,
+                    'username': document.get('username'),
+                    'phone': document.get('phone-number'),
+                    'name': document.get('name'),
+                    'blocked': document.get('blocked'),
+                    'farm name': farm_name,
+                    'area': farms[farm_name].get('areas'),
+                    'product': farms[farm_name].get('products'),
+                    'province': farms[farm_name].get('provinces'),
+                    'city': farms[farm_name].get('cities'),
+                    'village': farms[farm_name].get('villages'),
+                    'latitude': farms[farm_name]['location'].get('latitude'),
+                    'longitude': farms[farm_name]['location'].get('longitude'),
+                    'location method': farms[farm_name].get('location-method'),
+                })
+                i += 1
+            elif len(farms) > 1:
+                print(farms)
+                for key in farms:
+                    print(farms[key])
+                    user_df.loc[i] = pd.Series({
+                        'id': user_id,
+                        'username': document.get('username'),
+                        'phone': document.get('phone-number'),
+                        'name': document.get('name'),
+                        'blocked': document.get('blocked'),
+                        'farm name': key,
+                        'area': farms[key].get('area'),
+                        'product': farms[key].get('product'),
+                        'province': farms[key].get('province'),
+                        'city': farms[key].get('city'),
+                        'village': farms[key].get('village'),
+                        'latitude': farms[key]['location'].get('latitude'),
+                        'longitude': farms[key]['location'].get('longitude'),
+                        'location method': farms[key].get('location-method'),
+                    })
+                    i += 1
+        print(user_df.head)
         user_df.to_excel(output_file)
