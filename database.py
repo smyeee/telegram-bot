@@ -141,10 +141,11 @@ class Database:
         else:
             self.bot_collection.update_one({}, {"$push": {"num-members": members, "time-stamp": time}})
 
-    def log_activity(self, user_id: int, user_activity: str):
+    def log_activity(self, user_id: int, user_activity: str, provided_value: str = ""):
         activity = {
             "user_activity": user_activity,
             "type": "activity logs",
+            "value": provided_value,
             "userID": user_id,
             "username": self.user_collection.find_one({"_id": user_id})["username"],
             "timestamp": datetime.now().strftime("%Y%m%d %H:%M")

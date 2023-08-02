@@ -66,7 +66,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agriWeather-bot")
 update_message = """
-bug fix: delete button
+تغییر در نحوه ثبت فعالیت کاربران
 """
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, BROADCAST = range(2)
@@ -413,7 +413,7 @@ def view_farm(update: Update, context: CallbackContext):
     user_farms = db.get_farms(user.id)
     user_farms_names = list(db.get_farms(user.id).keys())
     if farm not in user_farms_names and farm != "↩️ بازگشت":
-        db.log_activity(user.id, "error - chose wrong farm to view")
+        db.log_activity(user.id, "error - chose wrong farm to view", farm)
         context.bot.send_message(
             chat_id=user.id,
             text="یکی از باغ های خود را انتخاب کنید",
@@ -455,7 +455,7 @@ def view_farm(update: Update, context: CallbackContext):
                 "می توانید از طریق گزینه ویرایش باغ موقعیت آن را ثبت کنید.",
                 reply_markup=farms_list_reply(db, user.id),
             )
-        db.log_activity(user.id, "viewed a farm")
+        db.log_activity(user.id, "viewed a farm", farm)
     except KeyError:
         logger.info(f"key {farm} doesn't exist.")
         return ConversationHandler.END
@@ -489,7 +489,7 @@ def choose_attr_to_edit(update: Update, context: CallbackContext):
     user_data["selected_farm"] = farm
     user_farms = list(db.get_farms(user.id).keys())
     if farm not in user_farms and farm != "↩️ بازگشت":
-        db.log_activity(user.id, "error - chose wrong farm")
+        db.log_activity(user.id, "error - chose wrong farm", farm)
         context.bot.send_message(
             chat_id=user.id,
             text="یکی از باغ های خود را ویرایش کنید",
@@ -502,7 +502,7 @@ def choose_attr_to_edit(update: Update, context: CallbackContext):
             chat_id=user.id, text="عملیات کنسل شد!", reply_markup=start_keyboard()
         )
         return ConversationHandler.END
-    db.log_activity(user.id, "chose farm to edit")
+    db.log_activity(user.id, "chose farm to edit", farm)
     message_id = update.effective_message.message_id
     try:
         # context.bot.edit_message_text(chat_id=user.id, message_id=message_id, text=f"انتخاب مولفه برای ویرایش در {farm}", reply_markup=edit_keyboard())
@@ -600,10 +600,11 @@ def handle_edit(update: Update, context: CallbackContext):
     if attr == "تغییر محصول":
         new_product = update.message.text
         if new_product == "بازگشت":
+            db.log_activity(user.id, "back")
             context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if not new_product or new_product not in PRODUCTS:
-            db.log_activity(user.id, "error - edit product")
+            db.log_activity(user.id, "error - edit product", new_product)
             update.message.reply_text(
                 "لطفا محصول جدید باغ را انتخاب کنید",
                 reply_markup=get_product_keyboard(),
@@ -622,7 +623,7 @@ def handle_edit(update: Update, context: CallbackContext):
             context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if not new_province or new_province not in PROVINCES:
-            db.log_activity(user.id, "error edit province")
+            db.log_activity(user.id, "error - edit province", new_province)
             update.message.reply_text(
                 "لطفا استان جدید باغ را انتخاب کنید",
                 reply_markup=get_province_keyboard(),
@@ -687,6 +688,7 @@ def handle_edit(update: Update, context: CallbackContext):
         new_location = update.message.location
         text = update.message.text
         if text == "بازگشت":
+            db.log_activity(user.id, "back")
             context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if text == "ارسال لینک آدرس (گوگل مپ یا نشان)":
@@ -702,7 +704,7 @@ def handle_edit(update: Update, context: CallbackContext):
                 user.id, f"farms.{farm}.location.latitude", new_location.latitude
             )
             reply_text = f"موقعیت جدید {farm} با موفقیت ثبت شد."
-            db.log_activity(user.id, "finish edit location")
+            db.log_activity(user.id, "finish edit location", f"long: {new_location.longitude}, lat: {new_location.latitude}")
             context.bot.send_message(
                 chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
             )
@@ -712,7 +714,7 @@ def handle_edit(update: Update, context: CallbackContext):
                 f"{update.effective_user.id} didn't send new_location successfully"
             )
             reply_text = "ارسال موقعیت جدید باغ با موفقیت انجام نشد."
-            db.log_activity(user.id, "error - edit location")
+            db.log_activity(user.id, "error - edit location", text)
             context.bot.send_message(
                 chat_id=user.id, text=reply_text, reply_markup=edit_keyboard_reply()
             )
@@ -758,7 +760,7 @@ def handle_edit_link(update: Update, context: CallbackContext):
             reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         )
         return HANDLE_EDIT
-    reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد."
+    reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا منتظر تایید ادمین باشید. با تشکر."
     db.log_activity(user.id, "finish edit location with link")
     update.message.reply_text(reply_text, reply_markup=start_keyboard())
     for admin in ADMIN_LIST:
@@ -789,7 +791,7 @@ def confirm_delete(update: Update, context: CallbackContext):
     user_farms = db.get_farms(user.id)
     user_farms_names = list(db.get_farms(user.id).keys())
     if farm not in user_farms_names and farm != "↩️ بازگشت":
-        db.log_activity(user.id, "error - wrong farm to delete")
+        db.log_activity(user.id, "error - wrong farm to delete", farm)
         context.bot.send_message(
             chat_id=user.id,
             text="یکی از باغ های خود را انتخاب کنید",
@@ -802,7 +804,7 @@ def confirm_delete(update: Update, context: CallbackContext):
             chat_id=user.id, text="عملیات کنسل شد!", reply_markup=start_keyboard()
         )
         return ConversationHandler.END
-    db.log_activity(user.id, "chose farm to delete")
+    db.log_activity(user.id, "chose farm to delete", farm)
     location = user_farms.get(farm)["location"]
     text = f"""
 آیا از حذف <b>{farm}</b> با مشخصات زیر اطمینان دارید؟
@@ -835,7 +837,7 @@ def delete_farm(update: Update, context: CallbackContext):
     answer = update.message.text
     acceptable = ["بله", "خیر", "بازگشت"]
     if answer not in acceptable:
-        db.log_activity(user.id, "error - wrong delete confirmation")
+        db.log_activity(user.id, "error - wrong delete confirmation", answer)
         context.bot.send_message(
             chat_id=user.id, text="عملیات موفق نبود", reply_markup=start_keyboard()
         )
@@ -914,10 +916,10 @@ def error_handler(update: Update, context: CallbackContext):
 # START OF REGISTER CONVERSATION
 def register(update: Update, context: CallbackContext):
     user = update.effective_user
-    db.log_activity(user.id, "start register")
+    db.log_activity(user.id, "start register", f"{user.id} - username: {user.username}")
     if db.check_if_user_is_registered(user_id=user.id):
         update.message.reply_text(
-            "شما قبلا ثبت نام کرده‌اید. می‌توانید با استفاده از /add به ثبت باغ‌های خود اقدام کنید"
+            "شما قبلا ثبت نام کرده‌اید. می‌توانید با استفاده از /start به ثبت باغ‌های خود اقدام کنید"
         )
         return ConversationHandler.END
     update.message.reply_text(
@@ -928,11 +930,12 @@ def register(update: Update, context: CallbackContext):
 
 def ask_phone(update: Update, context: CallbackContext):
     user = update.effective_user
-    db.log_activity(user.id, "enter name")
+    db.log_activity(user.id, "enter name", f"{update.message.text}")
     user_data = context.user_data
     # Get the answer to the area question
     if not update.message.text or update.message.text == "/start":
         update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید")
+        db.log_activity(user.id, "error - enter name", f"{update.message.text}")
         return ASK_PHONE
     name = update.message.text.strip()
     user_data["name"] = name
@@ -952,14 +955,15 @@ def handle_phone(update: Update, context: CallbackContext):
     # Get the answer to the area question
     phone = update.message.text
     if not phone or len(phone) != 11 or phone == "/start":
+        db.log_activity(user.id, "error - entered phone", phone)
         update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
         return HANDLE_PHONE
-    db.log_activity(user.id, "entered phone")
+    db.log_activity(user.id, "entered phone", phone)
     user_data["phone"] = phone
     db.set_user_attribute(user_id=user.id, key="phone-number", value=phone)
     reply_text = """
 از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
-لطفا با استفاده از /add نسبت به ثبت باغ‌های خود اقدام کنید.
+لطفا با استفاده از /start نسبت به ثبت باغ‌های خود اقدام کنید.
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
 شماره ثابت: 02164063399
@@ -973,6 +977,7 @@ def add(update: Update, context: CallbackContext):
     user = update.effective_user
     db.log_activity(user.id, "start add farm")
     if not db.check_if_user_is_registered(user_id=user.id):
+        db.log_activity(user.id, "error - add farm", "not registered yet")
         update.message.reply_text(
             "لطفا پیش از افزودن باغ از طریق /register ثبت نام کنید",
             reply_markup=ReplyKeyboardRemove(),
@@ -1008,14 +1013,14 @@ def ask_product(
     elif db.user_collection.find_one({"_id": user.id}).get("farms"):
         used_farm_names = db.user_collection.find_one({"_id": user.id})["farms"].keys()
         if update.message.text in used_farm_names:
-            db.log_activity(user.id, "error - chose same name")
+            db.log_activity(user.id, "error - chose same name", f"{update.message.text}")
             reply_text = (
                 "شما قبلا از این نام استفاده کرده‌اید. لطفا یک نام جدید انتخاب کنید."
             )
             update.message.reply_text(reply_text, reply_markup=back_button())
             return ASK_PRODUCT
     name = update.message.text.strip()
-    db.log_activity(user.id, "chose name")
+    db.log_activity(user.id, "chose name", f"{update.message.text}")
     user_data["farm_name"] = name
     # db.set_user_attribute(user.id, "name", name)
     # db.set_user_attribute(user.id, "finished-sign-up", datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
@@ -1039,14 +1044,14 @@ def ask_province(update: Update, context: CallbackContext):
         return ASK_PRODUCT
     # Get the answer to the province question
     if not update.message.text or update.message.text not in PRODUCTS:
-        db.log_activity(user.id, "error - chose wrong product")
+        db.log_activity(user.id, "error - chose wrong product", f"{update.message.text}")
         update.message.reply_text(
             "لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard()
         )
         return ASK_PROVINCE
     product = update.message.text.strip()
     user_data["product"] = product
-    db.log_activity(user.id, "chose product")
+    db.log_activity(user.id, "chose product", f"{update.message.text}")
     update.message.reply_text(
         "لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard()
     )
@@ -1064,7 +1069,7 @@ def ask_city(update: Update, context: CallbackContext):
         return ASK_PROVINCE
     # Get the answer to the province question
     if not update.message.text or update.message.text not in PROVINCES:
-        db.log_activity(user.id, "error - chose wrong province")
+        db.log_activity(user.id, "error - chose wrong province", f"{update.message.text}")
         update.message.reply_text(
             "لطفا استان محل باغ خود را انتخاب کنید:",
             reply_markup=get_province_keyboard(),
@@ -1072,7 +1077,7 @@ def ask_city(update: Update, context: CallbackContext):
         return ASK_CITY
     province = update.message.text.strip()
     user_data["province"] = province
-    db.log_activity(user.id, "chose province")
+    db.log_activity(user.id, "chose province", f"{update.message.text}")
     update.message.reply_text(
         "لطفا شهرستان محل باغ را وارد کنید:", reply_markup=back_button()
     )
@@ -1098,7 +1103,7 @@ def ask_village(update: Update, context: CallbackContext):
         return ASK_VILLAGE
     city = update.message.text.strip()
     user_data["city"] = city
-    db.log_activity(user.id, "entered city")
+    db.log_activity(user.id, "entered city", f"{update.message.text}")
     update.message.reply_text(
         "لطفا روستای محل باغ را وارد کنید:", reply_markup=back_button()
     )
@@ -1123,7 +1128,7 @@ def ask_area(update: Update, context: CallbackContext):
         return ASK_AREA
     village = update.message.text.strip()
     user_data["village"] = village
-    db.log_activity(user.id, "entered village")
+    db.log_activity(user.id, "entered village", f"{update.message.text}")
     update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
     return ASK_LOCATION
 
@@ -1142,7 +1147,7 @@ def ask_location(update: Update, context: CallbackContext):
         return ASK_LOCATION
     area = update.message.text.strip()
     user_data["area"] = area
-    db.log_activity(user.id, "entered area")
+    db.log_activity(user.id, "entered area", f"{update.message.text}")
     reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
     keyboard = [
         [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
@@ -1184,7 +1189,7 @@ def handle_location(update: Update, context: CallbackContext):
     location = update.message.location
     text = update.message.text
     if location:
-        db.log_activity(user.id, "sent location")
+        db.log_activity(user.id, "sent location", f"long:{location['longitude']}, lat: {location['latitude']}")
         logger.info(f"{update.effective_user.id} chose: ersal location online")
         user_data["location"] = {
             "latitude": location.latitude,
@@ -1201,16 +1206,16 @@ def handle_location(update: Update, context: CallbackContext):
             "location-method": "User sent location"
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
-        db.log_activity(user.id, "finish add farm - gave location")
+        db.log_activity(user.id, "finished add farm - gave location", farm_name)
         reply_text = f"""
 باغ شما با نام <{farm_name}> با موفقیت ثبت شد.
-توصیه‌های مرتبط با شرایط آب‌و‌هوایی از روزهای آینده برای شما ارسال خواهد  
-برای ویرایش اطلاعات باغ از /edit استفاده کنید.
+توصیه‌های مرتبط با شرایط آب‌و‌هوایی از روزهای آینده برای شما ارسال خواهد  شد.
+برای ویرایش یا مشاهده اطلاعات باغ از گزینه‌های مرتبط در /start استفاده کنید.
 """
         update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
     if not location and text != "از نقشه داخل تلگرام انتخاب میکنم":
-        db.log_activity(user.id, "error - location")
+        db.log_activity(user.id, "error - location", text)
         logger.info(f"{update.effective_user.id} didn't send location successfully")
         reply_text = "ارسال موقعیت باغ با موفقیت انجام نشد. می توانید از طریق ویرایش باغ موقعیت آن را ثبت کنید"
         user_data["location"] = {
@@ -1228,7 +1233,7 @@ def handle_location(update: Update, context: CallbackContext):
             "location-method": "Unsuccessful"
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
-        db.log_activity(user.id, "finish add farm - no location")
+        db.log_activity(user.id, "finish add farm - no location", farm_name)
         update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
     elif text == "از نقشه داخل تلگرام انتخاب میکنم":
@@ -1274,7 +1279,7 @@ def handle_link(update: Update, context: CallbackContext):
         )
         return HANDLE_LOCATION
     else:
-        db.log_activity(user.id, "sent location link")
+        db.log_activity(user.id, "sent location link", text)
         reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا تا بررسی ادمین منتظر بمانید. از شکیبایی شما سپاسگزاریم."
         user_data["location"] = {
             "latitude": None,
@@ -1291,7 +1296,7 @@ def handle_link(update: Update, context: CallbackContext):
             "location-method": "Link"
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
-        db.log_activity(user.id, "finish add farm with location link")
+        db.log_activity(user.id, "finish add farm with location link", farm_name)
         update.message.reply_text(reply_text, reply_markup=start_keyboard())
         for admin in ADMIN_LIST:
             context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{farm_name}\n{text}")
@@ -1336,10 +1341,10 @@ def recv_weather(update: Update, context: CallbackContext):
         update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
         return ConversationHandler.END
     if farm not in list(user_farms.keys()):
-        db.log_activity(user.id, "error - chose farm for weather report")
+        db.log_activity(user.id, "error - chose farm for weather report" , farm)
         update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
         return ConversationHandler.END
-    db.log_activity(user.id, "chose farm for weather report")
+    db.log_activity(user.id, "chose farm for weather report", farm)
     longitude = user_farms[farm]["location"]["longitude"]
     latitude = user_farms[farm]["location"]["latitude"]
     
@@ -1372,7 +1377,7 @@ def recv_weather(update: Update, context: CallbackContext):
                     table([jtoday, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values)
                     with open('table.png', 'rb') as image_file:
                         context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard())
-                    db.log_activity(user.id, "received 2 weather reports")
+                    db.log_activity(user.id, "received 4-day weather reports")
                     return ConversationHandler.END
                 else:
                     context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
@@ -1405,7 +1410,7 @@ def recv_weather(update: Update, context: CallbackContext):
                     with open('table.png', 'rb') as image_file:
                         context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard())
                     # context.bot.send_message(chat_id=user.id, text=weather_today, reply_markup=start_keyboard())
-                    db.log_activity(user.id, "received 1 weather reports")
+                    db.log_activity(user.id, "received 3-day weather reports")
                     return ConversationHandler.END
                 else:
                     context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
