@@ -1473,7 +1473,7 @@ def main():
     dp.add_handler(add_conv)
 
     view_conv = ConversationHandler(
-        entry_points=[MessageHandler(Filters.regex("مشاهده"), view_farm_keyboard)],
+        entry_points=[MessageHandler(Filters.regex("🖼 مشاهده باغ ها"), view_farm_keyboard)],
         states={
             VIEW_FARM: [MessageHandler(Filters.all, view_farm)],
         },
@@ -1482,7 +1482,7 @@ def main():
     dp.add_handler(view_conv)
 
     edit_conv = ConversationHandler(
-        entry_points=[MessageHandler(Filters.regex("ویرایش"), edit_farm_keyboard)],
+        entry_points=[MessageHandler(Filters.regex("✏️ ویرایش باغ ها"), edit_farm_keyboard)],
         states={
             CHOOSE_ATTR: [MessageHandler(Filters.all, choose_attr_to_edit)],
             EDIT_FARM: [MessageHandler(Filters.all, edit_farm)],
