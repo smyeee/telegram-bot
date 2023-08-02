@@ -89,7 +89,7 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                     rain_values.append(round(value, 1))
                             caption = f"""
 باغدار عزیز 
-وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
+پیش‌بینی وضعیت آب و هوای باغ شما با نام <{farm}> در چهار روز آینده بدین صورت خواهد بود
 """
                             weather_report = f"""
 مقادیر ارسالی 
@@ -259,5 +259,5 @@ def get_member_count(bot: Bot, logger):
     user_data = db.user_collection.distinct("_id")
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     member_count = len(user_data)
-    logger.info("Performed member count")
+    logger.info(f"Performed member count: {member_count}")
     db.log_member_changes(members=member_count, time=current_time)

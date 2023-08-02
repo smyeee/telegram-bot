@@ -67,10 +67,7 @@ logging.basicConfig(
 logger = logging.getLogger("agriWeather-bot")
 update_message = """
 تغییرات:
-اضافه شدن رول های جدید به /send
-    با /send میتونیم نظرسنجی یا پیام با تصویر، گیف و ... ارسال کنیم.
-اضافه شدن آپشن های جدید به /stats
-دانلود اکسل دوباره کار میکند
+تغییر متن پیام هواشناسی
 """
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, BROADCAST = range(2)
@@ -1371,7 +1368,7 @@ def recv_weather(update: Update, context: CallbackContext):
                             rain_values.append(round(value, 1))
                     caption = f"""
 باغدار عزیز 
-وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
+پیش‌بینی وضعیت آب و هوای باغ شما با نام <{farm}> در چهار روز آینده بدین صورت خواهد بود
 """
                     table([jtoday, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values)
                     with open('table.png', 'rb') as image_file:
@@ -1403,7 +1400,7 @@ def recv_weather(update: Update, context: CallbackContext):
                             rain_values.append(round(value, 1))
                     caption = f"""
 باغدار عزیز 
-وضعیت آب و هوای باغ شما با نام <{farm}> بدین صورت خواهد بود
+پیش‌بینی وضعیت آب و هوای باغ شما با نام <{farm}> در سه روز آینده بدین صورت خواهد بود
 """
                     table([jday2, jday3, jday4], tmin_values[1:], tmax_values[1:], rh_values[1:], spd_values[1:], rain_values[1:])
                     with open('table.png', 'rb') as image_file:
@@ -1544,7 +1541,7 @@ def main():
         lambda context: send_todays_data(context.bot, ADMIN_LIST, logger),
         interval=datetime.timedelta(days=1),
         # first=10
-        first=datetime.time(7, 30),
+        first=datetime.time(7, 0),
     )
 
     job_queue.run_once(lambda context: send_up_notice(context.bot, ADMIN_LIST, logger, update_message), when=5)
