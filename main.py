@@ -120,7 +120,7 @@ PRODUCTS = [
     "پسته ممتاز",
     "سایر",
 ]
-ADMIN_LIST = [103465015]#, 31583686, 391763080, 216033407]
+ADMIN_LIST = [103465015, 31583686, 391763080, 216033407]
 
 
 def start(update: Update, context: CallbackContext):
