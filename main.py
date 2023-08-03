@@ -65,8 +65,10 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger("agriWeather-bot")
-update_message = """تغییرات:
-اضافه شدن اصفهان - تهران - مرکزی - قم - سیستان - قزوین به استانها
+update_message = """
+🟢 Changes:
+✅ Added new provinces
+✅ Changed priority of update handlers: add-register-weather-view-edit-delete-set-send-stats-start (must change to ApplicationHandlerStop)
 """
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, BROADCAST = range(2)
@@ -121,7 +123,7 @@ PRODUCTS = [
     "سایر",
 ]
 ADMIN_LIST = [103465015, 31583686, 391763080, 216033407]
-
+MENU_CMDS = ['✍️ ثبت نام', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
@@ -169,8 +171,13 @@ def send(update: Update, context: CallbackContext):
 def choose_receivers(update: Update, context: CallbackContext):
     # user_data = db.user_collection.find()
     user_data = context.user_data
+    user = update.effective_user
     message_text = update.message.text
-    if not message_text:
+    if message_text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif not message_text:
         update.message.reply_text(
             "گیرنده پیام کیست؟",
             reply_markup=choose_role()
@@ -208,6 +215,7 @@ def choose_receivers(update: Update, context: CallbackContext):
 
 def broadcast(update: Update, context: CallbackContext):
     user_data = context.user_data
+    user = update.effective_user
     message_text = update.message.text
     message_poll = update.message.poll
     chat_id = update.message.chat_id
@@ -217,6 +225,10 @@ def broadcast(update: Update, context: CallbackContext):
     receivers = []
     if message_text == "/cancel":
         update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif message_text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
     elif message_text == "بازگشت":
         update.message.reply_text(
@@ -264,9 +276,14 @@ def set_loc(update: Update, context: CallbackContext):
 
 def ask_farm_name(update: Update, context: CallbackContext):
     user_data = context.user_data
+    user = update.effective_user
     target_id = update.message.text
     if target_id == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
+        return ConversationHandler.END
+    elif target_id in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", target_id)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
     elif not target_id:
         update.message.reply_text(
@@ -282,10 +299,15 @@ def ask_farm_name(update: Update, context: CallbackContext):
 
 def ask_longitude(update: Update, context: CallbackContext):
     user_data = context.user_data
+    user = update.effective_user
     farm_name = update.message.text
     farm_names = list(db.get_farms(int(user_data['target'])))
     if farm_name == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
+        return ConversationHandler.END
+    elif farm_name in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm_name)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
     elif not farm_name:
         update.message.reply_text(f"نام باغ چیست؟ \n/cancel")
@@ -299,11 +321,16 @@ def ask_longitude(update: Update, context: CallbackContext):
 
 def ask_latitude(update: Update, context: CallbackContext):
     user_data = context.user_data
+    user = update.effective_user
     longitude = update.message.text
     if longitude == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
         return ConversationHandler.END
-    if not longitude:
+    elif longitude in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", longitude)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif not longitude:
         update.message.reply_text(f"what's the longitude of {longitude}? \ndo you want to /cancel ?")
         return ASK_LATITUDE
     user_data["long"] = longitude
@@ -317,7 +344,11 @@ def handle_lat_long(update: Update, context: CallbackContext):
     if latitude == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
         return ConversationHandler.END
-    if not latitude:
+    elif latitude in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", latitude)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif not latitude:
         update.message.reply_text(f"what's the latitude of {latitude}? \ndo you want to /cancel ?")
         return HANDLE_LAT_LONG
     user_data["lat"] = latitude
@@ -387,6 +418,8 @@ def button(update: Update, context: CallbackContext):
     elif stat.data == "no_phone_count":
         no_phone_users = db.get_users_without_phone()
         context.bot.send_message(chat_id=id, text=f"تعداد بدون شماره تلفن: {len(no_phone_users)}")
+
+# START OF VIEW CONVERSATION
 def view_farm_keyboard(update: Update, context: CallbackContext):
     user = update.effective_user
     db.log_activity(user.id, "chose view farms")
@@ -412,6 +445,10 @@ def view_farm(update: Update, context: CallbackContext):
     user = update.effective_user
     user_farms = db.get_farms(user.id)
     user_farms_names = list(db.get_farms(user.id).keys())
+    if farm in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
     if farm not in user_farms_names and farm != "↩️ بازگشت":
         db.log_activity(user.id, "error - chose wrong farm to view", farm)
         context.bot.send_message(
@@ -459,7 +496,7 @@ def view_farm(update: Update, context: CallbackContext):
     except KeyError:
         logger.info(f"key {farm} doesn't exist.")
         return ConversationHandler.END
-
+# START OF EDIT CONVERSATION
 def edit_farm_keyboard(update: Update, context: CallbackContext):
     user = update.effective_user
     db.log_activity(user.id, "start edit")
@@ -488,6 +525,10 @@ def choose_attr_to_edit(update: Update, context: CallbackContext):
     user_data = context.user_data
     user_data["selected_farm"] = farm
     user_farms = list(db.get_farms(user.id).keys())
+    if farm in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
     if farm not in user_farms and farm != "↩️ بازگشت":
         db.log_activity(user.id, "error - chose wrong farm", farm)
         context.bot.send_message(
@@ -589,6 +630,10 @@ def edit_farm(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True),
         )
         return HANDLE_EDIT
+    else:
+        db.log_activity(user.id, "error - chose wrong value to edit", attr)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
 
 def handle_edit(update: Update, context: CallbackContext):
     user = update.effective_user
@@ -641,6 +686,10 @@ def handle_edit(update: Update, context: CallbackContext):
         if new_city == "بازگشت":
             context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
+        if new_city in MENU_CMDS:
+            db.log_activity(user.id, "error - answer in menu_cmd list", new_city)
+            update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            return ConversationHandler.END
         if not new_city:
             db.log_activity(user.id, "error - edit city")
             update.message.reply_text("لطفا شهرستان جدید باغ را انتخاب کنید")
@@ -657,6 +706,10 @@ def handle_edit(update: Update, context: CallbackContext):
         if new_village == "بازگشت":
             context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
+        if new_village in MENU_CMDS:
+            db.log_activity(user.id, "error - answer in menu_cmd list", new_village)
+            update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            return ConversationHandler.END
         if not new_village:
             db.log_activity(user.id, "error - edit village")
             update.message.reply_text("لطفا روستای جدید باغ را انتخاب کنید")
@@ -673,6 +726,10 @@ def handle_edit(update: Update, context: CallbackContext):
         if new_area == "بازگشت":
             context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
+        if new_area in MENU_CMDS:
+            db.log_activity(user.id, "error - answer in menu_cmd list", new_area)
+            update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            return ConversationHandler.END
         if not new_area:
             db.log_activity(user.id, "error - edit area")
             update.message.reply_text("لطفا مساحت جدید باغ را انتخاب کنید")
@@ -739,6 +796,10 @@ def handle_edit_link(update: Update, context: CallbackContext):
     user = update.effective_user
     user_data = context.user_data
     text = update.message.text
+    if text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
     if not text:
         db.log_activity(user.id, "error - no location link")
         update.message.reply_text("لطفا لینک آدرس باغ خود را ارسال کنید.", reply_markup=back_button())
@@ -766,7 +827,7 @@ def handle_edit_link(update: Update, context: CallbackContext):
     for admin in ADMIN_LIST:
         context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{user_data['selected_farm']}\n{text}")
     return ConversationHandler.END
-    
+    # START OF DELETE CONVERSATION
 def delete_farm_keyboard(update: Update, context: CallbackContext):
     user = update.effective_user
     db.log_activity(user.id, "start delete process")
@@ -790,6 +851,10 @@ def confirm_delete(update: Update, context: CallbackContext):
     user = update.effective_user
     user_farms = db.get_farms(user.id)
     user_farms_names = list(db.get_farms(user.id).keys())
+    if farm in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
     if farm not in user_farms_names and farm != "↩️ بازگشت":
         db.log_activity(user.id, "error - wrong farm to delete", farm)
         context.bot.send_message(
@@ -874,40 +939,6 @@ def delete_farm(update: Update, context: CallbackContext):
             logger.info(f"DELETE: key {farm} doesn't exist for user {user.id}.")
             return ConversationHandler.END
 
-# Function to send personalized scheduled messages
-def send_location_guide(update: Update, context: CallbackContext, bot: Bot):
-    # Retrieve all user data
-    ids = db.user_collection.distinct("_id")
-    i = 0
-    for user_id in ids:
-        chat = context.bot.getChat(user_id)
-        username = chat.username
-        # user_data[user_id]['username'] = username
-        # if not "location" in user_data[user_id]:
-        message = """
-باغدار عزیز برای ارسال توصیه‌های هواشناسی، به لوکیشن (موقعیت جغرافیایی) باغ شما نیاز داریم.
-لطفا با ارسال لوکیشن باغ، ثبت نام خود را از طریق /start تکمیل کنید.
-
-برای راهنمایی به @agriiadmin پیام دهید.
-                """
-        try:
-            bot.send_message(
-                user_id, message
-            )  ##, parse_mode=telegram.ParseMode.MARKDOWN_V2)
-            db.log_new_message(user_id, message)
-            # user_data[user_id]["blocked"] = False
-            # user_data[user_id]['send-location-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            i += 1
-
-        except Unauthorized:
-            logger.info(f"user {user_id} blocked the bot")
-            db.set_user_attribute(user_id, "blocked", True)
-            # user_data[user_id]["blocked"] = True
-            # user_data[user_id]['block-date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    logger.info(f"send_location_data succeeded for {i} out of {len(ids)} users.")
-    # with open("location_guide_data.pickle", "wb") as job_data:
-    #     pickle.dump(user_data, job_data)
-
 
 def error_handler(update: Update, context: CallbackContext):
     logger.error('Update "%s" caused error "%s"', update, context.error)
@@ -930,10 +961,14 @@ def register(update: Update, context: CallbackContext):
 
 def ask_phone(update: Update, context: CallbackContext):
     user = update.effective_user
-    db.log_activity(user.id, "enter name", f"{update.message.text}")
+    db.log_activity(user.id, "entered name", f"{update.message.text}")
     user_data = context.user_data
     # Get the answer to the area question
-    if not update.message.text or update.message.text == "/start":
+    if update.message.text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    if not update.message.text:
         update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید")
         db.log_activity(user.id, "error - enter name", f"{update.message.text}")
         return ASK_PHONE
@@ -954,7 +989,11 @@ def handle_phone(update: Update, context: CallbackContext):
     user_data = context.user_data
     # Get the answer to the area question
     phone = update.message.text
-    if not phone or len(phone) != 11 or phone == "/start":
+    if phone in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", phone)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    if not phone or len(phone) != 11:
         db.log_activity(user.id, "error - entered phone", phone)
         update.message.reply_text("لطفا شماره تلفن خود را وارد کنید:")
         return HANDLE_PHONE
@@ -1001,8 +1040,11 @@ def ask_product(
         db.log_activity(user.id, "back")
         update.message.reply_text("عمیلات لغو شد", reply_markup=start_keyboard())
         return ConversationHandler.END
-
-    if not update.message.text or update.message.text == "/start":
+    if update.message.text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    if not update.message.text:
         db.log_activity(user.id, "error - no name received")
         reply_text = """
 لطفا برای دسترسی ساده‌تر به این باغ یک نام انتخاب کنید:
@@ -1095,7 +1137,11 @@ def ask_village(update: Update, context: CallbackContext):
         )
         return ASK_CITY
     # Get the answer to the province question
-    if not update.message.text or update.message.text == "/start":
+    if update.message.text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    if not update.message.text:
         db.log_activity(user.id, "error - city")
         update.message.reply_text(
             "لطفا شهرستان محل باغ را وارد کنید:", reply_markup=back_button()
@@ -1120,7 +1166,11 @@ def ask_area(update: Update, context: CallbackContext):
         )
         return ASK_VILLAGE
     # Get the answer to the village question
-    if not update.message.text or update.message.text == "/start":
+    if update.message.text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    if not update.message.text:
         db.log_activity(user.id, "error - village")
         update.message.reply_text(
             "لطفا روستای محل باغ را وارد کنید:", reply_markup=back_button()
@@ -1141,7 +1191,11 @@ def ask_location(update: Update, context: CallbackContext):
         update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=back_button())
         return ASK_AREA
     # Get the answer to the phone number question
-    if not update.message.text or update.message.text == "/start":
+    if update.message.text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    if not update.message.text:
         db.log_activity(user.id, "error - area")
         update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
         return ASK_LOCATION
@@ -1257,7 +1311,11 @@ def handle_link(update: Update, context: CallbackContext):
     farm_city = user_data["city"]
     farm_village = user_data["village"]
     farm_area = user_data["area"]
-    if not text:
+    if text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
+        update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif not text:
         db.log_activity(user.id, "error - no location link")
         update.message.reply_text("لطفا لینک آدرس باغ خود را ارسال کنید.", reply_markup=back_button())
         return HANDLE_LINK
@@ -1429,12 +1487,6 @@ def main():
         TOKEN, use_context=True
     )  # , request_kwargs={'proxy_url': PROXY_URL})
 
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("register", register))
-    # dp.add_handler(CommandHandler("add", add))
-    # Add handlers to the dispatcher
     register_conv = ConversationHandler(
         entry_points=[MessageHandler(Filters.regex("✍️ ثبت نام"), register)],
         states={
@@ -1445,7 +1497,7 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    dp.add_handler(register_conv)
+    
     
     weather_conv = ConversationHandler(
         entry_points=[MessageHandler(Filters.regex("🌦 درخواست اطلاعات هواشناسی"), req_weather_data)],
@@ -1454,7 +1506,7 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    dp.add_handler(weather_conv)
+    
 
     add_conv = ConversationHandler(
         entry_points=[MessageHandler(Filters.regex("➕ اضافه کردن باغ"), add)],
@@ -1470,7 +1522,7 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    dp.add_handler(add_conv)
+    
 
     view_conv = ConversationHandler(
         entry_points=[MessageHandler(Filters.regex("🖼 مشاهده باغ ها"), view_farm_keyboard)],
@@ -1479,7 +1531,7 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    dp.add_handler(view_conv)
+    
 
     edit_conv = ConversationHandler(
         entry_points=[MessageHandler(Filters.regex("✏️ ویرایش باغ ها"), edit_farm_keyboard)],
@@ -1491,7 +1543,7 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    dp.add_handler(edit_conv)
+    
 
     delete_conv = ConversationHandler(
         entry_points=[
@@ -1503,7 +1555,7 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    dp.add_handler(delete_conv)
+    
 
     broadcast_handler = ConversationHandler(
         entry_points=[CommandHandler("send", send)],
@@ -1514,6 +1566,7 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     
+
     set_location_handler = ConversationHandler(
         entry_points=[CommandHandler("set", set_loc)],
         states={
@@ -1524,14 +1577,27 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    dp.add_handler(set_location_handler)
+    
+
+    # Get the dispatcher to register handlers
+    dp = updater.dispatcher
+    # Add handlers to the dispatcher
     dp.add_error_handler(error_handler)
 
+    dp.add_handler(add_conv)
+    dp.add_handler(register_conv)
+    dp.add_handler(weather_conv)
+    dp.add_handler(view_conv)
+    dp.add_handler(edit_conv)
+    dp.add_handler(delete_conv)
+
+    dp.add_handler(set_location_handler)
+    dp.add_handler(broadcast_handler)
     dp.add_handler(CommandHandler("stats", bot_stats))
     dp.add_handler(CallbackQueryHandler(button))
 
-    dp.add_handler(broadcast_handler)
-    # dp.add_handler(CommandHandler("stats", bot_stats, filters=Filters.user))
+    dp.add_handler(CommandHandler("start", start))
+
     # Start the bot
     updater.start_polling()
 
