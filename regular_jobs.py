@@ -112,6 +112,7 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                 with open('job-table.png', 'rb') as image_file:
                                     bot.send_photo(chat_id=id, photo=image_file, caption=caption, reply_markup=start_keyboard())
                                 username = db.user_collection.find_one({"_id": id})["username"]
+                                db.set_user_attribute(id, "blocked", False)
                                 db.log_new_message(
                                     user_id=id,
                                     username=username,
@@ -257,7 +258,9 @@ def send_up_notice(bot: Bot, admin_list, logger, message: str):
 
 def get_member_count(bot: Bot, logger):
     user_data = db.user_collection.distinct("_id")
+    members = db.number_of_members()
+    blockde_members = db.number_of_blocks()
+    member_count = members - blockde_members
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    member_count = len(user_data)
     logger.info(f"Performed member count: {member_count}")
     db.log_member_changes(members=member_count, time=current_time)

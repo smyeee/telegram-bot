@@ -239,6 +239,7 @@ def broadcast(update: Update, context: CallbackContext):
                     context.bot.copy_message(chat_id=user_id, from_chat_id=chat_id, message_id=message_id)
                 # context.bot.send_message(user_id, message)
                 username = db.user_collection.find_one({"_id": user_id})["username"]
+                db.set_user_attribute(user_id, "blocked", False)
                 db.log_new_message(
                     user_id=user_id,
                     username=username,
@@ -252,11 +253,11 @@ def broadcast(update: Update, context: CallbackContext):
                 db.set_user_attribute(user_id, "blocked", True)
             except BadRequest:
                 logger.error(f"chat with {user_id} not found.")
-    db.log_sent_messages(receivers, f"broadcast {user_data['receiver_type']}")
-    for id in ADMIN_LIST:
-        context.bot.send_message(id, f"پیام برای {i} نفر از {len(receiver_list)} نفر ارسال شد."
-                                 , reply_markup=start_keyboard())
-    return ConversationHandler.END
+        db.log_sent_messages(receivers, f"broadcast {user_data['receiver_type']}")
+        for id in ADMIN_LIST:
+            context.bot.send_message(id, f"پیام برای {i} نفر از {len(receiver_list)} نفر ارسال شد."
+                                    , reply_markup=start_keyboard())
+        return ConversationHandler.END
 
 def set_loc(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
@@ -371,10 +372,8 @@ def button(update: Update, context: CallbackContext):
     stat = update.callback_query
     id = update.effective_user.id
     if stat.data == "member_count":
-        member_count = db.bot_collection.find_one()["num-members"][-1]
-        blocked_count = db.number_of_blocks()
-        count = member_count - blocked_count
-        context.bot.send_message(chat_id=id, text=f"تعداد اعضا: {count}")
+        member_count = db.number_of_members() - db.number_of_blocks()
+        context.bot.send_message(chat_id=id, text=f"تعداد اعضا: {member_count}")
     elif stat.data == "member_count_change":
         members_doc = db.bot_collection.find_one()
         if len(members_doc["time-stamp"]) < 15:
@@ -1012,8 +1011,8 @@ def add(update: Update, context: CallbackContext):
     if not db.check_if_user_is_registered(user_id=user.id):
         db.log_activity(user.id, "error - add farm", "not registered yet")
         update.message.reply_text(
-            "لطفا پیش از افزودن باغ از طریق /register ثبت نام کنید",
-            reply_markup=ReplyKeyboardRemove(),
+            "لطفا پیش از افزودن باغ از طریق /start ثبت نام کنید",
+            reply_markup=start_keyboard(),
         )
         return ConversationHandler.END
     reply_text = """

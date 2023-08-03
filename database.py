@@ -184,7 +184,11 @@ class Database:
         users = [user["_id"] for user in cursor]
         return users
 
-    def number_of_blocks(self):
+    def number_of_members(self) -> int:
+        members = self.user_collection.distinct("_id")
+        return len(members)
+    
+    def number_of_blocks(self) -> int:
         blocked_users = self.user_collection.count_documents({"blocked": True})
         return blocked_users
     
