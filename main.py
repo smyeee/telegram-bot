@@ -65,8 +65,8 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger("agriWeather-bot")
-update_message = """
-تغییر در نحوه ثبت فعالیت کاربران
+update_message = """تغییرات:
+اضافه شدن اصفهان - تهران - مرکزی - قم - سیستان - قزوین به استانها
 """
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, BROADCAST = range(2)
@@ -109,7 +109,7 @@ REQUIRED_KEYS = [
     "name",
     "phone-number",
 ]
-PROVINCES = ["کرمان", "خراسان رضوی", "خراسان جنوبی", "یزد", "فارس", "سمنان", "سایر"]
+PROVINCES = ["کرمان", "خراسان رضوی", "خراسان جنوبی", "یزد", "فارس", "سمنان", "مرکزی", "تهران", "اصفهان", "قزوین", "سیستان و بلوچستان", "قم", "سایر"]
 PRODUCTS = [
     "پسته اکبری",
     "پسته اوحدی",
