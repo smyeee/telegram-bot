@@ -224,18 +224,18 @@ def send_todays_data(bot: Bot, admin_list, logger):
         logger.info(f"sent tomorrow's advice info to {advise_tomorrow_count} people")
         for admin in admin_list:
             bot.send_message(
-                chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} کاربر ارسال شد"
+                chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} باغ ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=weather_report_receiver_id)
+            bot.send_message(chat_id=admin, text=f"{len(weather_report_receiver_id)}:\n{weather_report_receiver_id}")
 
             bot.send_message(
-                chat_id=admin, text=f"توصیه به {advise_today_count} کاربر ارسال شد"
+                chat_id=admin, text=f"توصیه به {advise_today_count} باغ ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=advise_today_receiver_id)
+            bot.send_message(chat_id=admin, text=f"{len({advise_today_receiver_id})}:\n{advise_today_receiver_id}")
             bot.send_message(
-                chat_id=admin, text=f"توصیه به {advise_tomorrow_count} کاربر ارسال شد"
+                chat_id=admin, text=f"توصیه به {advise_tomorrow_count} باغ ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=advise_tomorrow_receiver_id)
+            bot.send_message(chat_id=admin, text=f"{len(advise_tomorrow_receiver_id)}:\n{advise_tomorrow_receiver_id}")
     except DriverError:
         for admin in admin_list:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
