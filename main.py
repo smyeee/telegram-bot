@@ -1,14 +1,10 @@
-import json
 import logging
 from logging.handlers import RotatingFileHandler
 import datetime
 import jdatetime
 import geopandas as gpd
 from shapely.geometry import Point
-import pandas as pd
 from telegram import (
-    Bot,
-    Location,
     KeyboardButton,
     Update,
     ReplyKeyboardMarkup,
@@ -22,8 +18,6 @@ from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
     ConversationHandler,
-    PicklePersistence,
-    Dispatcher,
 )
 from telegram import ParseMode
 from telegram.error import BadRequest, Unauthorized, NetworkError
