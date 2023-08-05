@@ -61,8 +61,7 @@ logging.basicConfig(
 logger = logging.getLogger("agriWeather-bot")
 update_message = """
 🟢 Changes:
-✅ اضافه شدن رول برای افراد لوکیشن دار در /send
-✅ اصلاح مشکل ارسال تعداد توصیه ها 
+✅ اصلاح خروجی اکسل
 """
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, BROADCAST = range(2)
