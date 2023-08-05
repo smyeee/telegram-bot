@@ -61,8 +61,8 @@ logging.basicConfig(
 logger = logging.getLogger("agriWeather-bot")
 update_message = """
 🟢 Changes:
-✅ Added new provinces
-✅ Changed priority of update handlers: add-register-weather-view-edit-delete-set-send-stats-start (must change to ApplicationHandlerStop)
+✅ اضافه شدن رول برای افراد لوکیشن دار در /send
+✅ اصلاح مشکل ارسال تعداد توصیه ها 
 """
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, BROADCAST = range(2)
