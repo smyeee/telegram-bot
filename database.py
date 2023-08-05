@@ -286,7 +286,7 @@ class Database:
 
 
     def to_excel(self, output_file: str) -> None:
-        user_df = pd.DataFrame(columns=['id', 'username', 'phone', 'name', 'blocked', 'farm name', 'product', 'province', 'city', 'village','area', 'latitude', 'longitude', 'location method'])
+        user_df = pd.DataFrame(columns=['id', 'username', 'phone', 'first-seen', 'name', 'blocked', 'farm name', 'product', 'province', 'city', 'village','area', 'latitude', 'longitude', 'location method'])
         users = self.user_collection.distinct("_id")
         i = 0
         for user_id in users:
@@ -297,6 +297,7 @@ class Database:
                 'id': user_id,
                 'username': document.get('username'),
                 'phone': document.get('phone-number'),
+                'first-seen': document.get('first-seen'),
                 'name': document.get('name'),
                 'blocked': document.get('blocked'),
             })
@@ -306,14 +307,15 @@ class Database:
                     'id': user_id,
                     'username': document.get('username'),
                     'phone': document.get('phone-number'),
+                    'first-seen': document.get('first-seen'),
                     'name': document.get('name'),
                     'blocked': document.get('blocked'),
                     'farm name': farm_name,
-                    'area': farms[farm_name].get('areas'),
-                    'product': farms[farm_name].get('products'),
-                    'province': farms[farm_name].get('provinces'),
-                    'city': farms[farm_name].get('cities'),
-                    'village': farms[farm_name].get('villages'),
+                    'area': farms[farm_name].get('area'),
+                    'product': farms[farm_name].get('product'),
+                    'province': farms[farm_name].get('province'),
+                    'city': farms[farm_name].get('city'),
+                    'village': farms[farm_name].get('village'),
                     'latitude': farms[farm_name]['location'].get('latitude'),
                     'longitude': farms[farm_name]['location'].get('longitude'),
                     'location method': farms[farm_name].get('location-method'),
@@ -325,6 +327,7 @@ class Database:
                         'id': user_id,
                         'username': document.get('username'),
                         'phone': document.get('phone-number'),
+                        'first-seen': document.get('first-seen'),
                         'name': document.get('name'),
                         'blocked': document.get('blocked'),
                         'farm name': key,
