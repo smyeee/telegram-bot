@@ -232,7 +232,7 @@ def send_todays_data(bot: Bot, admin_list, logger):
             bot.send_message(
                 chat_id=admin, text=f"توصیه به {advise_today_count} باغ ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=f"{len({advise_today_receiver_id})}:\n{advise_today_receiver_id}")
+            bot.send_message(chat_id=admin, text=f"{len(advise_today_receiver_id)}:\n{advise_today_receiver_id}")
             bot.send_message(
                 chat_id=admin, text=f"توصیه به {advise_tomorrow_count} باغ ارسال شد"
             )
