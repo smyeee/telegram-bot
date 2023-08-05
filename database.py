@@ -164,6 +164,50 @@ class Database:
         # equality = len(provinces) == len(cities) == len(villages) == len(areas) == len(locations)
         farms = user.get("farms")
         return farms
+    
+    def get_users_with_location(self):
+        pipeline = [
+                {"$match": {"$and": [
+                        { "farms": { "$exists": True } },
+                        { "farms": { "$ne": None } },
+                        { "farms": { "$ne": {} } }
+                        ]
+                    }
+                },
+                {"$addFields": {
+                    "farmsArray": { "$objectToArray": "$farms" }
+                    }
+                },
+                {"$redact": {
+                    "$cond": {
+                        "if": {
+                        "$anyElementTrue": {
+                            "$map": {
+                            "input": "$farmsArray",
+                            "as": "farm",
+                            "in": {
+                                "$and": [
+                                { "$ne": ["$$farm.v.location.latitude", None] },
+                                { "$ne": ["$$farm.v.location.longitude", None] }
+                                ]
+                            }
+                            }
+                        }
+                        },
+                        "then": "$$KEEP",
+                        "else": "$$PRUNE"
+                    }
+                    }
+                },
+                {"$project": {
+                    "_id": 1
+                    }
+                }
+                ]
+
+        cursor = self.user_collection.aggregate(pipeline) # users who have atleast one farm with no location
+        users = [user["_id"] for user in cursor]
+        return users
 
     def get_users_without_location(self):
         pipeline = [

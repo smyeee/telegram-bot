@@ -114,7 +114,7 @@ def conf_del_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def choose_role():
-    keyboard = [['تمام کاربران'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
+    keyboard = [['تمام کاربران'], ['لوکیشن دار'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)
 
 def back_button():

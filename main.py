@@ -189,6 +189,13 @@ def choose_receivers(update: Update, context: CallbackContext):
         update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
                                   reply_markup=back_button())
         return BROADCAST
+    elif message_text == "لوکیشن دار":
+        users = db.get_users_with_location()
+        user_data["receiver_list"] = users
+        user_data["receiver_type"] = "to Users With Location"
+        update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+                                  reply_markup=back_button())
+        return BROADCAST
     elif message_text == "بدون لوکیشن":
         users = db.get_users_without_location()
         user_data["receiver_list"] = users
