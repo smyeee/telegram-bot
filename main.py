@@ -62,7 +62,8 @@ logging.basicConfig(
 logger = logging.getLogger("agriWeather-bot")
 update_message = """
 🟢 Changes:
-✅ اصلاح خروجی اکسل
+✅ اضافه شدن قابلیت تعیین آیدی گیرنده به دستور /send
+✅ اضافه شدن قابلیت تعیین لوکیشن چند تایی به دستور /set
 """
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, HANDLE_IDS, BROADCAST = range(3)
