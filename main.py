@@ -22,8 +22,9 @@ from telegram.ext import (
 from telegram import ParseMode
 from telegram.error import BadRequest, Unauthorized, NetworkError
 import os
+import requests
+import re
 import matplotlib
-
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from fiona.errors import DriverError
@@ -306,8 +307,13 @@ def broadcast(update: Update, context: CallbackContext):
 def set_loc(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if user_id in ADMIN_LIST:
-        update.message.reply_text(
-            "لطفا شناسه کاربر مورد نظر را بنویسید یا برای لغو /cancel را بزنید:",
+        update.message.reply_text("""
+لطفا شناسه کاربر مورد نظر را بنویسید یا برای لغو /cancel را بزنید
+اگر قصد تعیین لوکیشن بیش از یک کاربر دارید به صورت زیر وارد شود:
+10354451
+951412545
+1594745
+""",
         )
         return ASK_FARM_NAME
     else:
@@ -329,19 +335,29 @@ def ask_farm_name(update: Update, context: CallbackContext):
              "لطفا شناسه کاربر مورد نظر را بنویسید یا برای لغو /cancel را بزنید:",
         )
         return ASK_FARM_NAME
-    elif not db.check_if_user_exists(int(target_id)):
+    elif len(target_id.split('\n'))==1 and not db.check_if_user_exists(int(target_id)):
         update.message.reply_text("چنین کاربری در دیتابیس وجود نداشت. دوباره تلاش کنید. \n/cancel")
         return ASK_FARM_NAME
-    user_data["target"] = target_id
-    update.message.reply_text(f"نام باغ چیست؟")
+    user_data["target"] = target_id.split("\n")
+    update.message.reply_text("""
+اگر قصد تعیین لوکیشن بیش از یک کاربر دارید به صورت زیر وارد شود:
+باغ 1
+باغ 2
+باغ 3
+دقت کنید که دقیقا نام باغ کاربر باشد. حتی اعداد فارسی با انگلیسی جابجا نشود.
+""")
     return ASK_LONGITUDE
 
 def ask_longitude(update: Update, context: CallbackContext):
     user_data = context.user_data
     user = update.effective_user
     farm_name = update.message.text
-    farm_names = list(db.get_farms(int(user_data['target'])))
-    if farm_name == "/cancel":
+    if len(farm_name.split("\n"))==1:
+        farm_names = list(db.get_farms(int(user_data['target'])))
+        if farm_name not in farm_names:
+            update.message.reply_text(f"نام باغ اشتباه است. دوباره تلاش کنید. \n/cancel")
+        return ASK_LONGITUDE
+    elif farm_name == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
         return ConversationHandler.END
     elif farm_name in MENU_CMDS:
@@ -351,16 +367,23 @@ def ask_longitude(update: Update, context: CallbackContext):
     elif not farm_name:
         update.message.reply_text(f"نام باغ چیست؟ \n/cancel")
         return ASK_LONGITUDE
-    elif farm_name not in farm_names:
-        update.message.reply_text(f"نام باغ اشتباه است. دوباره تلاش کنید. \n/cancel")
-        return ASK_LONGITUDE
-    user_data["farm_name"] = farm_name
-    update.message.reply_text(f"what's the longitude of {user_data['target']}? \ndo you want to /cancel ?")
+    elif len(user_data['target']) != len(farm_name.split('\n')):
+        db.log_activity(user.id, "error - farm_name list not equal to IDs", farm_name)
+        update.message.reply_text("تعداد آی‌دی‌ها و نام باغ ها یکسان نیست. لطفا دوباره شروع کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    user_data["farm_name"] = farm_name.split('\n')
+    update.message.reply_text("""
+اگر یک آیدی وارد کردید حالا مقدار longitude را وارد کنید. اگر بیش از یک آیدی داشتید لینک‌های گوگل مپ مرتبط را وارد کنید.
+هر لینک در یک خط باشد. تنها لینکهایی که مانند زیر باشند قابل قبول هستند
+https://goo.gl/maps/3Nx2zh3pevaz9vf16
+""")
     return ASK_LATITUDE
 
 def ask_latitude(update: Update, context: CallbackContext):
     user_data = context.user_data
     user = update.effective_user
+    target = user_data["target"]
+    farm_name = user_data["farm_name"]
     longitude = update.message.text
     if longitude == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
@@ -370,11 +393,46 @@ def ask_latitude(update: Update, context: CallbackContext):
         update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
     elif not longitude:
-        update.message.reply_text(f"what's the longitude of {longitude}? \ndo you want to /cancel ?")
+        update.message.reply_text("""
+اگر یک آیدی وارد کردید حالا مقدار longitude را وارد کنید. اگر بیش از یک آیدی داشتید لینک‌های گوگل مپ مرتبط را وارد کنید.
+هر لینک در یک خط باشد. تنها لینکهایی که مانند زیر باشند قابل قبول هستند
+https://goo.gl/maps/3Nx2zh3pevaz9vf16
+""")
         return ASK_LATITUDE
-    user_data["long"] = longitude
-    update.message.reply_text(f"what's the latitude of {user_data['target']}?\ndo you want to /cancel ?")
-    return HANDLE_LAT_LONG
+    elif len(target) == 1:
+        user_data["long"] = longitude
+        update.message.reply_text(f"what's the latitude of {user_data['target']}?\ndo you want to /cancel ?")
+        return HANDLE_LAT_LONG
+    else:
+        links = longitude.split("\n")
+        if len(user_data['target']) != len(links):
+            db.log_activity(user.id, "error - links list not equal to IDs", farm_name)
+            update.message.reply_text("تعداد لینک ها و آیدی ها یکسان نیست. لطفا دوباره شروع کنید.", reply_markup=start_keyboard())
+            return ConversationHandler.END
+        elif not all(link.startswith("https://goo.gl") for link in links):
+            db.log_activity(user.id, "error - links not valid", farm_name)
+            update.message.reply_text("لینک ها مورد قبول نیستند. لطفا دوباره شروع کنید.", reply_markup=start_keyboard())
+            return ConversationHandler.END
+        with requests.session() as s:
+            final_url = [s.head(link, allow_redirects=True).url for link in links]
+        result = [re.search("/@-?(\d+\.\d+),(\d+\.\d+)", url) for url in final_url]
+        for i, user_id in enumerate(user_data['target']):
+            try:
+                db.set_user_attribute(int(user_id), f"farms.{user_data['farm_name'][i]}.location.latitude", float(result[i].group(1)))
+                db.set_user_attribute(int(user_id), f"farms.{user_data['farm_name'][i]}.location.longitude", float(result[i].group(2)))
+                context.bot.send_message(chat_id=int(user_id), text=f"لوکیشن باغ شما با نام {user_data['farm_name'][i]} ثبت شد.")
+                context.bot.send_location(chat_id=int(user_id), latitude=float(result[i].group(1)), longitude=float(result[i].group(2)))
+                context.bot.send_message(chat_id=user.id, text=f"لوکیشن باغ {user_id} با نام {user_data['farm_name'][i]} ثبت شد.")
+                context.bot.send_location(chat_id=user.id, latitude=float(result[i].group(1)), longitude=float(result[i].group(2)))
+            except Unauthorized:
+                context.bot.send_message(chat_id=user.id, text=f"{user_id} blocked the bot")
+                db.set_user_attribute(user_id, "blocked", True)
+            except BadRequest:
+                context.bot.send_message(chat_id=user.id, text=f"chat with {user_id} not found. was the user id correct?")
+            except KeyError:
+                context.bot.send_message(chat_id=user.id, text=f"{user_id} doesn't have a farm called\n {user_data['farm_name'][i]} \nor user doesn't exist.")
+        return ConversationHandler.END
+
 
 def handle_lat_long(update: Update, context: CallbackContext):
     user = update.effective_user
