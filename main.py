@@ -142,10 +142,7 @@ def start(update: Update, context: CallbackContext):
                 """
         args = context.args[0]
         if args:
-            logger.info(f"\n {args} \n")
             db.log_token_use(user.id, args)
-            logger.info(f"{args}: {db.calc_token_number(args)}")
-            logger.info(f"All tokens used: {db.calc_user_tokens(user.id)}")
         update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
     else:
