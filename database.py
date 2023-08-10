@@ -18,6 +18,7 @@ class Database:
         self.db = self.client["agriweathBot"]  # database name
         self.user_collection = self.db["newUserCollection"]
         self.bot_collection = self.db["botCollection"]
+        self.token_collection = self.db["tokenCollection"]
         self.dialog_collection = self.db["dialogCollection"]
 
     def check_if_user_exists(self, user_id: int, raise_exception: bool = False):
@@ -72,6 +73,33 @@ class Database:
             {"_id": user_id},
             {"$set": {f"farms.{farm_name}": new_farm}}
         )
+
+    def add_token(self, user_id: int, value: str):
+        token_dict = {
+            "owner": user_id,
+            "token-value": value,
+            "time-created": datetime.now().strftime("%Y%m%d %H:%M"),
+            "used-by": [],
+        }
+        self.token_collection.insert_one(token_dict)
+
+    def log_token_use(self, user_id: int, value: str) -> int:
+        token_document = self.token_collection.find_one({ "token-value": value })
+        if token_document:
+            self.token_collection.update_one({"token-value": value}, {"$push": {"used-by": user_id}})
+
+    def calc_token_number(self, value: str):
+        token_document = self.token_collection.find_one({ "token-value": value })
+        return len(token_document['used-by'])
+
+    def calc_user_tokens(self, user_id: int) -> int:
+        user_tokens = self.token_collection.find( {"owner": user_id} )
+        num = 0
+        if user_tokens:            
+            for token in user_tokens:
+                num += len(token["used-by"])
+        return num
+
 
     def get_user_attribute(self, user_id: int, key: str):
         self.check_if_user_exists(user_id=user_id, raise_exception=True)

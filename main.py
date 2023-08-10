@@ -125,8 +125,6 @@ MENU_CMDS = ['✍️ ثبت نام', '🖼 مشاهده باغ ها', '➕ اض�
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
     user_data = context.user_data
-    args = context.args
-    logger.info(f"\n {args} \n")
     # Check if the user has already signed up
     if not db.check_if_user_exists(user_id=user.id):
         user_data["username"] = user.username
@@ -142,8 +140,14 @@ def start(update: Update, context: CallbackContext):
 ادمین: @agriiadmin
 تلفن ثابت: 02164063399
                 """
+        args = context.args[0]
+        if args:
+            logger.info(f"\n {args} \n")
+            db.log_token_use(user.id, args)
+            logger.info(f"{args}: {db.calc_token_number(args)}")
+            logger.info(f"All tokens used: {db.calc_user_tokens(user.id)}")
         update.message.reply_text(reply_text, reply_markup=start_keyboard())
-        return ASK_PROVINCE
+        return ConversationHandler.END
     else:
         reply_text = """
 باغدار عزیز سلام
@@ -525,6 +529,20 @@ def button(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=id, text=f"تعداد بدون شماره تلفن: {len(no_phone_users)}")
 
 # CREATE PERSONALIZED INVITE LINK FOR A USER
+def invite(update: Update, context: CallbackContext):
+    user = update.effective_user
+    db.log_activity(user.id, "chose invite-link menu option")
+    logger.info(context.bot.base_url)
+    random_string = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
+    db.set_user_attribute(user.id, "invite-links", random_string, array=True)
+    db.add_token(user.id, random_string)
+    link = f"https://t.me/amir_test_bot?start={random_string}"
+    update.message.reply_text(f"""
+می‌توانید از این لینک برای دعوت دوستان خود استفاده کرده و از مزایای آن بهره‌مند شوید:
+{link}
+""", reply_markup=start_keyboard())
+
+
 def invite_link(update: Update, context: CallbackContext):
     user = update.effective_user
     db.log_activity(user.id, "chose invite-link menu option")
@@ -1655,13 +1673,13 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     
-    invite_conv = ConversationHandler(
-        entry_points=[MessageHandler(Filters.regex("دعوت از دیگران"), invite_link)],
-        states={
-            HANDLE_INV_LINK: [MessageHandler(Filters.text , handle_invite_link)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
+    # invite_conv = ConversationHandler(
+    #     entry_points=[MessageHandler(Filters.regex("دعوت از دیگران"), invite_link)],
+    #     states={
+    #         HANDLE_INV_LINK: [MessageHandler(Filters.text , handle_invite_link)]
+    #     },
+    #     fallbacks=[CommandHandler("cancel", cancel)],
+    # )
 
     add_conv = ConversationHandler(
         entry_points=[MessageHandler(Filters.regex("➕ اضافه کردن باغ"), add)],
@@ -1742,7 +1760,8 @@ def main():
 
     dp.add_handler(register_conv)
     dp.add_handler(add_conv)
-    dp.add_handler(invite_conv)
+    # dp.add_handler(invite_conv)
+    dp.add_handler(MessageHandler(Filters.regex("دعوت از دیگران"), invite))
     dp.add_handler(weather_conv)
     dp.add_handler(view_conv)
     dp.add_handler(edit_conv)
