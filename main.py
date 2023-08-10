@@ -341,6 +341,7 @@ def ask_farm_name(update: Update, context: CallbackContext):
         return ASK_FARM_NAME
     user_data["target"] = target_id.split("\n")
     update.message.reply_text("""
+نام باغ را واد کنید:
 اگر قصد تعیین لوکیشن بیش از یک کاربر دارید به صورت زیر وارد شود:
 باغ 1
 باغ 2
@@ -354,10 +355,14 @@ def ask_longitude(update: Update, context: CallbackContext):
     user = update.effective_user
     farm_name = update.message.text
     if len(farm_name.split("\n"))==1:
-        farm_names = list(db.get_farms(int(user_data['target'])))
+        farm_names = list(db.get_farms(int(user_data['target'][0])))
         if farm_name not in farm_names:
             update.message.reply_text(f"نام باغ اشتباه است. دوباره تلاش کنید. \n/cancel")
-        return ASK_LONGITUDE
+            return ASK_LONGITUDE
+        else:
+            update.message.reply_text(f"مقدار longitude را وارد کنید. \n/cancel")
+            user_data["farm_name"] = farm_name
+            return ASK_LATITUDE
     elif farm_name == "/cancel":
         update.message.reply_text("عملیات کنسل شد!")
         return ConversationHandler.END
@@ -374,7 +379,7 @@ def ask_longitude(update: Update, context: CallbackContext):
         return ConversationHandler.END
     user_data["farm_name"] = farm_name.split('\n')
     update.message.reply_text("""
-اگر یک آیدی وارد کردید حالا مقدار longitude را وارد کنید. اگر بیش از یک آیدی داشتید لینک‌های گوگل مپ مرتبط را وارد کنید.
+لینک‌های گوگل مپ مرتبط را وارد کنید.
 هر لینک در یک خط باشد. تنها لینکهایی که مانند زیر باشند قابل قبول هستند
 https://goo.gl/maps/3Nx2zh3pevaz9vf16
 """)
@@ -450,11 +455,11 @@ def handle_lat_long(update: Update, context: CallbackContext):
         update.message.reply_text(f"what's the latitude of {latitude}? \ndo you want to /cancel ?")
         return HANDLE_LAT_LONG
     user_data["lat"] = latitude
-    db.set_user_attribute(int(user_data["target"]), f"farms.{user_data['farm_name']}.location.longitude", float(user_data["long"]))
-    db.set_user_attribute(int(user_data["target"]), f"farms.{user_data['farm_name']}.location.latitude", float(user_data["lat"]))
+    db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.longitude", float(user_data["long"]))
+    db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.latitude", float(user_data["lat"]))
     context.bot.send_location(chat_id=user.id, latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
-    context.bot.send_message(chat_id=int(user_data["target"]), text=f"لوکیشن باغ شما با نام {user_data['farm_name']} ثبت شد.")
-    context.bot.send_location(chat_id=int(user_data["target"]), latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
+    context.bot.send_message(chat_id=int(user_data["target"][0]), text=f"لوکیشن باغ شما با نام {user_data['farm_name']} ثبت شد.")
+    context.bot.send_location(chat_id=int(user_data["target"][0]), latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
     return ConversationHandler.END
 
 
@@ -1571,6 +1576,8 @@ def recv_weather(update: Update, context: CallbackContext):
                     return ConversationHandler.END
         except DriverError:
             logger.info(f"{user.id} requested today's weather. pesteh{today}_1.geojson was not found!")
+            context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
+            return ConversationHandler.END
         finally:
             os.system("rm table.png")
     else:
