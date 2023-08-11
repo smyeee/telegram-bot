@@ -6,15 +6,23 @@ import geopandas as gpd
 from shapely import Point
 import datetime
 import jdatetime
-import json
-from telegram.error import BadRequest, Unauthorized
-from telegram import Bot
+from telegram.error import BadRequest, Forbidden
+from telegram.ext import ContextTypes
 from fiona.errors import DriverError
-
+import logging
 
 db = database.Database()
 
-def send_todays_data(bot: Bot, admin_list, logger):
+message = """
+🟢 Changes:
+✅ تغییر توابع به async
+✅ قابلیت تولید لینک دعوت
+"""
+logger = logging.getLogger("agriWeather-bot")
+admin_list = [103465015, 31583686, 391763080, 216033407]
+
+
+async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     ids = db.user_collection.distinct("_id")
     current_day = datetime.datetime.now().strftime("%Y%m%d")
     jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
@@ -110,7 +118,7 @@ def send_todays_data(bot: Bot, admin_list, logger):
                             """
                             try:
                                 with open('job-table.png', 'rb') as image_file:
-                                    bot.send_photo(chat_id=id, photo=image_file, caption=caption, reply_markup=start_keyboard())
+                                    await context.bot.send_photo(chat_id=id, photo=image_file, caption=caption, reply_markup=start_keyboard())
                                 username = db.user_collection.find_one({"_id": id})["username"]
                                 db.set_user_attribute(id, "blocked", False)
                                 db.log_new_message(
@@ -122,11 +130,11 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                 logger.info(f"sent todays's weather info to {id}")
                                 weather_report_count += 1
                                 weather_report_receiver_id.append(id)
-                            except Unauthorized:
+                            except Forbidden:
                                 db.set_user_attribute(id, "blocked", True)
                                 logger.info(f"user:{id} has blocked the bot!")
                                 for admin in admin_list:
-                                    bot.send_message(
+                                    await context.bot.send_message(
                                         chat_id=admin, text=f"user: {id} has blocked the bot!"
                                     )
                             except BadRequest:
@@ -139,8 +147,8 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                 )
                             if not pd.isna(advise):
                                 try:
-                                    # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                    bot.send_message(chat_id=id, text=advise_today)
+                                    # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                                    await context.bot.send_message(chat_id=id, text=advise_today)
                                     username = db.user_collection.find_one({"_id": id})[
                                         "username"
                                     ]
@@ -153,12 +161,12 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                     logger.info(f"sent recommendation to {id}")
                                     advise_today_count += 1
                                     advise_today_receiver_id.append(id)
-                                    # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                except Unauthorized:
+                                    # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                                except Forbidden:
                                     db.set_user_attribute(id, "blocked", True)
                                     logger.info(f"user:{id} has blocked the bot!")
                                     for admin in admin_list:
-                                        bot.send_message(
+                                        await context.bot.send_message(
                                             chat_id=admin,
                                             text=f"user: {id} has blocked the bot!",
                                         )
@@ -187,8 +195,8 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                 )
                             if not pd.isna(advise):
                                 try:
-                                    # bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                    bot.send_message(chat_id=id, text=advise_tomorrow)
+                                    # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                                    await context.bot.send_message(chat_id=id, text=advise_tomorrow)
                                     username = db.user_collection.find_one({"_id": id})[
                                         "username"
                                     ]
@@ -201,12 +209,12 @@ def send_todays_data(bot: Bot, admin_list, logger):
                                     logger.info(f"sent recommendation to {id}")
                                     advise_tomorrow_count += 1
                                     advise_tomorrow_receiver_id.append(id)
-                                    # bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                except Unauthorized:
+                                    # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                                except Forbidden:
                                     db.set_user_attribute(id, "blocked", True)
                                     logger.info(f"user:{id} has blocked the bot!")
                                     for admin in admin_list:
-                                        bot.send_message(
+                                        await context.bot.send_message(
                                             chat_id=admin,
                                             text=f"user: {id} has blocked the bot!",
                                         )
@@ -224,39 +232,39 @@ def send_todays_data(bot: Bot, admin_list, logger):
         db.log_sent_messages(advise_tomorrow_receiver_id, "send_tomorrow_advice_to_users")
         logger.info(f"sent tomorrow's advice info to {advise_tomorrow_count} people")
         for admin in admin_list:
-            bot.send_message(
+            await context.bot.send_message(
                 chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} باغ ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=f"{len(weather_report_receiver_id)}:\n{weather_report_receiver_id}")
+            await context.bot.send_message(chat_id=admin, text=f"{len(weather_report_receiver_id)}:\n{weather_report_receiver_id}")
 
-            bot.send_message(
+            await context.bot.send_message(
                 chat_id=admin, text=f"توصیه به {advise_today_count} باغ ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=f"{len(advise_today_receiver_id)}:\n{advise_today_receiver_id}")
-            bot.send_message(
+            await context.bot.send_message(chat_id=admin, text=f"{len(advise_today_receiver_id)}:\n{advise_today_receiver_id}")
+            await context.bot.send_message(
                 chat_id=admin, text=f"توصیه به {advise_tomorrow_count} باغ ارسال شد"
             )
-            bot.send_message(chat_id=admin, text=f"{len(advise_tomorrow_receiver_id)}:\n{advise_tomorrow_receiver_id}")
+            await context.bot.send_message(chat_id=admin, text=f"{len(advise_tomorrow_receiver_id)}:\n{advise_tomorrow_receiver_id}")
     except DriverError:
         for admin in admin_list:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            bot.send_message(
+            await context.bot.send_message(
                 chat_id=admin,
                 text=f"{time} file pesteh{current_day}.geojson was not found!",
             )
     except KeyError:
         for admin in admin_list:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            bot.send_message(
+            await context.bot.send_message(
                 chat_id=admin, text=f"key error in file pesteh{current_day}_1.geojson!"
             )
 
-def send_up_notice(bot: Bot, admin_list, logger, message: str):
+async def send_up_notice(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Sent up notice to admins...")
     for admin in admin_list:
-        bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد"+"\n"+ message)
+        await context.bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد"+"\n"+ message)
 
-def get_member_count(bot: Bot, logger):
+async def get_member_count(context: ContextTypes.DEFAULT_TYPE):
     user_data = db.user_collection.distinct("_id")
     members = db.number_of_members()
     blockde_members = db.number_of_blocks()
