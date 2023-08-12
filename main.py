@@ -141,9 +141,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ادمین: @agriiadmin
 تلفن ثابت: 02164063399
                 """
-        args = context.args[0]
+        args = context.args
         if args:
-            db.log_token_use(user.id, args)
+            db.log_token_use(user.id, args[0])
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
     else:
@@ -533,7 +533,7 @@ async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     random_string = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
     db.set_user_attribute(user.id, "invite-links", random_string, array=True)
     db.add_token(user.id, random_string)
-    link = f"https://t.me/amir_test_bot?start={random_string}"
+    link = f"https://t.me/agriweathbot?start={random_string}"
     await update.message.reply_text(f"""
 می‌توانید از این لینک برای دعوت دوستان خود استفاده کرده و از مزایای آن بهره‌مند شوید:
 {link}
