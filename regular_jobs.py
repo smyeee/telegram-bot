@@ -17,6 +17,7 @@ message = """
 🟢 Changes:
 ✅ تغییر توابع به async
 ✅ قابلیت تولید لینک دعوت
+*
 """
 logger = logging.getLogger("agriWeather-bot")
 admin_list = [103465015, 31583686, 391763080, 216033407]
