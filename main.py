@@ -120,7 +120,7 @@ PRODUCTS = [
     "پسته ممتاز",
     "سایر",
 ]
-ADMIN_LIST = [103465015, 31583686, 391763080, 216033407]
+ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -307,8 +307,11 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.send_message(chat_id=user.id, text=f"{user_id} was not found")
         db.log_sent_messages(receivers, f"broadcast {user_data['receiver_type']}")
         for id in ADMIN_LIST:
-            await context.bot.send_message(id, f"پیام برای {i} نفر از {len(receiver_list)} نفر ارسال شد."
+            try:
+                await context.bot.send_message(id, f"پیام برای {i} نفر از {len(receiver_list)} نفر ارسال شد."
                                     , reply_markup=start_keyboard())
+            except BadRequest or Forbidden:
+                logger.warning(f"admin {id} has deleted the bot")
         return ConversationHandler.END
 
 async def set_loc(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -986,7 +989,10 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.log_activity(user.id, "finish edit location with link")
     await update.message.reply_text(reply_text, reply_markup=start_keyboard())
     for admin in ADMIN_LIST:
-        await context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{user_data['selected_farm']}\n{text}")
+        try:
+            await context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{user_data['selected_farm']}\n{text}")
+        except BadRequest or Forbidden:
+            logger.warning(f"admin {admin} has deleted the bot")
     return ConversationHandler.END
     # START OF DELETE CONVERSATION
 async def delete_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1543,7 +1549,10 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "finish add farm with location link", farm_name)
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         for admin in ADMIN_LIST:
-            await context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{farm_name}\n{text}")
+            try:
+                await context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{farm_name}\n{text}")
+            except BadRequest or Forbidden:
+                logger.warning(f"admin {admin} has deleted the bot")
         return ConversationHandler.END
 
 # START OF REQUEST WEATHER CONVERSATION
