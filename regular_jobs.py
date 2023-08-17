@@ -15,12 +15,10 @@ db = database.Database()
 
 message = """
 🟢 Changes:
-✅ تغییر توابع به async
-✅ قابلیت تولید لینک دعوت
-*
+✅ minor bug fixes
 """
 logger = logging.getLogger("agriWeather-bot")
-admin_list = [103465015, 31583686, 391763080, 216033407]
+admin_list = [103465015, 31583686, 391763080, 216033407, 5827206050]
 
 
 async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
@@ -42,16 +40,23 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     try:
         advise_data = gpd.read_file(f"data/pesteh{current_day}_1.geojson")
         advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
-        # advise_data = advise_data.dropna(subset=['Adivse'])
-        for id in ids:
-            farms = db.get_farms(id)
-            if not farms:
-                logger.info(f"user {id} has no farms yet.")
-            else:
-                for farm in farms:
+    except DriverError:
+        for admin in admin_list:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            await context.bot.send_message(
+                chat_id=admin,
+                text=f"{time} file pesteh{current_day}.geojson was not found!",
+            )
+    # advise_data = advise_data.dropna(subset=['Adivse'])
+    for id in ids:
+        farms = db.get_farms(id)
+        if not farms:
+            logger.info(f"user {id} has no farms yet.")
+        else:
+            for farm in farms:
+                try:
                     longitude = farms[farm]["location"]["longitude"]
                     latitude = farms[farm]["location"]["latitude"]
-                    logger.info(f"Location of farm:{farm} belonging to user:{id} --_-- lon:{longitude}, lat:{latitude}")
                     if longitude is None and farms[farm]["village"]:
                         province = farms[farm]["province"]
                         city = farms[farm]["city"]
@@ -71,7 +76,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                     elif longitude is None:
                         logger.info(f"\nLocation of farm:{farm} belonging to user:{id} was not found\n")
                     if latitude is not None and longitude is not None:
-                        logger.info(f"\nLocation of farm:{farm} belonging to user:{id} was found\n")
+                        logger.info(f"Location of farm:{farm} belonging to user:{id} was found")
                         # Find the nearest point to the user's lat/long
                         point = Point(longitude, latitude)
                         threshold = 0.1  # degrees
@@ -80,9 +85,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                         closest_coords = advise_data.geometry.iloc[idx_min_dist].coords[0]
                         closest_coords_tomorrow = advise_data_tomorrow.geometry.iloc[idx_min_dist_tomorrow].coords[0]
                         if point.distance(Point(closest_coords)) <= threshold:
-                            logger.info(
-                                f"user's {farm} location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}"
-                            )
+                            logger.info(f"distance: {point.distance(Point(closest_coords))}")
                             row = advise_data.iloc[idx_min_dist]
                             tmin_values, tmax_values, rh_values, spd_values, rain_values = [], [], [], [], []
                             for key, value in row.items():
@@ -97,25 +100,25 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 elif "rain_Time=" in key:
                                     rain_values.append(round(value, 1))
                             caption = f"""
-باغدار عزیز 
-پیش‌بینی وضعیت آب و هوای باغ شما با نام <{farm}> در چهار روز آینده بدین صورت خواهد بود
-"""
+    باغدار عزیز 
+    پیش‌بینی وضعیت آب و هوای باغ شما با نام <{farm}> در چهار روز آینده بدین صورت خواهد بود
+    """
                             weather_report = f"""
-مقادیر ارسالی 
-وضعیت آب و هوای باغ با نام <{farm}> بین {jdate}-{jday4} بدین صورت بود:
-حداکثر دما: {tmax_values} درجه سانتیگراد
-حداقل دما: {tmin_values} درجه سانتیگراد
-رطوبت نسبی: {rh_values} 
-سرعت باد: {spd_values} کیلومتر بر ساعت
-احتمال بارش: {rain_values} درصد
-"""
+    مقادیر ارسالی 
+    وضعیت آب و هوای باغ با نام <{farm}> بین {jdate}-{jday4} بدین صورت بود:
+    حداکثر دما: {tmax_values} درجه سانتیگراد
+    حداقل دما: {tmin_values} درجه سانتیگراد
+    رطوبت نسبی: {rh_values} 
+    سرعت باد: {spd_values} کیلومتر بر ساعت
+    احتمال بارش: {rain_values} درصد
+    """
                             table([jdate, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values, "job-table.png")
                             advise = advise_data.iloc[idx_min_dist]["Adivse"]
                             advise_today = f"""
-باغدار عزیز 
-توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما با نام <{farm}> ارسال می‌شود:
+    باغدار عزیز 
+    توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما با نام <{farm}> ارسال می‌شود:
 
-{advise}
+    {advise}
                             """
                             try:
                                 with open('job-table.png', 'rb') as image_file:
@@ -143,7 +146,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                             # logger.info(message)
                             if pd.isna(advise):
                                 logger.info(
-                                    f"No advice for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data "
+                                    f"No advice for user {id}   ong:{longitude}, lat:{latitude}). Closest point in advise data "
                                     f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}"
                                 )
                             if not pd.isna(advise):
@@ -175,7 +178,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                     logger.info(f"user:{id} chat was not found!")
                         else:
                             logger.info(
-                                f"user's location: ({longitude},{latitude}) | closest point in dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
+                                f"user's location: ({longitude},{latitude}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
                             )
                         if point.distance(Point(closest_coords_tomorrow)) <= threshold:
                             logger.info(
@@ -183,10 +186,10 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                             )
                             advise = advise_data_tomorrow.iloc[idx_min_dist_tomorrow]["Adivse"]
                             advise_tomorrow = f"""
-باغدار عزیز 
-توصیه زیر با توجه به وضعیت آب و هوایی فردای باغ شما با نام <{farm}> ارسال می‌شود:
+    باغدار عزیز 
+    توصیه زیر با توجه به وضعیت آب و هوایی فردای باغ شما با نام <{farm}> ارسال می‌شود:
 
-{advise}
+    {advise}
                             """
                             
                             if pd.isna(advise):
@@ -223,48 +226,44 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                     logger.info(f"user:{id} chat was not found!")
                         else:
                             logger.info(
-                                f"user's location: ({longitude},{latitude}) | closest point in TOMORROW's dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
+                                f"user's location: ({longitude},{latitude}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
                             )
-            
-        db.log_sent_messages(weather_report_receiver_id, "send_weather_report")
-        logger.info(f"sent weather report to {weather_report_count} people")
-        db.log_sent_messages(advise_today_receiver_id, "send_advice_to_users")
-        logger.info(f"sent advice info to {advise_today_count} people")
-        db.log_sent_messages(advise_tomorrow_receiver_id, "send_tomorrow_advice_to_users")
-        logger.info(f"sent tomorrow's advice info to {advise_tomorrow_count} people")
-        for admin in admin_list:
-            await context.bot.send_message(
-                chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} باغ ارسال شد"
-            )
-            await context.bot.send_message(chat_id=admin, text=f"{len(weather_report_receiver_id)}:\n{weather_report_receiver_id}")
+                except KeyError:
+                    for admin in admin_list:
+                        time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                        await context.bot.send_message(
+                            chat_id=admin, text=f"KeyError caused by user: {id} farm: {farm}"
+                        )
 
-            await context.bot.send_message(
-                chat_id=admin, text=f"توصیه به {advise_today_count} باغ ارسال شد"
-            )
-            await context.bot.send_message(chat_id=admin, text=f"{len(advise_today_receiver_id)}:\n{advise_today_receiver_id}")
-            await context.bot.send_message(
-                chat_id=admin, text=f"توصیه به {advise_tomorrow_count} باغ ارسال شد"
-            )
-            await context.bot.send_message(chat_id=admin, text=f"{len(advise_tomorrow_receiver_id)}:\n{advise_tomorrow_receiver_id}")
-    except DriverError:
-        for admin in admin_list:
-            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            await context.bot.send_message(
-                chat_id=admin,
-                text=f"{time} file pesteh{current_day}.geojson was not found!",
-            )
-    except KeyError:
-        for admin in admin_list:
-            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            await context.bot.send_message(
-                chat_id=admin, text=f"key error in file pesteh{current_day}_1.geojson!"
-            )
+    db.log_sent_messages(weather_report_receiver_id, "send_weather_report")
+    logger.info(f"sent weather report to {weather_report_count} people")
+    db.log_sent_messages(advise_today_receiver_id, "send_advice_to_users")
+    logger.info(f"sent advice info to {advise_today_count} people")
+    db.log_sent_messages(advise_tomorrow_receiver_id, "send_tomorrow_advice_to_users")
+    logger.info(f"sent tomorrow's advice info to {advise_tomorrow_count} people")
+    for admin in admin_list:
+        await context.bot.send_message(
+            chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} باغ ارسال شد"
+        )
+        await context.bot.send_message(chat_id=admin, text=f"{len(set(weather_report_receiver_id))}:\n{weather_report_receiver_id}")
+
+        await context.bot.send_message(
+            chat_id=admin, text=f"توصیه به {advise_today_count} باغ ارسال شد"
+        )
+        await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_today_receiver_id))}:\n{advise_today_receiver_id}")
+        await context.bot.send_message(
+            chat_id=admin, text=f"توصیه به {advise_tomorrow_count} باغ ارسال شد"
+        )
+        await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_tomorrow_receiver_id))}:\n{advise_tomorrow_receiver_id}")
+            
 
 async def send_up_notice(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Sent up notice to admins...")
     for admin in admin_list:
-        await context.bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد"+"\n"+ message)
-
+        try:
+            await context.bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد"+"\n"+ message)
+        except BadRequest or Forbidden:
+            logger.warning(f"admin {admin} has deleted the bot")
 async def get_member_count(context: ContextTypes.DEFAULT_TYPE):
     user_data = db.user_collection.distinct("_id")
     members = db.number_of_members()
