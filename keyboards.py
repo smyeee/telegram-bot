@@ -46,7 +46,7 @@ def farms_list_reply(database: db, user_id):
     keys_list = list(farms.keys())
     keyboard = [ [key] for key in keys_list ]
     keyboard.append(["↩️ بازگشت"])
-    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
         
 def edit_keyboard_inline():
     keyboard = [
@@ -99,11 +99,29 @@ def get_province_keyboard():
     keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['مرکزی', 'تهران', 'اصفهان'], ['قم', 'سیستان و بلوچستان', 'قزوین'], ['سایر', 'بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
+# 🌳🧾💶💰✅
 
 # Function to get the multi-choice keyboard for produce
+# def start_keyboard():
+#     keyboard = [['📤 دعوت از دیگران'], ,  ['🗑 حذف باغ ها', '✏️ ویرایش باغ ها'], ['🌦 درخواست اطلاعات هواشناسی']]
+#     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
 def start_keyboard():
-    keyboard = [['✍️ ثبت نام'], ['📤 دعوت از دیگران'], ['🖼 مشاهده باغ ها', '➕ اضافه کردن باغ'],  ['🗑 حذف باغ ها', '✏️ ویرایش باغ ها'], ['🌦 درخواست اطلاعات هواشناسی']]
+    keyboard = [ ['👨‍🌾 مدیریت باغ‌ها'],  ['💰 پرداخت‌ها'] , ['🌦 درخواست اطلاعات هواشناسی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
+def manage_farms_keyboard():
+    keyboard = [['🖼 مشاهده باغ ها', '➕ اضافه کردن باغ'], ['🗑 حذف باغ ها', '✏️ ویرایش باغ ها'], ['🏘 بازگشت به خانه']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
+
+def payment_keyboard():
+    keyboard = [['💶 خرید اشتراک'], ['🧾 ارسال فیش'], ['🏘 بازگشت به خانه']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
+
+
+def register_keyboard():
+    keyboard = [['✍️ ثبت نام']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def get_product_keyboard():
     keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر', 'بازگشت']]
