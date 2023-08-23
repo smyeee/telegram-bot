@@ -55,6 +55,5 @@ jobs:
             git pull --no-edit
             echo "FINSISHED UPDATING REPO"
             ls -lh
-            docker-compose up --build -d
+            docker-compose restart 
             sleep 15
-            docker-compose ps
