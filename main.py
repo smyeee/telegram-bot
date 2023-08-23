@@ -1502,11 +1502,7 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data["phone"] = phone
     db.set_user_attribute(user_id=user.id, key="phone-number", value=phone)
     reply_text = """
-از ثبت نام شما در بات هواشناسی کشاورزی متشکریم.
 اکنون می‌توانید با انتخاب گزینه <b>(➕ اضافه کردن باغ)</b> باغ‌های خود را ثبت کنید.
-راه‌های ارتباطی با ما:
-ادمین: @agriiadmin
-شماره ثابت: 02164063399
     """
     keyboard = [['➕ اضافه کردن باغ']]
     
