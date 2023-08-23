@@ -107,7 +107,7 @@ def get_province_keyboard():
 #     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def start_keyboard():
-    keyboard = [ ['👨‍🌾 مدیریت باغ‌ها'],  ['💰 پرداخت‌ها'] , ['🌦 درخواست اطلاعات هواشناسی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
+    keyboard = [ ['👨‍🌾 مدیریت باغ‌ها'],  ['🌟 سرویس VIP'] , ['🌦 درخواست اطلاعات هواشناسی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def manage_farms_keyboard():
@@ -115,7 +115,7 @@ def manage_farms_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
 def payment_keyboard():
-    keyboard = [['💶 خرید اشتراک'], ['🧾 ارسال فیش پرداخت'], ['🏘 بازگشت به خانه']]
+    keyboard = [['💶 خرید اشتراک - یک سال 499000 تومان'], ['🧾 ارسال فیش پرداخت'], ['🏘 بازگشت به خانه']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
 

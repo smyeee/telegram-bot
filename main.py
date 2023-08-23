@@ -104,8 +104,8 @@ RECV_WEATHER = range(1)
 CHOOSE_ATTR, EDIT_FARM, HANDLE_EDIT, HANDLE_EDIT_LINK = range(4)
 CONFIRM_DELETE, DELETE_FARM = range(2)
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-PAYMENT_PLANS = {"یک ساله - 500000 تومان": "https://packpay.ir/abad",}
-INITIAL_PRICE = 500000
+PAYMENT_PLANS = {"یک ساله - 499000 تومان": "https://packpay.ir/abad",}
+INITIAL_PRICE = 499000
 PROVINCES = ["کرمان", "خراسان رضوی", "خراسان جنوبی", "یزد", "فارس", "سمنان", "مرکزی", "تهران", "اصفهان", "قزوین", "سیستان و بلوچستان", "قم", "سایر"]
 PRODUCTS = [
     "پسته اکبری",
@@ -120,21 +120,67 @@ PRODUCTS = [
 ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
-###################################################################
+####################### Initialize Database #######################
 db = database.Database()
 ###################################################################
 ####################### MENU NAVIGATION ###########################
 async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
     reply_text = "بازگشت به منوی اصلی"
+    db.log_activity(user.id, "navigated to home view")
     await update.message.reply_text(reply_text, reply_markup=start_keyboard())
 
 async def farm_management_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
     reply_text = "مدیریت باغ‌ها"
+    db.log_activity(user.id, "navigated to farm management view")
     await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
 
 async def payment_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_text = "پرداخت‌ها"
-    await update.message.reply_text(reply_text, reply_markup=payment_keyboard())
+    user = update.effective_user
+    reply_text = """
+<b>☘باغی آباد با "آباد"☘</b>
+
+با عضویت در ربات " آباد " از خدمات زیر بهره‌مند می‌شوید: 
+
+💢 <b>رایگان:</b>
+
+✅ دریافت پیش بینی روزانه هواشناسی برای چهار روز آینده (دمای کمینه، دمای بیشینه، سرعت باد، رطوبت هوا و بارش)
+
+✅ امکان ثبت یک باغ
+
+
+💢 <b>سرویس vip:</b>
+
+✅ دریافت هشدارهای لازم جهت پیشگیری از پدیده‌های خسارت‌زای هواشناسی (مانند سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، تگرگ و … )
+
+✅ دریافت توصیه‌های کاربردی هواشناسی کشاورزی مخصوص رقم پسته شما ( زمان مناسب کوددهی، سم‌پاشی و یادآوری اقدامات مهم باغ شما)
+
+✅ دریافت پیامک در مواقع حساس علاوه بر بات تلگرامی
+
+✅ امکان ثبت تا ۵ باغ
+.
+.
+.
+و بسیاری از توصیه‌های کاربردی دیگر
+
+
+✅✅ در صورت عدم رضایت شما از سرویس در هر زمان، هزینه پرداختی باز می‌گردد.
+"""
+    db.log_activity(user.id, "navigated to payment view")
+    await update.message.reply_text(reply_text, parse_mode=ParseMode.HTML, reply_markup=payment_keyboard())
+
+async def contact_us(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    db.log_activity(user.id, "viewed contact us message")
+    text = """
+راه‌های ارتباط با ما:
+
+ادمین: @agriiadmin
+شماره تلفن: 02164063399
+آدرس: تهران، ضلع غربی دانشگاه شریف، برج فناوری بنتک
+"""
+    await update.message.reply_text(text, reply_markup=start_keyboard())
 
 ###################################################################
 ###################################################################
@@ -174,6 +220,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
 
+
+# Start of /send conversation
 async def send(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     db.log_activity(user_id, "used /send")
@@ -272,7 +320,6 @@ async def handle_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                   reply_markup=back_button())
         return BROADCAST
 
-
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data
     user = update.effective_user
@@ -330,6 +377,8 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.warning(f"admin {id} has deleted the bot")
         return ConversationHandler.END
 
+
+# Start of /set conversation
 async def set_loc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in ADMIN_LIST:
@@ -464,7 +513,6 @@ https://goo.gl/maps/3Nx2zh3pevaz9vf16
                 await context.bot.send_message(chat_id=user.id, text=f"{user_id} doesn't have a farm called\n {user_data['farm_name'][i]} \nor user doesn't exist.")
         return ConversationHandler.END
 
-
 async def handle_lat_long(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
@@ -488,18 +536,13 @@ async def handle_lat_long(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("عملیات کنسل شد!")
-    return ConversationHandler.END
-
-
+# Stats functions
 async def bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in ADMIN_LIST:
         await update.message.reply_text(
             "آمار مورد نظر را انتخاب کنید", reply_markup=stats_keyboard()
         )
-
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stat = update.callback_query
@@ -545,6 +588,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         no_phone_users = db.get_users_without_phone()
         await context.bot.send_message(chat_id=id, text=f"تعداد بدون شماره تلفن: {len(no_phone_users)}")
 
+
 # CREATE PERSONALIZED INVITE LINK FOR A USER
 async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -561,7 +605,7 @@ async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE):
 {link}
 """, reply_markup=start_keyboard())
 
-
+# invite link generation with a conversation, not added to app handlers right now.
 async def invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db.log_activity(user.id, "chose invite-link menu option")
@@ -592,7 +636,7 @@ async def handle_invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE)
     elif message_text=="ایجاد لینک دعوت جدید":
         random_string = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(5))
         db.set_user_attribute(user.id, "invite-links", random_string, array=True)
-        link = f"https://t.me/amir_test_bot?start={random_string}"
+        link = f"https://t.me/agriweathbot?start={random_string}"
         await update.message.reply_text(f"""
 سلام دوستان
 یک ربات هست که با توجه به موقعیت باغ شما و رقم محصول آن، توصیه‌های هواشناسی براتون ارسال میکنه
@@ -606,6 +650,8 @@ async def handle_invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE)
         db.log_activity(user.id, "error - option not valid", message_text)
         await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
+
+
 # START OF VIEW CONVERSATION
 async def view_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -693,14 +739,24 @@ async def payment_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     code = ''.join(random.choice(string.digits) for _ in range(5))
     user_data["code"] = code
     user_data["payment-message"] = await update.message.reply_text(f"""
-می‌توانید از درگاه پرداخت زیر نسبت به خرید اشتراک اقدام کنید.
-اگر کد تخفیف دارید با استفاده از دستور /off آن را ثبت کنید.
-<b>پس از پرداخت، تصویر پرداخت خود را همراه با کد {code} در قسمت ارسال فیش ثبت کنید.</b>
-مبلغ اشتراک یک ساله: 500000 تومان
+💢 برای خرید سرویس VIP، می‌توانید از دو روش زیر اقدام کنید.
+
+🔹 مبلغ اشتراک یک ساله: 499,000 تومان
+
+1⃣ شماره کارت:
+6104 3389 6738 5168 
+به نام نیما گنجی
+
+2⃣ وارد درگاه پرداخت زیر شده و با وارد کردن مبلغ، پرداخت را انجام دهید.                                                                   
+
+✅ اگر کد تخفیف دارید با استفاده از دستور /off آن را ثبت کنید.
+
+✅✅ در صورت عدم رضایت شما از سرویس در هر زمان، هزینه پرداختی باز می‌گردد.
+
+✅<b> پس از پرداخت، تصویر فیش خود را همراه با کد {code} در قسمت ارسال فیش ثبت کنید.</b>
 """,
                                      reply_markup=InlineKeyboardMarkup(keyboard),
                                      parse_mode=ParseMode.HTML)
-    db.log_activity(user.id, "received payment message")
     db.log_payment(user.id, code=code)
     db.set_user_attribute(user.id, "payment-msg-id", user_data["payment-message"]["message_id"])
     db.set_user_attribute(user.id, "used-coupon", False)
@@ -714,7 +770,9 @@ async def ask_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=user.id, text="لطفا ابتدا فرایند پرداخت را از منوی بات در /start آغاز کنید")
         return ConversationHandler.END
     else:
-        await context.bot.send_message(chat_id=user.id, text="لطفا کد تخفیف خود را وارد کنید:")
+        await context.bot.send_message(chat_id=user.id, text="لطفا کد تخفیف خود را وارد کنید:",
+                                       reply_markup=ReplyKeyboardRemove())
+        db.log_activity(user.id, "started /off conversation")
         return HANDLE_COUPON
 
 async def handle_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -727,12 +785,12 @@ async def handle_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif coupon in MENU_CMDS:
         db.log_activity(user.id, "error - coupon in menu_cmd list", coupon)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید. /off", reply_markup=start_keyboard())
         return ConversationHandler.END
     elif db.verify_coupon(coupon):
         if not db.get_user_attribute(user.id, "used-coupon"):
             db.set_user_attribute(user.id, "used-coupon", True)
-            db.log_activity(user.id, "used a coupon", coupon)
+            db.log_activity(user.id, "used a valid coupon", coupon)
             final_price = db.apply_coupon(coupon, INITIAL_PRICE)
             keyboard = [[InlineKeyboardButton("درگاه پرداخت", url=PAYMENT_PLANS[key]) for key in list(PAYMENT_PLANS.keys())]]
             code = user_data["code"]
@@ -743,17 +801,52 @@ async def handle_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                                 parse_mode=ParseMode.HTML,
                                                 reply_markup= InlineKeyboardMarkup(keyboard),
                                                 text=f"""
-می‌توانید از درگاه پرداخت زیر نسبت به خرید اشتراک اقدام کنید.
-اگر کد تخفیف دارید با استفاده از دستور /off آن را ثبت کنید.
-<b>پس از پرداخت، تصویر پرداخت خود را همراه با کد {code} در قسمت ارسال فیش ثبت کنید.</b>
-<s> اشتراک یک ساله: 500000 تومان</s>
- اشتراک یک ساله: {final_price} تومان
+💢 برای خرید سرویس VIP، می‌توانید از دو روش زیر اقدام کنید.
+
+🔹 <s>مبلغ اشتراک یک ساله: 499,000 تومان</s>
+🔹 مبلغ اشتراک یک ساله: {final_price} تومان
+                                           
+1⃣ شماره کارت:
+6104 3389 6738 5168 
+به نام نیما گنجی
+
+2⃣ وارد درگاه پرداخت زیر شده و با وارد کردن مبلغ، پرداخت را انجام دهید.                                                                   
+
+✅ اگر کد تخفیف دارید با استفاده از دستور /off آن را ثبت کنید.
+
+✅✅ در صورت عدم رضایت شما از سرویس در هر زمان، هزینه پرداختی باز می‌گردد.
+
+✅<b> پس از پرداخت، تصویر فیش خود را همراه با کد {code} در قسمت ارسال فیش ثبت کنید.</b>
+
 """)
             await context.bot.send_message(chat_id=user.id, text="تخفیف اعمال شد", parse_mode=ParseMode.HTML,
-                                        reply_to_message_id=db.get_user_attribute(user.id, "payment-msg-id"))
+                                        reply_to_message_id=db.get_user_attribute(user.id, "payment-msg-id"),
+                                        reply_markup=payment_keyboard())
+#             await context.bot.send_message(chat_id=user.id, text=f"""
+# 💢 برای خرید سرویس VIP، می‌توانید از دو روش زیر اقدام کنید.
+
+# 🔹 <s>مبلغ اشتراک یک ساله: 499,000 تومان</s>
+# 🔹 مبلغ اشتراک یک ساله: {final_price} تومان
+                                           
+# 1⃣ شماره کارت:
+# 6104 3389 6738 5168 
+# به نام نیما گنجی
+
+# 2⃣ وارد درگاه پرداخت زیر شده و با وارد کردن مبلغ، پرداخت را انجام دهید.                                                                   
+
+# ✅ اگر کد تخفیف دارید با استفاده از دستور /off آن را ثبت کنید.
+
+# ✅✅ در صورت عدم رضایت شما از سرویس در هر زمان، هزینه پرداختی باز می‌گردد.
+
+# ✅<b> پس از پرداخت، تصویر فیش خود را همراه با کد {code} در قسمت ارسال فیش ثبت کنید.</b>
+
+# """, parse_mode=ParseMode.HTML,
+#                                         reply_to_message_id=db.get_user_attribute(user.id, "payment-msg-id"))
+
             return ConversationHandler.END
         else:
             await context.bot.send_message(chat_id=user.id, text="شما قبلا از کد تخفیف استفاده کرده‌اید.")
+            db.log_activity(user.id, "tried to use a coupon multiple times")
     else:
         await context.bot.send_message(chat_id=user.id, text="کد تخفیف معتبر نیست")
         return ConversationHandler.END
@@ -762,8 +855,10 @@ async def handle_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     msg_id = db.get_user_attribute(user.id, "payment-msg-id")
+    db.log_activity(user.id, "chose ersal-e fish")
     await context.bot.send_message(chat_id=user.id, text="لطفا کد پرداخت موجود در پیام را وارد کنید.",
-                                   reply_to_message_id=msg_id)
+                                   reply_to_message_id=msg_id,
+                                   reply_markup=ReplyKeyboardRemove())
     return ASK_SS
 
 async def ask_ss(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -774,6 +869,7 @@ async def ask_ss(update: Update, context: ContextTypes.DEFAULT_TYPE):
     all_codes = [payment['code'] for payment in payments]
     if not payments:
         await context.bot.send_message(chat_id=user.id, text="لطفا ابتدا نسبت به پرداخت اقدام کنید.")
+        db.log_activity(user.id, "error - tried to verify before starting payment process")
         return ConversationHandler.END
     elif not code or code in MENU_CMDS:
         db.log_activity(user.id, "error - payment code in menu_cmd list", code)
@@ -781,9 +877,11 @@ async def ask_ss(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif code not in all_codes:
         await context.bot.send_message(chat_id=user.id, text="کد وارد شده اشتباه است.")
+        db.log_activity(user.id, "error - payment code not valid", code)
         return ConversationHandler.END
     else:
         await context.bot.send_message(chat_id=user.id, text="لطفا تصویر مبلغ پرداختی خود را ارسال فرمایید")
+        db.log_activity(user.id, "entered payment code", code)
         user_data["verification-code"] = code
         return HANDLE_SS
     
@@ -797,18 +895,21 @@ async def handle_ss(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
     elif not ss:
-        db.log_activity(user.id, "error - no screenshot")
+        db.log_activity(user.id, "error - no image was detected")
         await update.message.reply_text("تصویری دریافت نشد. در صورت تمایل دوباره از دکمه ارسال فیش استفاده کنید", reply_markup=payment_keyboard())
         return ConversationHandler.END
     elif ss:
-        db.log_activity(user.id, "sent screenshot")
+        db.log_activity(user.id, "sent an image")
         message_id = update.message.message_id
-        await update.message.reply_text("تصویر فیش شما دریافت شد. لطفا در انتظار تایید ادمین بمانید. نتیجه بررسی به شما اعلام خواهد شد.", reply_markup=payment_keyboard())
+        await update.message.reply_text("تصویر فیش شما دریافت شد. لطفا در انتظار تایید ادمین بمانید"
+                                        ". نتیجه بررسی به شما اعلام خواهد شد.",
+                                        reply_markup=payment_keyboard())
         for admin in ADMIN_LIST:
             try:
                 await context.bot.send_message(chat_id=admin, text=f"""درخواست تایید پرداخت:
 user: {user.id} 
 username: {user.username}
+phone-number: {db.get_user_attribute(user.id, "phone-number")}
 code: {user_data["verification-code"]}
 final price: {db.get_final_price(user.id, user_data["verification-code"])}
 """ )
@@ -839,7 +940,6 @@ example:
             await context.bot.send_message(chat_id=user.id, text="پرداخت کاربر تایید شد.")
             await context.bot.send_message(chat_id=int(args[0]), text="پرداخت شما با موفقیت تایید شد. از اعتماد شما متشکریم.")
 
-
 async def create_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not user.id in ADMIN_LIST:
@@ -857,6 +957,7 @@ async def create_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=user.id, text=f"{args[0]} {args[1]} was saved.")
         else:
             await context.bot.send_message(chat_id=user.id, text="کد تکراری بود")
+
 
 # START OF EDIT CONVERSATION
 async def edit_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1162,7 +1263,6 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return HANDLE_EDIT
 
-
 async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
@@ -1202,6 +1302,8 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.warning(f"admin {admin} has deleted the bot")
     return ConversationHandler.END
     # START OF DELETE CONVERSATION
+
+# START OF DELETE CONVERSATION
 async def delete_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db.log_activity(user.id, "start delete process")
@@ -1314,9 +1416,9 @@ async def delete_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ConversationHandler.END
 
 
+# Fallback handlers
 async def error_handler_(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.error('Update "%s" caused error "%s"', update, context.error)
-
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
@@ -1345,6 +1447,11 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
         chat_id=103465015, text=message, parse_mode=ParseMode.HTML
     )
 
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("عملیات کنسل شد!")
+    return ConversationHandler.END
+
+
 # START OF REGISTER CONVERSATION
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1358,7 +1465,6 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "لطفا نام و نام خانوادگی خود را وارد کنید \nلغو با /cancel", reply_markup=ReplyKeyboardRemove()
     )
     return ASK_PHONE
-
 
 async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1378,7 +1484,6 @@ async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.set_user_attribute(user_id=user.id, key="name", value=name)
     await update.message.reply_text("لطفا شماره تلفن خود را وارد کنید: \nلغو با /cancel")
     return HANDLE_PHONE
-
 
 async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1428,7 +1533,6 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     #
     return ASK_PRODUCT
 
-
 async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
@@ -1468,7 +1572,6 @@ async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ASK_PROVINCE
 
-
 async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
@@ -1495,7 +1598,6 @@ async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ASK_CITY
 
-
 async def ask_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
@@ -1520,7 +1622,6 @@ async def ask_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "لطفا شهرستان محل باغ را وارد کنید:", reply_markup=back_button()
     )
     return ASK_VILLAGE
-
 
 async def ask_village(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1551,7 +1652,6 @@ async def ask_village(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ASK_AREA
 
-
 async def ask_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
@@ -1577,7 +1677,6 @@ async def ask_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.log_activity(user.id, "entered village", f"{update.message.text}")
     await update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
     return ASK_LOCATION
-
 
 async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1619,7 +1718,6 @@ async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     )
     return HANDLE_LOCATION
-
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1765,6 +1863,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.warning(f"admin {admin} has deleted the bot")
         return ConversationHandler.END
 
+
 # START OF REQUEST WEATHER CONVERSATION
 async def req_weather_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1889,6 +1988,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                  reply_markup=start_keyboard())
         return ConversationHandler.END
  
+
 def main():
     proxy_url = 'http://127.0.0.1:8889'
     application = ApplicationBuilder().token(TOKEN).build()
@@ -2017,13 +2117,14 @@ def main():
     # Menu navigation commands
     application.add_handler(MessageHandler(filters.Regex('🏘 بازگشت به خانه'), home_view))
     application.add_handler(MessageHandler(filters.Regex('👨‍🌾 مدیریت باغ‌ها'), farm_management_view))
-    application.add_handler(MessageHandler(filters.Regex('💰 پرداخت‌ها'), payment_view))
+    application.add_handler(MessageHandler(filters.Regex('🌟 سرویس VIP'), payment_view))
 
     # Bot handlers
     application.add_handler(register_conv)
     application.add_handler(add_conv)
     application.add_handler(MessageHandler(filters.Regex("دعوت از دیگران"), invite))
-    application.add_handler(MessageHandler(filters.Regex('💶 خرید اشتراک'), payment_link))
+    application.add_handler(MessageHandler(filters.Regex('📬 ارتباط با ما'), contact_us))
+    application.add_handler(MessageHandler(filters.Regex('💶 خرید اشتراک - یک سال 499000 تومان'), payment_link))
     application.add_handler(CommandHandler("verify", verify_payment))
     application.add_handler(off_conv)
     application.add_handler(verify_conv)
