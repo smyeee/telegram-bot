@@ -855,6 +855,11 @@ async def handle_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     msg_id = db.get_user_attribute(user.id, "payment-msg-id")
+    if not msg_id:
+        await context.bot.send_message(chat_id=user.id, text="لطفا ابتدا فرایند خرید را از طریق دکمه <b>خرید اشتراک</b> آغاز کنید.",
+                                       parse_mode=ParseMode.HTML,
+                                       reply_markup=payment_keyboard())
+        return ConversationHandler.END
     db.log_activity(user.id, "chose ersal-e fish")
     await context.bot.send_message(chat_id=user.id, text="لطفا کد پرداخت موجود در پیام را وارد کنید.",
                                    reply_to_message_id=msg_id,
@@ -1987,8 +1992,8 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     proxy_url = 'http://127.0.0.1:8889'
-    application = ApplicationBuilder().token(TOKEN).build()
-    # application = ApplicationBuilder().token(TOKEN).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
+    # application = ApplicationBuilder().token(TOKEN).build()
+    application = ApplicationBuilder().token(TOKEN).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
     register_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("✍️ ثبت نام"), register)],
         states={
