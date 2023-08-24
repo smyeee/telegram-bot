@@ -115,7 +115,7 @@ def manage_farms_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
 def payment_keyboard():
-    keyboard = [['💶 خرید اشتراک - یک سال 499000 تومان'], ['🧾 ارسال فیش پرداخت'], ['🏘 بازگشت به خانه']]
+    keyboard = [['💶 خرید اشتراک'], ['🧾 ارسال فیش پرداخت'], ['🏘 بازگشت به خانه']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
 

@@ -1992,8 +1992,8 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     proxy_url = 'http://127.0.0.1:8889'
-    application = ApplicationBuilder().token(TOKEN).build()
-    # application = ApplicationBuilder().token(TOKEN).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
+    # application = ApplicationBuilder().token(TOKEN).build()
+    application = ApplicationBuilder().token(TOKEN).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
     register_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("✍️ ثبت نام"), register)],
         states={
@@ -2125,7 +2125,7 @@ def main():
     application.add_handler(add_conv)
     application.add_handler(MessageHandler(filters.Regex("دعوت از دیگران"), invite))
     application.add_handler(MessageHandler(filters.Regex('📬 ارتباط با ما'), contact_us))
-    application.add_handler(MessageHandler(filters.Regex('💶 خرید اشتراک - یک سال 499000 تومان'), payment_link))
+    application.add_handler(MessageHandler(filters.Regex('💶 خرید اشتراک'), payment_link))
     application.add_handler(CommandHandler("verify", verify_payment))
     application.add_handler(off_conv)
     application.add_handler(verify_conv)
