@@ -177,7 +177,7 @@ async def contact_us(update: Update, context: ContextTypes.DEFAULT_TYPE):
 راه‌های ارتباط با ما:
 
 ادمین: @agriiadmin
-شماره تلفن: 02164063399
+شماره تلفن: 02164063410
 آدرس: تهران، ضلع غربی دانشگاه شریف، برج فناوری بنتک
 """
     await update.message.reply_text(text, reply_markup=start_keyboard())
@@ -201,7 +201,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 و سپس باغ های خود را ثبت کنید.
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
-تلفن ثابت: 02164063399
+تلفن ثابت: 02164063410
                 """
         args = context.args
         if args:
@@ -215,7 +215,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … باغ های خد را در بات ثبت کنید.
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
-تلفن ثابت: 02164063399
+تلفن ثابت: 02164063410
                 """
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
