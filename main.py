@@ -39,7 +39,7 @@ import html
 import json
 import traceback
 import database
-from regular_jobs import send_todays_data, send_up_notice, get_member_count
+from regular_jobs import send_todays_data, send_up_notice, get_member_count, register_reminder, no_farm_reminder, no_location_reminder
 from keyboards import (
     register_keyboard,
     start_keyboard,
@@ -207,6 +207,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if args:
             db.log_token_use(user.id, args[0])
         await update.message.reply_text(reply_text, reply_markup=register_keyboard())
+        context.job_queue.run_once(register_reminder, when=datetime.timedelta(days=1), chat_id=user.id, data=user.username)    
+        context.job_queue.run_once(no_farm_reminder, when=datetime.timedelta(days=1, minutes=2), chat_id=user.id, data=user.username)    
         return ConversationHandler.END
     else:
         reply_text = """
@@ -1789,6 +1791,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
         db.log_activity(user.id, "finish add farm - no location", farm_name)
+        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta.days(1), chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
     elif text == "از نقشه داخل تلگرام انتخاب میکنم":
@@ -1856,6 +1859,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
         db.log_activity(user.id, "finish add farm with location link", farm_name)
+        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta.days(1), chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         for admin in ADMIN_LIST:
             try:

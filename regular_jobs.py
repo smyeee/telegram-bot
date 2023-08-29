@@ -20,8 +20,101 @@ message = """
 ✅ اضافه شدن دستور /verify برای تایید پرداخت‌های کاربر
 ✅ هر دو دستور بالا فقط برای ادمین‌ها قابل استفاده هستند. راهنمای استفاده اضافه شده و با زدن دستورها قابل دسترس است.
 """
+
+# Incomplete registration
+message_incomplete_reg = """
+باغدار عزیز لطفا ثبت‌نام را تکمیل و باغ خود را ثبت کنید تا بتوانیم پیش‌بینی‌های ۴ روزه و توصیه‌های مختص باغ شما را ارسال کنیم.
+برای شروع /start را بزنید.
+راهنمایی بیشتر:
+👉 @agriiadmin
+"""
+# No farms
+message_no_farms = """
+باغدار عزیز لطفا اطلاعات باغ خود را ثبت کنید تا بتوانیم توصیه‌های مختص باغ شما را ارسال کنیم.
+/start را بزنید و سپس دکمه «اضافه‌کردن باغ» و اطلاعات خود را وارد کنید.
+راهنمایی بیشتر:
+👉 @agriiadmin
+"""
+# No Location
+message_no_location = """
+باغدار عزیز یک مرحله تا ارسال توصیه مخصوص باغ شما مانده.
+لطفا موقعیت باغ خود را با زدن /start و دکمه ویرایش وارد کنید.
+راهنمایی بیشتر:
+👉 @agriiadmin
+"""
+
+
 logger = logging.getLogger("agriWeather-bot")
 admin_list = [103465015, 31583686, 391763080, 216033407, 5827206050]
+
+
+async def register_reminder(context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.job.chat_id
+    username = context.job.data
+    if not db.check_if_user_is_registered(user_id):
+        try:
+            await context.bot.send_message(chat_id=user_id, text=message_incomplete_reg)           
+            db.log_new_message(user_id=user_id,
+                           username=username,
+                           message=message_incomplete_reg,
+                           function="register reminder")
+        except Forbidden:
+            db.set_user_attribute(user_id, "blocked", True)
+            logger.info(f"user:{user_id} has blocked the bot!")
+        except BadRequest:
+            logger.info(f"user:{user_id} chat was not found!")
+
+async def no_farm_reminder(context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.job.chat_id
+    username = context.job.data
+    if db.check_if_user_is_registered(user_id) and not db.get_farms(user_id):
+        try:
+            await context.bot.send_message(chat_id=user_id, text=message_no_farms)           
+            db.log_new_message(user_id=user_id,
+                            username=username,
+                            message=message_incomplete_reg,
+                            function="no farm reminder")
+        except Forbidden:
+            db.set_user_attribute(user_id, "blocked", True)
+            logger.info(f"user:{user_id} has blocked the bot!")
+        except BadRequest:
+            logger.info(f"user:{user_id} chat was not found!")
+
+async def no_location_reminder(context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.job.chat_id
+    username = context.job.data
+    farms = db.get_farms(user_id)
+    if farms:
+        if all([farm[1].get('location')['longitude']==None for farm in farms.items()]):
+            try:
+                await context.bot.send_message(chat_id=user_id, text=message_no_location)           
+                db.log_new_message(user_id=user_id,
+                                username=username,
+                                message=message_incomplete_reg,
+                                function="no location reminder")
+            except Forbidden:
+                db.set_user_attribute(user_id, "blocked", True)
+                logger.info(f"user:{user_id} has blocked the bot!")
+            except BadRequest:
+                logger.info(f"user:{user_id} chat was not found!")
+
+async def send_reminders(context: ContextTypes.DEFAULT_TYPE):
+    ids = db.user_collection.distinct("_id")
+    current_time = datetime.datetime.now()
+    for id in ids:
+        document = db.user_collection.find_one({"_id": id})
+        first_seen = document.get("first-seen")
+        first_seen_dt = datetime.datetime.strptime(first_seen, "%Y%m%d %H:%M")
+        time_delta = (current_time - first_seen_dt).days
+        if not db.check_if_user_is_registered(id) and time_delta >= 1:
+            await context.bot.send_message(chat_id=id, text=message_incomplete_reg)           
+        elif not document.get("farms", None) and time_delta >= 1:
+            await context.bot.send_message(chat_id=id, text=message_no_farms)           
+        else:
+            if all([farm[1].get('location')['longitude']==None for farm in document.get('farms').items()]):
+                await context.bot.send_message(chat_id=id, text=message_no_location)           
+       
+    
 
 
 async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
