@@ -86,7 +86,9 @@ class Database:
     def log_token_use(self, user_id: int, value: str) -> int:
         token_document = self.token_collection.find_one({ "token-value": value })
         if token_document:
+            owner = token_document.get("owner")
             self.token_collection.update_one({"token-value": value}, {"$push": {"used-by": user_id}})
+            self.user_collection.update_one({"_id": user_id}, {"$set": {"invited-by": owner}})
 
     def calc_token_number(self, value: str):
         token_document = self.token_collection.find_one({ "token-value": value })

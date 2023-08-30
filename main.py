@@ -203,12 +203,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
 تلفن ثابت: 02164063410
-https://t.me/agriweath48
                 """
         args = context.args
         if args:
             db.log_token_use(user.id, args[0])
         await update.message.reply_text(reply_text, reply_markup=register_keyboard())
+        await update.message.reply_text("https://t.me/agriweath/48")
         context.job_queue.run_once(register_reminder, when=datetime.timedelta(hours=3), chat_id=user.id, data=user.username)    
         return ConversationHandler.END
     else:
@@ -219,7 +219,6 @@ https://t.me/agriweath48
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
 تلفن ثابت: 02164063410
-https://t.me/agriweath48
                 """
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
