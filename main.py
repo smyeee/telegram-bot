@@ -188,6 +188,7 @@ async def contact_us(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
+    context.job_queue.run_once(no_farm_reminder, when=datetime.timedelta(days=1, minutes=10), chat_id=user.id, data=user.username)    
     # Check if the user has already signed up
     if not db.check_if_user_is_registered(user_id=user.id):
         user_data["username"] = user.username
@@ -208,7 +209,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.log_token_use(user.id, args[0])
         await update.message.reply_text(reply_text, reply_markup=register_keyboard())
         context.job_queue.run_once(register_reminder, when=datetime.timedelta(days=1), chat_id=user.id, data=user.username)    
-        context.job_queue.run_once(no_farm_reminder, when=datetime.timedelta(days=1, minutes=2), chat_id=user.id, data=user.username)    
         return ConversationHandler.END
     else:
         reply_text = """
@@ -1084,7 +1084,7 @@ async def edit_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "chose edit location")
         user_data["attr"] = attr
         reply_text = """
-لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید.
+لطفا موقعیت باغ (لوکیشن باغ) خود را با انتخاب یکی از روش‌های زیر بفرستید.
 
 🟢 ربات آباد از لوکیشن شما فقط در راستای ارسال توصیه ها استفاده می‌کند.
 🟢 متاسفانه آباد امکان ارسال توصیه بدون داشتن لوکیشن باغ شما را ندارد.
@@ -1226,15 +1226,21 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return EDIT_FARM
         if text == "ارسال لینک آدرس (گوگل مپ یا نشان)":
             db.log_activity(user.id, "chose to edit location with link")
+            db.set_user_attribute(
+                user.id, f"farms.{farm}.location-method", "Link via edit"
+            )
             await update.message.reply_text("لطفا لینک آدرس باغ خود را ارسال کنید.", reply_markup=back_button())
             return HANDLE_EDIT_LINK
         if new_location:
-            logger.info(f"{update.effective_user.id} chose: ersal new_location online")
+            logger.info(f"{update.effective_user.id} chose: new_location sent successfully")
             db.set_user_attribute(
                 user.id, f"farms.{farm}.location.longitude", new_location.longitude
             )
             db.set_user_attribute(
                 user.id, f"farms.{farm}.location.latitude", new_location.latitude
+            )
+            db.set_user_attribute(
+                user.id, f"farms.{farm}.location-method", "User sent location via edit"
             )
             reply_text = f"موقعیت جدید {farm} با موفقیت ثبت شد."
             db.log_activity(user.id, "finish edit location", f"long: {new_location.longitude}, lat: {new_location.latitude}")
@@ -1254,6 +1260,10 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=user.id, text=reply_text, reply_markup=edit_keyboard_reply()
             )
+            db.set_user_attribute(
+                user.id, f"farms.{farm}.location-method", "Unsuccessful via edit"
+            )
+            context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1),chat_id=user.id, data=user.username)    
             return EDIT_FARM
         elif text == "از نقشه داخل تلگرام انتخاب میکنم":
             db.log_activity(user.id, "chose to send location from map")
@@ -1284,7 +1294,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return HANDLE_EDIT_LINK
     elif text == "بازگشت":
         db.log_activity(user.id, "back")
-        reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
+        reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را با انتخاب یکی از روش‌های زیر بفرستید."
         keyboard = [
         [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [
@@ -1302,6 +1312,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا منتظر تایید ادمین باشید. با تشکر."
     db.log_activity(user.id, "finish edit location with link")
     await update.message.reply_text(reply_text, reply_markup=start_keyboard())
+    context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1),chat_id=user.id, data=user.username)    
     for admin in ADMIN_LIST:
         try:
             await context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{user_data['selected_farm']}\n{text}")
@@ -1701,7 +1712,7 @@ async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data["area"] = area
     db.log_activity(user.id, "entered area", f"{update.message.text}")
     reply_text = """
-لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید.
+لطفا موقعیت باغ (لوکیشن باغ) خود را با انتخاب یکی از روش‌های زیر بفرستید.
 
 🟢 ربات آباد از لوکیشن شما فقط در راستای ارسال توصیه ها استفاده می‌کند.
 🟢 متاسفانه آباد امکان ارسال توصیه بدون داشتن لوکیشن باغ شما را ندارد.
@@ -1791,7 +1802,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
         db.log_activity(user.id, "finish add farm - no location", farm_name)
-        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta.days(1), chat_id=user.id, data=user.username)    
+        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1),chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
     elif text == "از نقشه داخل تلگرام انتخاب میکنم":
@@ -1825,7 +1836,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return HANDLE_LINK
     elif text == "بازگشت":
         db.log_activity(user.id, "back")
-        reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را بفرستید."
+        reply_text = "لطفا موقعیت باغ (لوکیشن باغ) خود را با انتخاب یکی از روش‌های زیر بفرستید."
         keyboard = [
         [KeyboardButton("ارسال لینک آدرس (گوگل مپ یا نشان)")],
         [
@@ -1859,7 +1870,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
         db.log_activity(user.id, "finish add farm with location link", farm_name)
-        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta.days(1), chat_id=user.id, data=user.username)    
+        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1), chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         for admin in ADMIN_LIST:
             try:

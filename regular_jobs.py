@@ -233,10 +233,6 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                             except Forbidden:
                                 db.set_user_attribute(id, "blocked", True)
                                 logger.info(f"user:{id} has blocked the bot!")
-                                for admin in admin_list:
-                                    await context.bot.send_message(
-                                        chat_id=admin, text=f"user: {id} has blocked the bot!"
-                                    )
                             except BadRequest:
                                 logger.info(f"user:{id} chat was not found!")
                             # logger.info(message)
@@ -265,11 +261,6 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 except Forbidden:
                                     db.set_user_attribute(id, "blocked", True)
                                     logger.info(f"user:{id} has blocked the bot!")
-                                    for admin in admin_list:
-                                        await context.bot.send_message(
-                                            chat_id=admin,
-                                            text=f"user: {id} has blocked the bot!",
-                                        )
                                 except BadRequest:
                                     logger.info(f"user:{id} chat was not found!")
                         else:
@@ -313,11 +304,6 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 except Forbidden:
                                     db.set_user_attribute(id, "blocked", True)
                                     logger.info(f"user:{id} has blocked the bot!")
-                                    for admin in admin_list:
-                                        await context.bot.send_message(
-                                            chat_id=admin,
-                                            text=f"user: {id} has blocked the bot!",
-                                        )
                                 except BadRequest:
                                     logger.info(f"user:{id} chat was not found!")
                         else:
@@ -360,8 +346,8 @@ async def send_up_notice(context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=admin, text="بات دوباره راه‌اندازی شد"+"\n"+ message)
         except BadRequest or Forbidden:
             logger.warning(f"admin {admin} has deleted the bot")
+
 async def get_member_count(context: ContextTypes.DEFAULT_TYPE):
-    user_data = db.user_collection.distinct("_id")
     members = db.number_of_members()
     blockde_members = db.number_of_blocks()
     member_count = members - blockde_members
