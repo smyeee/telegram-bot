@@ -98,24 +98,6 @@ async def no_location_reminder(context: ContextTypes.DEFAULT_TYPE):
             except BadRequest:
                 logger.info(f"user:{user_id} chat was not found!")
 
-async def send_reminders(context: ContextTypes.DEFAULT_TYPE):
-    ids = db.user_collection.distinct("_id")
-    current_time = datetime.datetime.now()
-    for id in ids:
-        document = db.user_collection.find_one({"_id": id})
-        first_seen = document.get("first-seen")
-        first_seen_dt = datetime.datetime.strptime(first_seen, "%Y%m%d %H:%M")
-        time_delta = (current_time - first_seen_dt).days
-        if not db.check_if_user_is_registered(id) and time_delta >= 1:
-            await context.bot.send_message(chat_id=id, text=message_incomplete_reg)           
-        elif not document.get("farms", None) and time_delta >= 1:
-            await context.bot.send_message(chat_id=id, text=message_no_farms)           
-        else:
-            if all([farm[1].get('location')['longitude']==None for farm in document.get('farms').items()]):
-                await context.bot.send_message(chat_id=id, text=message_no_location)           
-       
-    
-
 
 async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     ids = db.user_collection.distinct("_id")
