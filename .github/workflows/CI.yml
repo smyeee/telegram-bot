@@ -52,7 +52,7 @@ jobs:
             docker-compose down
             sleep 15
             git fetch
-            git pull --no-edit
+            git pull 
             echo "FINSISHED UPDATING REPO"
             ls -lh
             docker-compose restart 
