@@ -203,6 +203,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
 تلفن ثابت: 02164063410
+https://t.me/agriweath48
                 """
         args = context.args
         if args:
@@ -218,6 +219,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 راه‌های ارتباطی با ما:
 ادمین: @agriiadmin
 تلفن ثابت: 02164063410
+https://t.me/agriweath48
                 """
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
