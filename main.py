@@ -188,7 +188,7 @@ async def contact_us(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
-    context.job_queue.run_once(no_farm_reminder, when=datetime.timedelta(days=1, minutes=10), chat_id=user.id, data=user.username)    
+    context.job_queue.run_once(no_farm_reminder, when=datetime.timedelta(hours=1), chat_id=user.id, data=user.username)    
     # Check if the user has already signed up
     if not db.check_if_user_is_registered(user_id=user.id):
         user_data["username"] = user.username
@@ -208,7 +208,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if args:
             db.log_token_use(user.id, args[0])
         await update.message.reply_text(reply_text, reply_markup=register_keyboard())
-        context.job_queue.run_once(register_reminder, when=datetime.timedelta(days=1), chat_id=user.id, data=user.username)    
+        context.job_queue.run_once(register_reminder, when=datetime.timedelta(hours=3), chat_id=user.id, data=user.username)    
         return ConversationHandler.END
     else:
         reply_text = """
@@ -1263,7 +1263,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.set_user_attribute(
                 user.id, f"farms.{farm}.location-method", "Unsuccessful via edit"
             )
-            context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1),chat_id=user.id, data=user.username)    
+            context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    
             return EDIT_FARM
         elif text == "از نقشه داخل تلگرام انتخاب میکنم":
             db.log_activity(user.id, "chose to send location from map")
@@ -1312,7 +1312,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا منتظر تایید ادمین باشید. با تشکر."
     db.log_activity(user.id, "finish edit location with link")
     await update.message.reply_text(reply_text, reply_markup=start_keyboard())
-    context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1),chat_id=user.id, data=user.username)    
+    context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    
     for admin in ADMIN_LIST:
         try:
             await context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{user_data['selected_farm']}\n{text}")
@@ -1802,7 +1802,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
         db.log_activity(user.id, "finish add farm - no location", farm_name)
-        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1),chat_id=user.id, data=user.username)    
+        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
     elif text == "از نقشه داخل تلگرام انتخاب میکنم":
@@ -1870,7 +1870,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
         db.log_activity(user.id, "finish add farm with location link", farm_name)
-        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(days=1), chat_id=user.id, data=user.username)    
+        context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1), chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         for admin in ADMIN_LIST:
             try:
