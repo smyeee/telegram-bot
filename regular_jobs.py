@@ -15,10 +15,7 @@ db = database.Database()
 
 message = """
 🟢 Changes:
-✅ اضافه شدن قابلیت پرداخت همراه با کد تخفیف (/off)
-✅ اضافه شدن دستور /coupon برای تولید کد تخفیف با ارزش دلخواه
-✅ اضافه شدن دستور /verify برای تایید پرداخت‌های کاربر
-✅ هر دو دستور بالا فقط برای ادمین‌ها قابل استفاده هستند. راهنمای استفاده اضافه شده و با زدن دستورها قابل دسترس است.
+✅ توقف ارسال توصیه
 """
 
 # Incomplete registration
@@ -117,7 +114,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     advise_tomorrow_count = 0
     try:
         advise_data = gpd.read_file(f"data/pesteh{current_day}_1.geojson")
-        advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
+        # advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
     except DriverError:
         for admin in admin_list:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -159,9 +156,9 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                         point = Point(longitude, latitude)
                         threshold = 0.1  # degrees
                         idx_min_dist = advise_data.geometry.distance(point).idxmin()
-                        idx_min_dist_tomorrow = advise_data_tomorrow.geometry.distance(point).idxmin()
+                        # idx_min_dist_tomorrow = advise_data_tomorrow.geometry.distance(point).idxmin()
                         closest_coords = advise_data.geometry.iloc[idx_min_dist].coords[0]
-                        closest_coords_tomorrow = advise_data_tomorrow.geometry.iloc[idx_min_dist_tomorrow].coords[0]
+                        # closest_coords_tomorrow = advise_data_tomorrow.geometry.iloc[idx_min_dist_tomorrow].coords[0]
                         if point.distance(Point(closest_coords)) <= threshold:
                             logger.info(f"distance: {point.distance(Point(closest_coords))}")
                             row = advise_data.iloc[idx_min_dist]
@@ -218,80 +215,80 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                             except BadRequest:
                                 logger.info(f"user:{id} chat was not found!")
                             # logger.info(message)
-                            if pd.isna(advise):
-                                logger.info(
-                                    f"No advice for user {id}   ong:{longitude}, lat:{latitude}). Closest point in advise data "
-                                    f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}"
-                                )
-                            if not pd.isna(advise):
-                                try:
-                                    # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                    await context.bot.send_message(chat_id=id, text=advise_today)
-                                    username = db.user_collection.find_one({"_id": id})[
-                                        "username"
-                                    ]
-                                    db.log_new_message(
-                                        user_id=id,
-                                        username=username,
-                                        message=advise_today,
-                                        function="send_advice",
-                                    )
-                                    logger.info(f"sent recommendation to {id}")
-                                    advise_today_count += 1
-                                    advise_today_receiver_id.append(id)
-                                    # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                except Forbidden:
-                                    db.set_user_attribute(id, "blocked", True)
-                                    logger.info(f"user:{id} has blocked the bot!")
-                                except BadRequest:
-                                    logger.info(f"user:{id} chat was not found!")
+                            # if pd.isna(advise):
+                            #     logger.info(
+                            #         f"No advice for user {id}   ong:{longitude}, lat:{latitude}). Closest point in advise data "
+                            #         f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}"
+                            #     )
+                            # if not pd.isna(advise):
+                            #     try:
+                            #         # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                            #         await context.bot.send_message(chat_id=id, text=advise_today)
+                            #         username = db.user_collection.find_one({"_id": id})[
+                            #             "username"
+                            #         ]
+                            #         db.log_new_message(
+                            #             user_id=id,
+                            #             username=username,
+                            #             message=advise_today,
+                            #             function="send_advice",
+                            #         )
+                            #         logger.info(f"sent recommendation to {id}")
+                            #         advise_today_count += 1
+                            #         advise_today_receiver_id.append(id)
+                            #         # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                            #     except Forbidden:
+                            #         db.set_user_attribute(id, "blocked", True)
+                            #         logger.info(f"user:{id} has blocked the bot!")
+                            #     except BadRequest:
+                            #         logger.info(f"user:{id} chat was not found!")
                         else:
                             logger.info(
                                 f"user's location: ({longitude},{latitude}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
                             )
-                        if point.distance(Point(closest_coords_tomorrow)) <= threshold:
-                            logger.info(
-                                f"user's {farm} location: ({longitude},{latitude}) | closest point in TOMORROW's dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}"
-                            )
-                            advise = advise_data_tomorrow.iloc[idx_min_dist_tomorrow]["Adivse"]
-                            advise_tomorrow = f"""
-    باغدار عزیز 
-    توصیه زیر با توجه به وضعیت آب و هوایی فردای باغ شما با نام <{farm}> ارسال می‌شود:
+    #                     if point.distance(Point(closest_coords_tomorrow)) <= threshold:
+    #                         logger.info(
+    #                             f"user's {farm} location: ({longitude},{latitude}) | closest point in TOMORROW's dataset: ({closest_coords[0]},{closest_coords[1]}) | distance: {point.distance(Point(closest_coords))}"
+    #                         )
+    #                         advise = advise_data_tomorrow.iloc[idx_min_dist_tomorrow]["Adivse"]
+    #                         advise_tomorrow = f"""
+    # باغدار عزیز 
+    # توصیه زیر با توجه به وضعیت آب و هوایی فردای باغ شما با نام <{farm}> ارسال می‌شود:
 
-    {advise}
-                            """
+    # {advise}
+    #                         """
                             
-                            if pd.isna(advise):
-                                logger.info(
-                                    f"No advice for TOMORROW for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data "
-                                    f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}"
-                                )
-                            if not pd.isna(advise):
-                                try:
-                                    # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                    await context.bot.send_message(chat_id=id, text=advise_tomorrow)
-                                    username = db.user_collection.find_one({"_id": id})[
-                                        "username"
-                                    ]
-                                    db.log_new_message(
-                                        user_id=id,
-                                        username=username,
-                                        message=advise_today,
-                                        function="send_advice_tomorrow",
-                                    )
-                                    logger.info(f"sent recommendation to {id}")
-                                    advise_tomorrow_count += 1
-                                    advise_tomorrow_receiver_id.append(id)
-                                    # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                                except Forbidden:
-                                    db.set_user_attribute(id, "blocked", True)
-                                    logger.info(f"user:{id} has blocked the bot!")
-                                except BadRequest:
-                                    logger.info(f"user:{id} chat was not found!")
-                        else:
-                            logger.info(
-                                f"user's location: ({longitude},{latitude}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
-                            )
+    #                         if pd.isna(advise):
+    #                             logger.info(
+    #                                 f"No advice for TOMORROW for user {id} with location (long:{longitude}, lat:{latitude}). Closest point in advise data "
+    #                                 f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}"
+    #                             )
+    #                         if not pd.isna(advise):
+    #                             try:
+    #                                 # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+    #                                 await context.bot.send_message(chat_id=id, text=advise_tomorrow)
+    #                                 username = db.user_collection.find_one({"_id": id})[
+    #                                     "username"
+    #                                 ]
+    #                                 db.log_new_message(
+    #                                     user_id=id,
+    #                                     username=username,
+    #                                     message=advise_today,
+    #                                     function="send_advice_tomorrow",
+    #                                 )
+    #                                 logger.info(f"sent recommendation to {id}")
+    #                                 advise_tomorrow_count += 1
+    #                                 advise_tomorrow_receiver_id.append(id)
+    #                                 # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+    #                             except Forbidden:
+    #                                 db.set_user_attribute(id, "blocked", True)
+    #                                 logger.info(f"user:{id} has blocked the bot!")
+    #                             except BadRequest:
+    #                                 logger.info(f"user:{id} chat was not found!")
+    #                     else:
+    #                         logger.info(
+    #                             f"user's location: ({longitude},{latitude}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
+    #                         )
                 except KeyError:
                     for admin in admin_list:
                         time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
