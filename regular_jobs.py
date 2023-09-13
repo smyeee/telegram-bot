@@ -113,7 +113,8 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     advise_tomorrow_receiver_id = []
     advise_tomorrow_count = 0
     try:
-        advise_data = gpd.read_file(f"data/pesteh{current_day}_1.geojson")
+        advise_data = gpd.read_file(f"data/pesteh{current_day}_Advise.geojson")
+        weather_data = gpd.read_file(f"data/pesteh{current_day}_weather.geojson")
         # advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
     except DriverError:
         for admin in admin_list:
