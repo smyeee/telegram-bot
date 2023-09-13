@@ -1123,7 +1123,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         new_product = update.message.text
         if new_product == "بازگشت":
             db.log_activity(user.id, "back")
-            await context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
+            await context.bot.send_message(chat_id=user.id, text = "یکی از موارد زیر را جهت ویرایش انتخاب کنید:", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if not new_product or new_product not in PRODUCTS:
             db.log_activity(user.id, "error - edit product", new_product)
@@ -1136,13 +1136,13 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"محصول جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit product")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
         )
         return ConversationHandler.END
     elif attr == "تغییر استان":
         new_province = update.message.text
         if new_province == "بازگشت":
-            await context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
+            await context.bot.send_message(chat_id=user.id, text = "یکی از موارد زیر را جهت ویرایش انتخاب کنید:", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if not new_province or new_province not in PROVINCES:
             db.log_activity(user.id, "error - edit province", new_province)
@@ -1155,13 +1155,13 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"استان جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit province")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
         )
         return ConversationHandler.END
     elif attr == "تغییر شهرستان":
         new_city = update.message.text
         if new_city == "بازگشت":
-            await context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
+            await context.bot.send_message(chat_id=user.id, text = "یکی از موارد زیر را جهت ویرایش انتخاب کنید:", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if new_city in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_city)
@@ -1175,13 +1175,13 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"شهرستان جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit city")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
         )
         return ConversationHandler.END
     elif attr == "تغییر روستا":
         new_village = update.message.text
         if new_village == "بازگشت":
-            await context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
+            await context.bot.send_message(chat_id=user.id, text = "یکی از موارد زیر را جهت ویرایش انتخاب کنید:", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if new_village in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_village)
@@ -1195,13 +1195,13 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"روستای جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit village")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
         )
         return ConversationHandler.END
     elif attr == "تغییر مساحت":
         new_area = update.message.text
         if new_area == "بازگشت":
-            await context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
+            await context.bot.send_message(chat_id=user.id, text = "یکی از موارد زیر را جهت ویرایش انتخاب کنید:", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if new_area in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_area)
@@ -1215,7 +1215,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"مساحت جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit area")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
         )
         return ConversationHandler.END
     elif attr == "تغییر موقعیت":
@@ -1223,7 +1223,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
         if text == "بازگشت":
             db.log_activity(user.id, "back")
-            await context.bot.send_message(chat_id=user.id, text = "انتخاب مولفه برای ویرایش", reply_markup=edit_keyboard_reply())
+            await context.bot.send_message(chat_id=user.id, text = "یکی از موارد زیر را جهت ویرایش انتخاب کنید:", reply_markup=edit_keyboard_reply())
             return EDIT_FARM
         if text == "ارسال لینک آدرس (گوگل مپ یا نشان)":
             db.log_activity(user.id, "chose to edit location with link")
@@ -1246,7 +1246,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_text = f"موقعیت جدید {farm} با موفقیت ثبت شد."
             db.log_activity(user.id, "finish edit location", f"long: {new_location.longitude}, lat: {new_location.latitude}")
             await context.bot.send_message(
-                chat_id=user.id, text=reply_text, reply_markup=start_keyboard()
+                chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
             )
             return ConversationHandler.END
         if not new_location and text != "از نقشه داخل تلگرام انتخاب میکنم":
@@ -1312,7 +1312,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return HANDLE_EDIT
     reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا منتظر تایید ادمین باشید. با تشکر."
     db.log_activity(user.id, "finish edit location with link")
-    await update.message.reply_text(reply_text, reply_markup=start_keyboard())
+    await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
     context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    
     for admin in ADMIN_LIST:
         try:
@@ -1576,12 +1576,19 @@ async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await update.message.reply_text(reply_text, reply_markup=back_button())
             return ASK_PRODUCT
-    name = update.message.text.strip()
+    farm_name = update.message.text.strip()
+    user_data["farm_name"] = farm_name
     db.log_activity(user.id, "chose name", f"{update.message.text}")
-    user_data["farm_name"] = name
-    # db.set_user_attribute(user.id, "name", name)
-    # db.set_user_attribute(user.id, "finished-sign-up", datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
-    # logger.info(f"{update.effective_user.username} (id: {update.effective_user.id}) Finished sign up.")
+    new_farm_dict = {
+        "product": None,
+        "province": None,
+        "city": None,
+        "village": None,
+        "area": None,
+        "location": {"latitude": None, "longitude": None},
+        "location-method": None
+    }
+    db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
     await update.message.reply_text(
         "لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard()
     )
@@ -1606,8 +1613,9 @@ async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_PROVINCE
     product = update.message.text.strip()
-    user_data["product"] = product
-    db.log_activity(user.id, "chose product", f"{update.message.text}")
+    farm_name = user_data["farm_name"]
+    db.set_user_attribute(user.id, f"farms.{farm_name}.product", product)
+    db.log_activity(user.id, "chose product", f"{product}")
     await update.message.reply_text(
         "لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard()
     )
@@ -1631,8 +1639,9 @@ async def ask_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_CITY
     province = update.message.text.strip()
-    user_data["province"] = province
-    db.log_activity(user.id, "chose province", f"{update.message.text}")
+    farm_name = user_data["farm_name"]
+    db.set_user_attribute(user.id, f"farms.{farm_name}.province", province)
+    db.log_activity(user.id, "chose province", f"{province}")
     await update.message.reply_text(
         "لطفا شهرستان محل باغ را وارد کنید:", reply_markup=back_button()
     )
@@ -1660,8 +1669,9 @@ async def ask_village(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_VILLAGE
     city = update.message.text.strip()
-    user_data["city"] = city
-    db.log_activity(user.id, "entered city", f"{update.message.text}")
+    farm_name = user_data["farm_name"]
+    db.set_user_attribute(user.id, f"farms.{farm_name}.city", city)
+    db.log_activity(user.id, "entered city", f"{city}")
     await update.message.reply_text(
         "لطفا روستای محل باغ را وارد کنید:", reply_markup=back_button()
     )
@@ -1688,8 +1698,9 @@ async def ask_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_AREA
     village = update.message.text.strip()
-    user_data["village"] = village
-    db.log_activity(user.id, "entered village", f"{update.message.text}")
+    farm_name = user_data["farm_name"]
+    db.set_user_attribute(user.id, f"farms.{farm_name}.village", village)
+    db.log_activity(user.id, "entered village", f"{village}")
     await update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
     return ASK_LOCATION
 
@@ -1710,8 +1721,9 @@ async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
         return ASK_LOCATION
     area = update.message.text.strip()
-    user_data["area"] = area
-    db.log_activity(user.id, "entered area", f"{update.message.text}")
+    farm_name = user_data["farm_name"]
+    db.set_user_attribute(user.id, f"farms.{farm_name}.area", area)
+    db.log_activity(user.id, "entered area", f"{area}")
     reply_text = """
 لطفا موقعیت باغ (لوکیشن باغ) خود را با انتخاب یکی از روش‌های زیر بفرستید.
 
@@ -1746,13 +1758,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("لطفا لینک آدرس باغ خود را ارسال کنید.", reply_markup=back_button())
         return HANDLE_LINK
             
-
     farm_name = user_data["farm_name"]
-    farm_product = user_data["product"]
-    farm_province = user_data["province"]
-    farm_city = user_data["city"]
-    farm_village = user_data["village"]
-    farm_area = user_data["area"]
 
     # Get the user's location
     location = update.message.location
@@ -1760,21 +1766,11 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if location:
         db.log_activity(user.id, "sent location", f"long:{location['longitude']}, lat: {location['latitude']}")
         logger.info(f"{update.effective_user.id} chose: ersal location online")
-        user_data["location"] = {
-            "latitude": location.latitude,
-            "longitude": location.longitude,
-        }
-        farm_location = user_data["location"]
-        new_farm_dict = {
-            "product": farm_product,
-            "province": farm_province,
-            "city": farm_city,
-            "village": farm_village,
-            "area": farm_area,
-            "location": farm_location,
-            "location-method": "User sent location"
-        }
-        db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
+
+        db.set_user_attribute(user.id, f"farms.{farm_name}.location.latitude", location.latitude)
+        db.set_user_attribute(user.id, f"farms.{farm_name}.location.longitude", location.longitude)
+        db.set_user_attribute(user.id, f"farms.{farm_name}.location-method", "User sent location")
+
         db.log_activity(user.id, "finished add farm - gave location", farm_name)
         reply_text = f"""
 باغ شما با نام <{farm_name}> با موفقیت ثبت شد.
@@ -1787,22 +1783,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - location", text)
         logger.info(f"{update.effective_user.id} didn't send location successfully")
         reply_text = "ارسال موقعیت باغ با موفقیت انجام نشد. می توانید از طریق ویرایش باغ، موقعیت آن را ثبت کنید."
-        user_data["location"] = {
-            "latitude": None,
-            "longitude": None,
-        }
-        farm_location = user_data["location"]
-        new_farm_dict = {
-            "product": farm_product,
-            "province": farm_province,
-            "city": farm_city,
-            "village": farm_village,
-            "area": farm_area,
-            "location": farm_location,
-            "location-method": "Unsuccessful"
-        }
-        db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
+        
+        db.set_user_attribute(user.id, f"farms.{farm_name}.location-method", "Unsuccessful")
         db.log_activity(user.id, "finish add farm - no location", farm_name)
+        
         context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
         return ConversationHandler.END
@@ -1822,11 +1806,6 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data
     text = update.message.text
     farm_name = user_data["farm_name"]
-    farm_product = user_data["product"]
-    farm_province = user_data["province"]
-    farm_city = user_data["city"]
-    farm_village = user_data["village"]
-    farm_area = user_data["area"]
     if text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
         await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
@@ -1855,21 +1834,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         db.log_activity(user.id, "sent location link", text)
         reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا تا بررسی ادمین منتظر بمانید. از شکیبایی شما سپاسگزاریم."
-        user_data["location"] = {
-            "latitude": None,
-            "longitude": None,
-        }
-        farm_location = user_data["location"]
-        new_farm_dict = {
-            "product": farm_product,
-            "province": farm_province,
-            "city": farm_city,
-            "village": farm_village,
-            "area": farm_area,
-            "location": farm_location,
-            "location-method": "Link"
-        }
-        db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
+        db.set_user_attribute(user.id, f"farms.{farm_name}.location-method", "Link")
         db.log_activity(user.id, "finish add farm with location link", farm_name)
         context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1), chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
@@ -1930,7 +1895,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if longitude is not None:
         try:
             if datetime.time(7, 0).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(20, 30).strftime("%H%M"):    
-                weather_data = gpd.read_file(f"data/pesteh{today}_1.geojson")
+                weather_data = gpd.read_file(f"data/pesteh{today}_weather.geojson")
                 point = Point(longitude, latitude)
                 threshold = 0.1  # degrees
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
@@ -1962,7 +1927,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
                     return ConversationHandler.END
             else:
-                weather_data = gpd.read_file(f"data/pesteh{yesterday}_1.geojson")
+                weather_data = gpd.read_file(f"data/pesteh{yesterday}_weather.geojson")
                 point = Point(longitude, latitude)
                 threshold = 0.1  # degrees
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
@@ -2166,7 +2131,7 @@ def main():
     job_queue.run_repeating(send_todays_data,
         interval=datetime.timedelta(days=1),
         # first=10
-        first=datetime.time(7, 0),
+        first=datetime.time(5, 30),
     )
 
     job_queue.run_once(send_up_notice, when=5)

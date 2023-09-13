@@ -98,9 +98,10 @@ async def no_location_reminder(context: ContextTypes.DEFAULT_TYPE):
 
 async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     ids = db.user_collection.distinct("_id")
-    current_day = datetime.datetime.now().strftime("%Y%m%d")
+    today = datetime.datetime.now().strftime("%Y%m%d")
+    day2 = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y%m%d")
+    day3 = (datetime.datetime.now() + datetime.timedelta(days=2)).strftime("%Y%m%d")
     jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
-    tomorrow = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y%m%d")
     jtomorrow = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
     jday2 = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
     jday3 = (jdatetime.datetime.now() + jdatetime.timedelta(days=2)).strftime("%Y/%m/%d")
@@ -108,20 +109,21 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     villages = pd.read_excel("vilages.xlsx")
     weather_report_receiver_id = []
     weather_report_count = 0
-    advise_today_receiver_id = []
-    advise_today_count = 0
+    advise_count = [0, 0, 0]             # [ [day1], [day2], [day3] ]
+    advise_receiver_id = [ [], [], [] ]  # [ [day1], [day2], [day3] ]
+    jdates = [jdate, jday2, jday3]
     advise_tomorrow_receiver_id = []
     advise_tomorrow_count = 0
     try:
-        advise_data = gpd.read_file(f"data/pesteh{current_day}_Advise.geojson")
-        weather_data = gpd.read_file(f"data/pesteh{current_day}_weather.geojson")
+        advise_data = gpd.read_file(f"data/pesteh{today}_Advise.geojson")
+        weather_data = gpd.read_file(f"data/pesteh{today}_weather.geojson")
         # advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
     except DriverError:
         for admin in admin_list:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             await context.bot.send_message(
                 chat_id=admin,
-                text=f"{time} file pesteh{current_day}.geojson was not found!",
+                text=f"{time} file was not found!",
             )
     # advise_data = advise_data.dropna(subset=['Adivse'])
     for id in ids:
@@ -156,13 +158,12 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                         # Find the nearest point to the user's lat/long
                         point = Point(longitude, latitude)
                         threshold = 0.1  # degrees
-                        idx_min_dist = advise_data.geometry.distance(point).idxmin()
-                        # idx_min_dist_tomorrow = advise_data_tomorrow.geometry.distance(point).idxmin()
-                        closest_coords = advise_data.geometry.iloc[idx_min_dist].coords[0]
-                        # closest_coords_tomorrow = advise_data_tomorrow.geometry.iloc[idx_min_dist_tomorrow].coords[0]
-                        if point.distance(Point(closest_coords)) <= threshold:
-                            logger.info(f"distance: {point.distance(Point(closest_coords))}")
-                            row = advise_data.iloc[idx_min_dist]
+                        idx_min_dist_weather = weather_data.geometry.distance(point).idxmin()
+                        closest_coords_weather = weather_data.geometry.iloc[idx_min_dist_weather].coords[0]
+                        idx_min_dist_advise = advise_data.geometry.distance(point).idxmin()
+                        closest_coords_advise = advise_data.geometry.iloc[idx_min_dist_advise].coords[0]
+                        if point.distance(Point(closest_coords_weather)) <= threshold:
+                            row = weather_data.iloc[idx_min_dist_weather]
                             tmin_values, tmax_values, rh_values, spd_values, rain_values = [], [], [], [], []
                             for key, value in row.items():
                                 if "tmin_Time=" in key:
@@ -189,13 +190,6 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     احتمال بارش: {rain_values} درصد
     """
                             table([jdate, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values, "job-table.png")
-                            advise = advise_data.iloc[idx_min_dist]["Adivse"]
-                            advise_today = f"""
-    باغدار عزیز 
-    توصیه زیر با توجه به وضعیت آب و هوایی امروز باغ شما با نام <{farm}> ارسال می‌شود:
-
-    {advise}
-                            """
                             try:
                                 with open('job-table.png', 'rb') as image_file:
                                     await context.bot.send_photo(chat_id=id, photo=image_file, caption=caption, reply_markup=start_keyboard())
@@ -215,37 +209,53 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 logger.info(f"user:{id} has blocked the bot!")
                             except BadRequest:
                                 logger.info(f"user:{id} chat was not found!")
-                            # logger.info(message)
-                            # if pd.isna(advise):
-                            #     logger.info(
-                            #         f"No advice for user {id}   ong:{longitude}, lat:{latitude}). Closest point in advise data "
-                            #         f"is index:{idx_min_dist} - {advise_data.iloc[idx_min_dist]['geometry']}"
-                            #     )
-                            # if not pd.isna(advise):
-                            #     try:
-                            #         # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                            #         await context.bot.send_message(chat_id=id, text=advise_today)
-                            #         username = db.user_collection.find_one({"_id": id})[
-                            #             "username"
-                            #         ]
-                            #         db.log_new_message(
-                            #             user_id=id,
-                            #             username=username,
-                            #             message=advise_today,
-                            #             function="send_advice",
-                            #         )
-                            #         logger.info(f"sent recommendation to {id}")
-                            #         advise_today_count += 1
-                            #         advise_today_receiver_id.append(id)
-                            #         # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-                            #     except Forbidden:
-                            #         db.set_user_attribute(id, "blocked", True)
-                            #         logger.info(f"user:{id} has blocked the bot!")
-                            #     except BadRequest:
-                            #         logger.info(f"user:{id} chat was not found!")
                         else:
                             logger.info(
-                                f"user's location: ({longitude},{latitude}) | distance: {point.distance(Point(closest_coords))} > {threshold}"
+                                f"user's location: ({longitude},{latitude}) | distance in weather file: {point.distance(Point(closest_coords_weather))} > {threshold}"
+                            )
+        
+                        if point.distance(Point(closest_coords_advise)) <= threshold:
+                            row = advise_data.iloc[idx_min_dist_advise]
+
+                            advise_3days = [row[f'Time={today}'], row[f'Time={day2}'], row[f'Time={day3}']]
+                            
+                            for i, advise in enumerate(advise_3days):
+                                if pd.isna(advise):
+                                    logger.info(
+                                        f"No advice for user {id} in day: {i+1}"
+                                    )
+                                
+                                if not pd.isna(advise):
+                                    advise = f"""
+باغدار عزیز 
+توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <{farm}> در تاریخ {jdates[i]} ارسال می‌شود:
+
+{advise}
+                                """
+                                    try:
+                                        # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                                        await context.bot.send_message(chat_id=id, text=advise)
+                                        username = db.user_collection.find_one({"_id": id})[
+                                            "username"
+                                        ]
+                                        db.log_new_message(
+                                            user_id=id,
+                                            username=username,
+                                            message=advise,
+                                            function="send_advice",
+                                        )
+                                        logger.info(f"sent recommendation to {id} for {farm}")
+                                        advise_count[i] += 1
+                                        advise_receiver_id[i].append(id)
+                                        # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
+                                    except Forbidden:
+                                        db.set_user_attribute(id, "blocked", True)
+                                        logger.info(f"user:{id} has blocked the bot!")
+                                    except BadRequest:
+                                        logger.info(f"user:{id} chat was not found!")
+                        else:
+                            logger.info(
+                                f"user's location: ({longitude},{latitude}) | distance in advise file: {point.distance(Point(closest_coords_advise))} > {threshold}"
                             )
     #                     if point.distance(Point(closest_coords_tomorrow)) <= threshold:
     #                         logger.info(
@@ -299,24 +309,40 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
 
     db.log_sent_messages(weather_report_receiver_id, "send_weather_report")
     logger.info(f"sent weather report to {weather_report_count} people")
-    db.log_sent_messages(advise_today_receiver_id, "send_advice_to_users")
-    logger.info(f"sent advice info to {advise_today_count} people")
-    db.log_sent_messages(advise_tomorrow_receiver_id, "send_tomorrow_advice_to_users")
-    logger.info(f"sent tomorrow's advice info to {advise_tomorrow_count} people")
-    for admin in admin_list:
-        await context.bot.send_message(
-            chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} باغ ارسال شد"
-        )
-        await context.bot.send_message(chat_id=admin, text=f"{len(set(weather_report_receiver_id))}:\n{weather_report_receiver_id}")
 
-        await context.bot.send_message(
-            chat_id=admin, text=f"توصیه به {advise_today_count} باغ ارسال شد"
-        )
-        await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_today_receiver_id))}:\n{advise_today_receiver_id}")
-        await context.bot.send_message(
-            chat_id=admin, text=f"توصیه به {advise_tomorrow_count} باغ ارسال شد"
-        )
-        await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_tomorrow_receiver_id))}:\n{advise_tomorrow_receiver_id}")
+    db.log_sent_messages(advise_receiver_id[0], "send_advice_to_users")
+    logger.info(f"sent today's advice info to {advise_count[0]} people")
+    
+    db.log_sent_messages(advise_receiver_id[1], "send_advice_to_users")
+    logger.info(f"sent day2 advice info to {advise_count[1]} people")
+
+    db.log_sent_messages(advise_receiver_id[2], "send_advice_to_users")
+    logger.info(f"sent day3 advice info to {advise_count[2]} people")
+
+    for admin in admin_list:
+        try:
+            await context.bot.send_message(
+                chat_id=admin, text=f"وضعیت آب و هوای {weather_report_count} باغ ارسال شد"
+            )
+            await context.bot.send_message(chat_id=admin, text=f"{len(set(weather_report_receiver_id))}:\n{weather_report_receiver_id}")
+
+            await context.bot.send_message(
+                chat_id=admin, text=f"توصیه به {advise_count[0]} باغ ارسال شد"
+            )
+            await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_receiver_id[0]))}:\n{advise_receiver_id[0]}")
+
+            await context.bot.send_message(
+                chat_id=admin, text=f"توصیه به {advise_count[1]} باغ ارسال شد"
+            )
+            await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_receiver_id[1]))}:\n{advise_receiver_id[1]}")
+
+            await context.bot.send_message(
+                chat_id=admin, text=f"توصیه به {advise_count[2]} باغ ارسال شد"
+            )
+            await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_receiver_id[2]))}:\n{advise_receiver_id[2]}")
+        except BadRequest or Forbidden:
+                logger.warning(f"admin {admin} has deleted the bot")
+        
             
 
 async def send_up_notice(context: ContextTypes.DEFAULT_TYPE):
