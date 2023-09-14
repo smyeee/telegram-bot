@@ -112,8 +112,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     advise_count = [0, 0, 0]             # [ [day1], [day2], [day3] ]
     advise_receiver_id = [ [], [], [] ]  # [ [day1], [day2], [day3] ]
     jdates = [jdate, jday2, jday3]
-    advise_tomorrow_receiver_id = []
-    advise_tomorrow_count = 0
+    advise_tags = ['امروز', 'فردا', 'پس فردا']
     try:
         advise_data = gpd.read_file(f"data/pesteh{today}_Advise.geojson")
         weather_data = gpd.read_file(f"data/pesteh{today}_weather.geojson")
@@ -228,7 +227,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 if not pd.isna(advise):
                                     advise = f"""
 باغدار عزیز 
-توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <{farm}> در تاریخ {jdates[i]} ارسال می‌شود:
+توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <{farm}> برای {advise_tags[i]} مورخ {jdates[i]} ارسال می‌شود:
 
 {advise}
                                 """
