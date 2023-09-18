@@ -23,7 +23,7 @@ services:
       - MONGODB_URI=${mongodb_uri}
     # ports:
     #   - 8000:8000
-    command: python3 -u main.py
+    command: python3 -u src/main.py
     # depends_on:
     #   - mongo
 

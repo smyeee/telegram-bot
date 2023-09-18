@@ -1,6 +1,6 @@
 import database
-from table_generator import table
-from keyboards import start_keyboard
+from .table_generator import table
+from .keyboards import start_keyboard
 import pandas as pd
 import geopandas as gpd
 from shapely import Point
