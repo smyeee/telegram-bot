@@ -54,7 +54,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not db.check_if_user_is_registered(user_id=user.id):
         user_data["username"] = user.username
         user_data["blocked"] = False
-        db.add_new_user(user_id=user.id, username=user.username)
+        first_seen = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        db.add_new_user(user_id=user.id, username=user.username, first_seen=first_seen)
         logger.info(f"{user.username} (id: {user.id}) started the bot.")
         reply_text = """
 باغدار عزیز سلام
