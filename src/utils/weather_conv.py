@@ -23,7 +23,7 @@ from .keyboards import (
     farms_list_reply,
 )
 from .table_generator import table
-
+from telegram.constants import ParseMode
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -124,7 +124,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
                     table([jtoday, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values)
                     with open('table.png', 'rb') as image_file:
-                        await context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard())
+                        await context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
                     db.log_activity(user.id, "received 4-day weather reports")
                     return ConversationHandler.END
                 else:
@@ -156,7 +156,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
                     table([jday2, jday3, jday4], tmin_values[1:], tmax_values[1:], rh_values[1:], spd_values[1:], rain_values[1:])
                     with open('table.png', 'rb') as image_file:
-                        await context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard())
+                        await context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
                     # await context.bot.send_message(chat_id=user.id, text=weather_today, reply_markup=start_keyboard())
                     db.log_activity(user.id, "received 3-day weather reports")
                     return ConversationHandler.END
