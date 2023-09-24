@@ -1,6 +1,5 @@
-import logging
-from logging.handlers import RotatingFileHandler
 import datetime
+import jdatetime
 from telegram import (
     Update,
     ReplyKeyboardMarkup
@@ -9,7 +8,9 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler,
 )
-import warnings
+from telegram.constants import ParseMode
+from telegram.error import Forbidden, BadRequest
+import pandas as pd
 import random
 import string
 
@@ -17,25 +18,12 @@ import database
 from .regular_jobs import register_reminder, no_farm_reminder
 from .keyboards import (
     register_keyboard,
-    start_keyboard
+    start_keyboard,
+    view_advise_keyboard
 )
+from .logger import logger
 
-warnings.filterwarnings("ignore", category=UserWarning)
 
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    encoding="utf-8",
-    level=logging.INFO,
-    handlers=[
-        RotatingFileHandler(
-            "bot_logs.log", maxBytes=512000, backupCount=5
-        ),  # File handler to write logs to a file
-        logging.StreamHandler(),  # Stream handler to display logs in the console
-    ],
-)
-logger = logging.getLogger("agriWeather-bot")
-logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Constants for ConversationHandler states
 HANDLE_INV_LINK = 0
@@ -157,3 +145,47 @@ async def handle_invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE)
     #     },
     #     fallbacks=[CommandHandler("cancel", cancel)],
     # )
+
+async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
+    jday2 = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
+    jday3 = (jdatetime.datetime.now() + jdatetime.timedelta(days=2)).strftime("%Y/%m/%d")
+    await query.answer()
+    user_id = query.message.chat.id
+    # logger.info(f"data:{query.data}, user: {user_id}\n---------")
+    farm_name = query.data.split("\n")[0]
+    day_chosen = query.data.split("\n")[1]
+    advise_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name]["advise"]
+    if day_chosen=="today_advise":
+        advise = advise_3days["today"]
+        if pd.isna(advise):
+            advise = "توصیه‌ای برای این تاریخ موجود نیست"
+        date = jdate
+        db.log_activity(user_id, "chose advice date", "day1")
+    elif day_chosen=="day2_advise":
+        advise = advise_3days["day2"]
+        if pd.isna(advise):
+            advise = "توصیه‌ای برای این تاریخ موجود نیست"
+        date = jday2
+        db.log_activity(user_id, "chose advice date", "day2")
+    elif day_chosen=="day3_advise":
+        advise = advise_3days["day3"]
+        if pd.isna(advise):
+            advise = "توصیه‌ای برای این تاریخ موجود نیست"
+        date = jday3
+        db.log_activity(user_id, "chose advice date", "day3")
+    advise = f"""
+توصیه مرتبط با وضعیت آب و هوایی باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> مورخ <b>{date}</b>:
+
+<pre>{advise}</pre>
+"""
+    try:
+        await query.edit_message_text(advise, reply_markup=view_advise_keyboard(farm_name), parse_mode=ParseMode.HTML)
+        db.log_activity(user_id, "received advice for other date")
+    except Forbidden or BadRequest:
+        logger.info("encountered error trying to respond to CallbackQueryHandler")
+        db.log_activity(user_id, "error - couldn't receive advice for other date")
+    except:
+        logger.info("Unexpected error") # Could be message not modified?
+        db.log_activity(user_id, "error - couldn't receive advice for other date")

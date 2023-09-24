@@ -118,6 +118,16 @@ def payment_keyboard():
     keyboard = [['💶 خرید اشتراک'], ['🧾 ارسال فیش پرداخت'], ['🏘 بازگشت به خانه']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
+def view_advise_keyboard(farm_name: str):
+    keyboard = [
+        [
+        InlineKeyboardButton("توصیه پس‌فردا", callback_data=f'{farm_name}\nday3_advise'),
+        InlineKeyboardButton("توصیه فردا", callback_data=f'{farm_name}\nday2_advise'),
+        InlineKeyboardButton("توصیه امروز", callback_data=f'{farm_name}\ntoday_advise'),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    return reply_markup
 
 def register_keyboard():
     keyboard = [['✍️ ثبت نام']]

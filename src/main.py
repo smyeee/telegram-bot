@@ -34,7 +34,7 @@ from utils.register_conv import register_conv_handler
 from utils.view_conv import view_conv_handler
 from utils.set_location_conv import set_location_handler
 from utils.admin import broadcast_handler, stats_buttons, bot_stats
-from utils.commands import invite, start
+from utils.commands import invite, start, change_day
 from utils.payment_funcs import payment_link, verify_payment, off_conv_handler, verify_conv_handler, create_coupon
 
 # Enable logging
@@ -175,6 +175,7 @@ def main():
     application.add_handler(view_conv_handler)
     application.add_handler(edit_farm_conv_handler)
     application.add_handler(delete_conv_handler)
+    application.add_handler(CallbackQueryHandler(change_day))
 
     application.add_handler(CommandHandler("coupon", create_coupon))
     application.add_handler(set_location_handler)
@@ -184,14 +185,13 @@ def main():
 
     application.add_handler(CommandHandler("start", start))
 
-
     # Schedule periodic messages
     job_queue = application.job_queue
     
     job_queue.run_repeating(get_member_count, interval=7200, first=60)
     job_queue.run_repeating(send_todays_data,
         interval=datetime.timedelta(days=1),
-        # first=10
+        # first=10,
         first=datetime.time(5, 30),
     )
 

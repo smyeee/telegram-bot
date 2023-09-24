@@ -120,7 +120,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             rain_values.append(round(value, 1))
                     caption = f"""
 باغدار عزیز 
-پیش‌بینی وضعیت آب و هوای باغ شما با نام <{farm}> در چهار روز آینده بدین صورت خواهد بود
+پیش‌بینی وضعیت آب و هوای باغ شما با نام <b>#{farm.replace(" ", "_")}</b> در چهار روز آینده بدین صورت خواهد بود
 """
                     table([jtoday, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values)
                     with open('table.png', 'rb') as image_file:
@@ -152,7 +152,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             rain_values.append(round(value, 1))
                     caption = f"""
 باغدار عزیز 
-پیش‌بینی وضعیت آب و هوای باغ شما با نام <{farm}> در سه روز آینده بدین صورت خواهد بود
+پیش‌بینی وضعیت آب و هوای باغ شما با نام <b>#{farm.replace(" ", "_")}</b> در سه روز آینده بدین صورت خواهد بود
 """
                     table([jday2, jday3, jday4], tmin_values[1:], tmax_values[1:], rh_values[1:], spd_values[1:], rain_values[1:])
                     with open('table.png', 'rb') as image_file:
