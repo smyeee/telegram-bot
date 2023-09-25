@@ -224,6 +224,7 @@ async def bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stat = update.callback_query
+    await stat.answer()
     id = update.effective_user.id
     if stat.data == "member_count":
         member_count = db.number_of_members() - db.number_of_blocks()
