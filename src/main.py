@@ -183,15 +183,15 @@ def main():
     application.add_handler(view_conv_handler)
     application.add_handler(edit_farm_conv_handler)
     application.add_handler(delete_conv_handler)
-    application.add_handler(CallbackQueryHandler(change_day))
 
     application.add_handler(CommandHandler("coupon", create_coupon))
     application.add_handler(set_location_handler)
     application.add_handler(broadcast_handler)
     application.add_handler(CommandHandler("stats", bot_stats))
-    application.add_handler(CallbackQueryHandler(stats_buttons))
+    application.add_handler(CallbackQueryHandler(stats_buttons, pattern="^(member_count|member_count_change|excel_download|block_count|no_location_count|no_phone_count)$"))
 
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(change_day))
 
     # Schedule periodic messages
     job_queue = application.job_queue
