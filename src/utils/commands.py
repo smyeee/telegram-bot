@@ -156,7 +156,8 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # logger.info(f"data:{query.data}, user: {user_id}\n---------")
     farm_name = query.data.split("\n")[0]
     day_chosen = query.data.split("\n")[1]
-    advise_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name]["advise"]
+    advise_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("advise")
+    advise_sp_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("sp-advise")
     if day_chosen=="today_advise":
         advise = advise_3days["today"]
         if pd.isna(advise):
@@ -175,6 +176,25 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday3
         db.log_activity(user_id, "chose advice date", "day3")
+    elif day_chosen=="today_sp_advise":
+        advise = advise_sp_3days["today"]
+        if pd.isna(advise):
+            advise = "توصیه‌ای برای این تاریخ موجود نیست"
+        date = jdate
+        db.log_activity(user_id, "chose sp-advice date", "day1")
+    elif day_chosen=="day2_sp_advise":
+        advise = advise_sp_3days["day2"]
+        if pd.isna(advise):
+            advise = "توصیه‌ای برای این تاریخ موجود نیست"
+        date = jday2
+        db.log_activity(user_id, "chose sp-advice date", "day2")
+    elif day_chosen=="day3_sp_advise":
+        advise = advise_sp_3days["day3"]
+        if pd.isna(advise):
+            advise = "توصیه‌ای برای این تاریخ موجود نیست"
+        date = jday3
+        db.log_activity(user_id, "chose sp-advice date", "day3")
+    
     advise = f"""
 توصیه مرتبط با وضعیت آب و هوایی باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> مورخ <b>{date}</b>:
 
