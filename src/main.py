@@ -25,6 +25,7 @@ from utils.keyboards import (
     start_keyboard,
     manage_farms_keyboard,
     payment_keyboard,
+    request_info_keyboard,
 )
 from utils.add_conv import add_farm_conv_handler
 from utils.edit_conv import edit_farm_conv_handler
@@ -73,6 +74,12 @@ async def farm_management_view(update: Update, context: ContextTypes.DEFAULT_TYP
     reply_text = "مدیریت باغ‌ها"
     db.log_activity(user.id, "navigated to farm management view")
     await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
+
+async def info_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    reply_text = "می‌توانید اطلاعات اختصاصی باغ خود را با انتخاب موارد زیر دریافت کنید"
+    db.log_activity(user.id, "navigated to farm info view")
+    await update.message.reply_text(reply_text, reply_markup=request_info_keyboard())
 
 async def payment_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -161,6 +168,7 @@ def main():
     application.add_handler(MessageHandler(filters.Regex('🏘 بازگشت به خانه'), home_view))
     application.add_handler(MessageHandler(filters.Regex('👨‍🌾 مدیریت باغ‌ها'), farm_management_view))
     application.add_handler(MessageHandler(filters.Regex('🌟 سرویس VIP'), payment_view))
+    application.add_handler(MessageHandler(filters.Regex('📲 دریافت اطلاعات اختصاصی باغ'), info_view))
 
     # Bot handlers
     application.add_handler(register_conv_handler)
