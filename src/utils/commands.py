@@ -157,7 +157,10 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
     jday2 = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
     jday3 = (jdatetime.datetime.now() + jdatetime.timedelta(days=2)).strftime("%Y/%m/%d")
-    await query.answer()
+    try:
+        await query.answer()
+    except BadRequest:
+        logger.error(f"query.answer() caused BadRequest error. user: {query.message.chat.id}")
     user_id = query.message.chat.id
     # logger.info(f"data:{query.data}, user: {user_id}\n---------")
     farm_name = query.data.split("\n")[0]
@@ -165,36 +168,48 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     advise_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("advise")
     advise_sp_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("sp-advise")
     if day_chosen=="today_advise":
+        if not advise_3days:
+            return
         advise = advise_3days["today"]
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jdate
         db.log_activity(user_id, "chose advice date", "day1")
     elif day_chosen=="day2_advise":
+        if not advise_3days:
+            return
         advise = advise_3days["day2"]
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday2
         db.log_activity(user_id, "chose advice date", "day2")
     elif day_chosen=="day3_advise":
+        if not advise_3days:
+            return
         advise = advise_3days["day3"]
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday3
         db.log_activity(user_id, "chose advice date", "day3")
     elif day_chosen=="today_sp_advise":
+        if not advise_sp_3days:
+            return
         advise = advise_sp_3days["today"]
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jdate
         db.log_activity(user_id, "chose sp-advice date", "day1")
     elif day_chosen=="day2_sp_advise":
+        if not advise_sp_3days:
+            return
         advise = advise_sp_3days["day2"]
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday2
         db.log_activity(user_id, "chose sp-advice date", "day2")
     elif day_chosen=="day3_sp_advise":
+        if not advise_sp_3days:
+            return
         advise = advise_sp_3days["day3"]
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"

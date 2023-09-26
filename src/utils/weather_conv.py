@@ -153,7 +153,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
                     username = user.username
                     db.log_new_message(
-                        user_id=id,
+                        user_id=user.id,
                         username=username,
                         message=caption,
                         function="req_weather_4",
@@ -193,7 +193,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     # await context.bot.send_message(chat_id=user.id, text=weather_today, reply_markup=start_keyboard())
                     username = user.username
                     db.log_new_message(
-                        user_id=id,
+                        user_id=user.id,
                         username=username,
                         message=caption,
                         function="req_weather_3",

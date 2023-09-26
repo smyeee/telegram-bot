@@ -15,6 +15,7 @@ from telegram.ext import (
     ConversationHandler,
 )
 from telegram.error import BadRequest, Forbidden
+from telegram.constants import ParseMode 
 import warnings
 
 import database
@@ -95,6 +96,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
+    logger.info(update.message.text)
     if update.message.text == "بازگشت":
         db.log_activity(user.id, "back")
         await update.message.reply_text("عمیلات لغو شد", reply_markup=manage_farms_keyboard())
@@ -110,6 +112,13 @@ async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
 مثلا باغ شماره 1
 """
         await update.message.reply_text(reply_text, reply_markup=back_button())
+        return ASK_PRODUCT
+    if "." in update.message.text:
+        db.log_activity(user.id, "error - chose name with .", f"{update.message.text}")
+        reply_text = (
+                "نام باغ نباید شامل <b>.</b> باشد. لطفا یک نام دیگر انتخاب کنید"
+            )
+        await update.message.reply_text(reply_text, reply_markup=back_button(), parse_mode=ParseMode.HTML)
         return ASK_PRODUCT
     elif db.user_collection.find_one({"_id": user.id}).get("farms"):
         used_farm_names = db.user_collection.find_one({"_id": user.id})["farms"].keys()

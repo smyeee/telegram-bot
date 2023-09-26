@@ -224,7 +224,10 @@ async def bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stat = update.callback_query
-    await stat.answer()
+    try:
+        await stat.answer()
+    except BadRequest:
+        logger.error(f"query.answer() caused BadRequest error. user: {stat.message.chat.id}")
     id = update.effective_user.id
     if stat.data == "member_count":
         member_count = db.number_of_members() - db.number_of_blocks()
