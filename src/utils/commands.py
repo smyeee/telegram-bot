@@ -157,7 +157,10 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
     jday2 = (jdatetime.datetime.now() + jdatetime.timedelta(days=1)).strftime("%Y/%m/%d")
     jday3 = (jdatetime.datetime.now() + jdatetime.timedelta(days=2)).strftime("%Y/%m/%d")
-    await query.answer()
+    try:
+        await query.answer()
+    except BadRequest:
+        logger.error("BadRequest error inside change_day (CB Query Handler)")
     user_id = query.message.chat.id
     # logger.info(f"data:{query.data}, user: {user_id}\n---------")
     farm_name = query.data.split("\n")[0]
