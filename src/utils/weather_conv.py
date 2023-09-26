@@ -308,8 +308,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END   
 
 weather_req_conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("🌦 درخواست اطلاعات هواشناسی"), req_weather_data),
-                      MessageHandler(filters.Regex('🧪 دریافت توصیه محلول‌پاشی'), req_sp_data)],
+        entry_points=[MessageHandler(filters.Regex('🌦 پیش‌بینی هواشناسی'), req_weather_data),
+                      MessageHandler(filters.Regex('🧪 شرایط محلول‌پاشی'), req_sp_data)],
         states={
             RECV_WEATHER: [MessageHandler(filters.TEXT , recv_weather)],
             RECV_SP: [MessageHandler(filters.TEXT , recv_sp)]

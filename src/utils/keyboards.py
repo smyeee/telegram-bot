@@ -107,7 +107,7 @@ def get_province_keyboard():
 #     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def start_keyboard():
-    keyboard = [ ['👨‍🌾 مدیریت باغ‌ها'],  ['🌟 سرویس VIP'] , ['📲 دریافت اطلاعات اختصاصی باغ'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
+    keyboard = [ ['👨‍🌾 مدیریت باغ‌ها'],  ['🌟 سرویس VIP'] , ['🌦 پیش‌بینی هواشناسی', '🧪 شرایط محلول‌پاشی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def manage_farms_keyboard():

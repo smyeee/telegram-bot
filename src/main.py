@@ -201,8 +201,8 @@ def main():
     job_queue.run_repeating(get_member_count, interval=7200, first=60)
     job_queue.run_repeating(send_todays_data,
         interval=datetime.timedelta(days=1),
-        # first=10,
-        first=datetime.time(5, 30),
+        first=10,
+        # first=datetime.time(5, 30),
     )
 
     job_queue.run_once(send_up_notice, when=5)
