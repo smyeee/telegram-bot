@@ -7,6 +7,9 @@ from telegram import (
 from telegram.ext import (
     ContextTypes,
     ConversationHandler,
+    MessageHandler,
+    CommandHandler,
+    filters
 )
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, BadRequest
@@ -19,7 +22,8 @@ from .regular_jobs import register_reminder, no_farm_reminder
 from .keyboards import (
     register_keyboard,
     start_keyboard,
-    view_advise_keyboard
+    view_advise_keyboard,
+    farms_list_reply
 )
 from .logger import logger
 
@@ -27,6 +31,8 @@ from .logger import logger
 
 # Constants for ConversationHandler states
 HANDLE_INV_LINK = 0
+HARVEST_OFF = 0
+HARVEST_ON = 0
 ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
@@ -209,3 +215,112 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         logger.info("Unexpected error") # Could be message not modified?
         db.log_activity(user_id, "error - couldn't receive advice for other date")
+
+async def ask_harvest_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    db.log_activity(user.id, "harvest_off")
+    user_farms = db.get_farms(user.id)
+    if user_farms:
+        await context.bot.send_message(
+            chat_id=user.id,
+            text="یکی از باغ های خود را انتخاب کنید",
+            reply_markup=farms_list_reply(db, user.id),
+        )
+        return HARVEST_OFF
+    else:
+        db.log_activity(user.id, "error - no farm for harvest_off")
+        await context.bot.send_message(
+            chat_id=user.id,
+            text="شما هنوز باغی ثبت نکرده اید",
+            reply_markup=start_keyboard(),
+        )
+        return ConversationHandler.END
+    
+async def harvest_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    farm = update.message.text
+    user_farms = db.get_farms(user.id)
+    if farm == '↩️ بازگشت':
+        db.log_activity(user.id, "back")
+        await update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif farm not in list(user_farms.keys()):
+        db.log_activity(user.id, "error - chose farm for harvest_off" , farm)
+        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif farm in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    db.log_activity(user.id, "chose farm for harvest_off", farm)
+    db.set_user_attribute(user.id, f"farms.{farm}.harvest-off", True)
+    reply_text = f"""
+ارسال توصیه‌های برداشت برای باغ <b>#{farm.replace(" ", "_")}</b> متوقف شد. 
+در صورت تمایل به دریافت مجدد توصیه‌های برداشت /harvest_on را بزنید.
+"""
+    await context.bot.send_message(chat_id=user.id, text= reply_text, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
+    return ConversationHandler.END
+
+async def ask_harvest_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    db.log_activity(user.id, "harvest_on")
+    user_farms = db.get_farms(user.id)
+    if user_farms:
+        await context.bot.send_message(
+            chat_id=user.id,
+            text="یکی از باغ های خود را انتخاب کنید",
+            reply_markup=farms_list_reply(db, user.id),
+        )
+        return HARVEST_ON
+    else:
+        db.log_activity(user.id, "error - no farm for harvest_on")
+        await context.bot.send_message(
+            chat_id=user.id,
+            text="شما هنوز باغی ثبت نکرده اید",
+            reply_markup=start_keyboard(),
+        )
+        return ConversationHandler.END
+    
+async def harvest_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    farm = update.message.text
+    user_farms = db.get_farms(user.id)
+    if farm == '↩️ بازگشت':
+        db.log_activity(user.id, "back")
+        await update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif farm not in list(user_farms.keys()):
+        db.log_activity(user.id, "error - chose farm for harvest_on" , farm)
+        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif farm in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    db.log_activity(user.id, "chose farm for harvest_on", farm)
+    db.set_user_attribute(user.id, f"farms.{farm}.harvest-off", False)
+    reply_text = f"""
+توصیه‌های برداشت برای باغ <b>#{farm.replace(" ", "_")}</b> ارسال خواهد شد.
+"""
+    await context.bot.send_message(chat_id=user.id, text= reply_text, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
+    return ConversationHandler.END
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("عملیات کنسل شد!")
+    return ConversationHandler.END
+
+harvest_off_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("harvest_off", ask_harvest_off)],
+        states={
+            HARVEST_OFF: [MessageHandler(filters.ALL, harvest_off)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+
+harvest_on_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("harvest_on", ask_harvest_on)],
+        states={
+            HARVEST_ON: [MessageHandler(filters.ALL, harvest_on)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )

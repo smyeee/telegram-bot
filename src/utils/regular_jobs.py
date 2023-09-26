@@ -162,6 +162,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                         closest_coords_weather = weather_data.geometry.iloc[idx_min_dist_weather].coords[0]
                         idx_min_dist_advise = advise_data.geometry.distance(point).idxmin()
                         closest_coords_advise = advise_data.geometry.iloc[idx_min_dist_advise].coords[0]
+                        # Send weather prediction to every farm
                         if point.distance(Point(closest_coords_weather)) <= threshold:
                             row = weather_data.iloc[idx_min_dist_weather]
                             tmin_values, tmax_values, rh_values, spd_values, rain_values = [], [], [], [], []
@@ -213,7 +214,14 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                             logger.info(
                                 f"user's location: ({longitude},{latitude}) | distance in weather file: {point.distance(Point(closest_coords_weather))} > {threshold}"
                             )
-        
+                        # Define some Conditions before sending advice:
+                        if farms[farm].get("harvest-off"):
+                            continue
+                        if farms[farm]["product"] == "سایر":
+                            continue
+
+                        ################################################
+                        # Send advice to all other farms
                         if point.distance(Point(closest_coords_advise)) <= threshold:
                             row = advise_data.iloc[idx_min_dist_advise]
 
@@ -231,6 +239,9 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
 <pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
 
 <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+
+----------------------------------------------------
+در صورت عدم تمایل به دریافت توصیه‌های زمان برداشت /harvest_off را بزنید.
     """
                                 else:
                                     advise = f"""
@@ -240,6 +251,9 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
 <pre>{advise_3days[0]}</pre>
 
 <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+
+----------------------------------------------------
+در صورت عدم تمایل به دریافت توصیه‌های زمان برداشت /harvest_off را بزنید.
     """
                                 await context.bot.send_message(chat_id=id, text=advise, reply_markup=view_advise_keyboard(farm), parse_mode=ParseMode.HTML)
                                 username = db.user_collection.find_one({"_id": id})[

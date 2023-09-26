@@ -110,9 +110,13 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "back")
         await update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
         return ConversationHandler.END
-    if farm not in list(user_farms.keys()):
+    elif farm not in list(user_farms.keys()):
         db.log_activity(user.id, "error - chose farm for weather report" , farm)
         await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif farm in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm for weather report", farm)
     longitude = user_farms[farm]["location"]["longitude"]
@@ -225,9 +229,13 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "back")
         await update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
         return ConversationHandler.END
-    if farm not in list(user_farms.keys()):
+    elif farm not in list(user_farms.keys()):
         db.log_activity(user.id, "error - chose farm for sp report" , farm)
         await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif farm in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", farm)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm for sp report", farm)
     longitude = user_farms[farm]["location"]["longitude"]
