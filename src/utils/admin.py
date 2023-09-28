@@ -23,6 +23,7 @@ from .keyboards import (
     back_button,
     choose_role
 )
+from .regular_jobs import send_todays_data
 
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -213,6 +214,17 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("عملیات کنسل شد!")
     return ConversationHandler.END
 
+
+async def backup_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if user.id not in ADMIN_LIST:
+        return
+    context.job_queue.run_once(send_todays_data, when=10)
+    for admin in ADMIN_LIST:
+        try:
+            context.bot
+        except BadRequest or Forbidden:
+            logger.error(f"Problem sending a message to admin: {admin}")
 
 # Stats functions
 async def bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
