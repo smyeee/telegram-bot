@@ -22,6 +22,7 @@ from .regular_jobs import register_reminder, no_farm_reminder
 from .keyboards import (
     register_keyboard,
     start_keyboard,
+    view_sp_advise_keyboard,
     view_advise_keyboard,
     farms_list_reply
 )
@@ -171,6 +172,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not advise_3days:
             return
         advise = advise_3days["today"]
+        keyboard = view_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jdate
@@ -179,6 +181,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not advise_3days:
             return
         advise = advise_3days["day2"]
+        keyboard = view_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday2
@@ -187,6 +190,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not advise_3days:
             return
         advise = advise_3days["day3"]
+        keyboard = view_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday3
@@ -195,6 +199,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not advise_sp_3days:
             return
         advise = advise_sp_3days["today"]
+        keyboard = view_sp_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jdate
@@ -203,6 +208,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not advise_sp_3days:
             return
         advise = advise_sp_3days["day2"]
+        keyboard = view_sp_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday2
@@ -211,6 +217,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not advise_sp_3days:
             return
         advise = advise_sp_3days["day3"]
+        keyboard = view_sp_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday3
@@ -222,7 +229,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
 <pre>{advise}</pre>
 """
     try:
-        await query.edit_message_text(advise, reply_markup=view_advise_keyboard(farm_name), parse_mode=ParseMode.HTML)
+        await query.edit_message_text(advise, reply_markup=keyboard, parse_mode=ParseMode.HTML)
         db.log_activity(user_id, "received advice for other date")
     except Forbidden or BadRequest:
         logger.info("encountered error trying to respond to CallbackQueryHandler")
