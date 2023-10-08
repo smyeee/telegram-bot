@@ -261,7 +261,7 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if pd.isna(sp_3days[0]):
                         advise = f"""
 باغدار عزیز 
-توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای {date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
+توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
 
 <pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
 
@@ -270,7 +270,7 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     else:
                         advise = f"""
 باغدار عزیز 
-توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای {date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
+توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
 
 <pre>{sp_3days[0]}</pre>
 

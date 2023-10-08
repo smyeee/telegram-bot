@@ -17,7 +17,7 @@ db = database.Database()
 
 message = """
 🟢 Changes:
-✅ اضافه شدن دستور /today برای ارسال دوباره توصیه‌های روزانه در مواقعی که دیتا روی ftp نمیاد.
+✅ موارد 33-35-36 در بکلاگ
 """
 
 # Incomplete registration
@@ -115,7 +115,8 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     jdates = [jdate, jday2, jday3]
     advise_tags = ['امروز', 'فردا', 'پس فردا']
     try:
-        advise_data = gpd.read_file(f"data/pesteh{today}_Advise.geojson")
+        advise_pre_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Bef.geojson")
+        advise_post_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Aft.geojson")
         weather_data = gpd.read_file(f"data/pesteh{today}_weather.geojson")
         # advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
     except DriverError:
@@ -160,8 +161,6 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                         threshold = 0.1  # degrees
                         idx_min_dist_weather = weather_data.geometry.distance(point).idxmin()
                         closest_coords_weather = weather_data.geometry.iloc[idx_min_dist_weather].coords[0]
-                        idx_min_dist_advise = advise_data.geometry.distance(point).idxmin()
-                        closest_coords_advise = advise_data.geometry.iloc[idx_min_dist_advise].coords[0]
                         # Send weather prediction to every farm
                         if point.distance(Point(closest_coords_weather)) <= threshold:
                             row = weather_data.iloc[idx_min_dist_weather]
@@ -215,15 +214,21 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 f"user's location: ({longitude},{latitude}) | distance in weather file: {point.distance(Point(closest_coords_weather))} > {threshold}"
                             )
                         # Define some Conditions before sending advice:
-                        if farms[farm].get("harvest-off"):
-                            continue
                         if farms[farm]["product"] == "سایر":
                             continue
-
+                        if farms[farm].get("harvest-off"):
+                            idx_min_dist_advise = advise_post_harvest.geometry.distance(point).idxmin()
+                            closest_coords_advise = advise_post_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
+                            ps_msg = ""
+                            row = advise_post_harvest.iloc[idx_min_dist_advise]
+                        elif farms[farm].get("harvest-off") == False or farms[farm].get("harvest-off") == None:
+                            idx_min_dist_advise = advise_pre_harvest.geometry.distance(point).idxmin()
+                            closest_coords_advise = advise_pre_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
+                            ps_msg = "در صورتی که برداشت محصولتان تکمیل شده و تمایل به دریافت روزانه توصیه‌های پس از برداشت دارید از دستور /harvest_off استفاده کرده و باغ خود را انتخاب کنید."
+                            row = advise_pre_harvest.iloc[idx_min_dist_advise]
                         ################################################
                         # Send advice to all other farms
                         if point.distance(Point(closest_coords_advise)) <= threshold:
-                            row = advise_data.iloc[idx_min_dist_advise]
 
                             advise_3days = [row[f'Time={today}'], row[f'Time={day2}'], row[f'Time={day3}']]
                             # advise_3days_no_nan = ["" for text in advise_3days if pd.isna(text)]
@@ -234,26 +239,26 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 if pd.isna(advise_3days[0]):
                                     advise = f"""
 باغدار عزیز 
-توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای {advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
+توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
 
 <pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
 
 <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
 
 ----------------------------------------------------
-در صورت عدم تمایل به دریافت توصیه‌های زمان برداشت /harvest_off را بزنید.
+{ps_msg}
     """
                                 else:
                                     advise = f"""
 باغدار عزیز 
-توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای {advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
+توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
 
 <pre>{advise_3days[0]}</pre>
 
 <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
 
 ----------------------------------------------------
-در صورت عدم تمایل به دریافت توصیه‌های زمان برداشت /harvest_off را بزنید.
+{ps_msg}
     """
                                 await context.bot.send_message(chat_id=id, text=advise, reply_markup=view_advise_keyboard(farm), parse_mode=ParseMode.HTML)
                                 username = db.user_collection.find_one({"_id": id})[

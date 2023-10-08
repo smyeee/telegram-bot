@@ -169,6 +169,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     advise_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("advise")
     advise_sp_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("sp-advise")
     if day_chosen=="today_advise":
+        day = "امروز"
         if not advise_3days:
             return
         advise = advise_3days["today"]
@@ -178,6 +179,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         date = jdate
         db.log_activity(user_id, "chose advice date", "day1")
     elif day_chosen=="day2_advise":
+        day = "فردا"
         if not advise_3days:
             return
         advise = advise_3days["day2"]
@@ -187,6 +189,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         date = jday2
         db.log_activity(user_id, "chose advice date", "day2")
     elif day_chosen=="day3_advise":
+        day = "پس‌فردا"
         if not advise_3days:
             return
         advise = advise_3days["day3"]
@@ -196,6 +199,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         date = jday3
         db.log_activity(user_id, "chose advice date", "day3")
     elif day_chosen=="today_sp_advise":
+        day = "امروز"
         if not advise_sp_3days:
             return
         advise = advise_sp_3days["today"]
@@ -205,6 +209,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         date = jdate
         db.log_activity(user_id, "chose sp-advice date", "day1")
     elif day_chosen=="day2_sp_advise":
+        day = "فردا"
         if not advise_sp_3days:
             return
         advise = advise_sp_3days["day2"]
@@ -214,6 +219,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         date = jday2
         db.log_activity(user_id, "chose sp-advice date", "day2")
     elif day_chosen=="day3_sp_advise":
+        day = "پس‌فردا"
         if not advise_sp_3days:
             return
         advise = advise_sp_3days["day3"]
@@ -224,7 +230,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user_id, "chose sp-advice date", "day3")
     
     advise = f"""
-توصیه مرتبط با وضعیت آب و هوایی باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> مورخ <b>{date}</b>:
+توصیه مرتبط با وضعیت آب و هوایی باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> برای #{day} مورخ <b>{date}</b>:
 
 <pre>{advise}</pre>
 """
