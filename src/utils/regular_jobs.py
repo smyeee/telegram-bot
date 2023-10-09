@@ -43,8 +43,7 @@ message_no_location = """
 """
 
 
-admin_list = [103465015, 31583686, 391763080, 216033407, 5827206050]
-
+admin_list = db.get_admins()
 
 async def register_reminder(context: ContextTypes.DEFAULT_TYPE):
     user_id = context.job.chat_id

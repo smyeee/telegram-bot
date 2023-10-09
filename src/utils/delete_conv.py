@@ -39,13 +39,11 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Constants for ConversationHandler states
 CONFIRM_DELETE, DELETE_FARM = range(2)
-ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
-
-
+ADMIN_LIST = db.get_admins()
 
 # START OF DELETE CONVERSATION
 async def delete_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):

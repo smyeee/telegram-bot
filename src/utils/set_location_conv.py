@@ -39,11 +39,11 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # Constants for ConversationHandler states
 ASK_FARM_NAME, ASK_LONGITUDE, ASK_LATITUDE, HANDLE_LAT_LONG = range(4)
 
-ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
+ADMIN_LIST = db.get_admins()
 ###################################################################
 
 
@@ -199,9 +199,15 @@ async def handle_lat_long(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data["lat"] = latitude
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.longitude", float(user_data["long"]))
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.latitude", float(user_data["lat"]))
-    await context.bot.send_location(chat_id=user.id, latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
-    await context.bot.send_message(chat_id=int(user_data["target"][0]), text=f"لوکیشن باغ شما با نام {user_data['farm_name']} ثبت شد.")
-    await context.bot.send_location(chat_id=int(user_data["target"][0]), latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
+    for admin in ADMIN_LIST:
+        await context.bot.send_message(chat_id=admin, text=f"Location of farm {user_data['farm_name']} belonging to {user_data['target'][0]} was set")
+        await context.bot.send_location(chat_id=admin, latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
+    try:
+        await context.bot.send_message(chat_id=int(user_data["target"][0]), text=f"لوکیشن باغ شما با نام {user_data['farm_name']} ثبت شد.")
+        await context.bot.send_location(chat_id=int(user_data["target"][0]), latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
+    except (BadRequest, Forbidden):
+        db.set_user_attribute(int(user_data["target"][0]), "blocked", True)
+        await context.bot.send_message(chat_id=user.id, text=f"Location wasn't set. User may have blocked the bot.")
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):

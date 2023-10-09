@@ -56,11 +56,11 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 # Constants for ConversationHandler states
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
+ADMIN_LIST = db.get_admins()
 ###################################################################
 ####################### MENU NAVIGATION ###########################
 async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
