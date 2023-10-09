@@ -165,17 +165,17 @@ def main():
     application.add_error_handler(error_handler)
 
     # Menu navigation commands
-    application.add_handler(MessageHandler(filters.Regex('🏘 بازگشت به خانه'), home_view))
-    application.add_handler(MessageHandler(filters.Regex('👨‍🌾 مدیریت باغ‌ها'), farm_management_view))
-    application.add_handler(MessageHandler(filters.Regex('🌟 سرویس VIP'), payment_view))
-    application.add_handler(MessageHandler(filters.Regex('📲 دریافت اطلاعات اختصاصی باغ'), info_view))
+    application.add_handler(MessageHandler(filters.Regex('^🏘 بازگشت به خانه$'), home_view))
+    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت باغ‌ها$'), farm_management_view))
+    application.add_handler(MessageHandler(filters.Regex('^🌟 سرویس VIP$'), payment_view))
+    application.add_handler(MessageHandler(filters.Regex('^📲 دریافت اطلاعات اختصاصی باغ$'), info_view))
 
     # Bot handlers
     application.add_handler(register_conv_handler)
     application.add_handler(add_farm_conv_handler)
-    application.add_handler(MessageHandler(filters.Regex("دعوت از دیگران"), invite))
-    application.add_handler(MessageHandler(filters.Regex('📬 ارتباط با ما'), contact_us))
-    application.add_handler(MessageHandler(filters.Regex('💶 خرید اشتراک'), payment_link))
+    application.add_handler(MessageHandler(filters.Regex("^📤 دعوت از دیگران$"), invite))
+    application.add_handler(MessageHandler(filters.Regex("^📬 ارتباط با ما$"), contact_us))
+    application.add_handler(MessageHandler(filters.Regex("^💶 خرید اشتراک$"), payment_link))
     application.add_handler(CommandHandler("verify", verify_payment))
     application.add_handler(off_conv_handler)
     application.add_handler(verify_conv_handler)
