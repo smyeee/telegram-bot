@@ -23,6 +23,7 @@ from .keyboards import (
     back_button,
     choose_role
 )
+from .regular_jobs import send_todays_data
 
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -45,11 +46,11 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # Constants for ConversationHandler states
 CHOOSE_RECEIVERS, HANDLE_IDS, BROADCAST = range(3)
 ASK_FARM_NAME, ASK_LONGITUDE, ASK_LATITUDE, HANDLE_LAT_LONG = range(4)
-ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
+ADMIN_LIST = db.get_admins()
 ###################################################################
 
 # Start of /send conversation
@@ -214,6 +215,17 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+async def backup_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if user.id not in ADMIN_LIST:
+        return
+    context.job_queue.run_once(send_todays_data, when=10)
+    for admin in ADMIN_LIST:
+        try:
+            context.bot
+        except BadRequest or Forbidden:
+            logger.error(f"Problem sending a message to admin: {admin}")
+
 # Stats functions
 async def bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -224,7 +236,10 @@ async def bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stat = update.callback_query
-    await stat.answer()
+    try:
+        await stat.answer()
+    except BadRequest:
+        logger.error(f"query.answer() caused BadRequest error. user: {stat.message.chat.id}")
     id = update.effective_user.id
     if stat.data == "member_count":
         member_count = db.number_of_members() - db.number_of_blocks()

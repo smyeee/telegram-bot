@@ -67,6 +67,11 @@ class Database:
         if not self.check_if_user_exists(user_id=user_id):
             self.user_collection.insert_one(user_dict)
 
+    def get_admins(self) -> list:
+        """Return a list of admin IDs"""
+        admins = self.bot_collection.find_one({"name":"admin-list"})["admins"]
+        admins = [int(admin) for admin in admins]
+        return admins
 
     def add_new_farm(self, user_id, farm_name: str, new_farm: dict):
         self.user_collection.update_one(

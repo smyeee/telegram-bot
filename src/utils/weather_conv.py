@@ -153,7 +153,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await context.bot.send_photo(chat_id=user.id, photo=image_file, caption=caption, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
                     username = user.username
                     db.log_new_message(
-                        user_id=id,
+                        user_id=user.id,
                         username=username,
                         message=caption,
                         function="req_weather_4",
@@ -193,7 +193,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     # await context.bot.send_message(chat_id=user.id, text=weather_today, reply_markup=start_keyboard())
                     username = user.username
                     db.log_new_message(
-                        user_id=id,
+                        user_id=user.id,
                         username=username,
                         message=caption,
                         function="req_weather_3",
@@ -261,7 +261,7 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if pd.isna(sp_3days[0]):
                         advise = f"""
 باغدار عزیز 
-توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای {date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
+توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
 
 <pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
 
@@ -270,7 +270,7 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     else:
                         advise = f"""
 باغدار عزیز 
-توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای {date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
+توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
 
 <pre>{sp_3days[0]}</pre>
 

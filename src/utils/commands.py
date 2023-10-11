@@ -22,6 +22,7 @@ from .regular_jobs import register_reminder, no_farm_reminder
 from .keyboards import (
     register_keyboard,
     start_keyboard,
+    view_sp_advise_keyboard,
     view_advise_keyboard,
     farms_list_reply
 )
@@ -33,11 +34,11 @@ from .logger import logger
 HANDLE_INV_LINK = 0
 HARVEST_OFF = 0
 HARVEST_ON = 0
-ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
+ADMIN_LIST = db.get_admins()
 ###################################################################
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -160,7 +161,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await query.answer()
     except BadRequest:
-        logger.error("BadRequest error inside change_day (CB Query Handler)")
+        logger.error(f"query.answer() caused BadRequest error. user: {query.message.chat.id}")
     user_id = query.message.chat.id
     # logger.info(f"data:{query.data}, user: {user_id}\n---------")
     farm_name = query.data.split("\n")[0]
@@ -168,49 +169,73 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     advise_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("advise")
     advise_sp_3days = db.user_collection.find_one({"_id": user_id})["farms"][farm_name].get("sp-advise")
     if day_chosen=="today_advise":
+        day = "امروز"
+        if not advise_3days:
+            return
         advise = advise_3days["today"]
+        keyboard = view_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jdate
         db.log_activity(user_id, "chose advice date", "day1")
     elif day_chosen=="day2_advise":
+        day = "فردا"
+        if not advise_3days:
+            return
         advise = advise_3days["day2"]
+        keyboard = view_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday2
         db.log_activity(user_id, "chose advice date", "day2")
     elif day_chosen=="day3_advise":
+        day = "پس‌فردا"
+        if not advise_3days:
+            return
         advise = advise_3days["day3"]
+        keyboard = view_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday3
         db.log_activity(user_id, "chose advice date", "day3")
     elif day_chosen=="today_sp_advise":
+        day = "امروز"
+        if not advise_sp_3days:
+            return
         advise = advise_sp_3days["today"]
+        keyboard = view_sp_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jdate
         db.log_activity(user_id, "chose sp-advice date", "day1")
     elif day_chosen=="day2_sp_advise":
+        day = "فردا"
+        if not advise_sp_3days:
+            return
         advise = advise_sp_3days["day2"]
+        keyboard = view_sp_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday2
         db.log_activity(user_id, "chose sp-advice date", "day2")
     elif day_chosen=="day3_sp_advise":
+        day = "پس‌فردا"
+        if not advise_sp_3days:
+            return
         advise = advise_sp_3days["day3"]
+        keyboard = view_sp_advise_keyboard(farm_name)
         if pd.isna(advise):
             advise = "توصیه‌ای برای این تاریخ موجود نیست"
         date = jday3
         db.log_activity(user_id, "chose sp-advice date", "day3")
     
     advise = f"""
-توصیه مرتبط با وضعیت آب و هوایی باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> مورخ <b>{date}</b>:
+توصیه مرتبط با وضعیت آب و هوایی باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> برای #{day} مورخ <b>{date}</b>:
 
 <pre>{advise}</pre>
 """
     try:
-        await query.edit_message_text(advise, reply_markup=view_advise_keyboard(farm_name), parse_mode=ParseMode.HTML)
+        await query.edit_message_text(advise, reply_markup=keyboard, parse_mode=ParseMode.HTML)
         db.log_activity(user_id, "received advice for other date")
     except Forbidden or BadRequest:
         logger.info("encountered error trying to respond to CallbackQueryHandler")

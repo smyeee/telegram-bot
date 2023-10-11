@@ -34,7 +34,7 @@ from utils.delete_conv import delete_conv_handler
 from utils.register_conv import register_conv_handler
 from utils.view_conv import view_conv_handler
 from utils.set_location_conv import set_location_handler
-from utils.admin import broadcast_handler, stats_buttons, bot_stats
+from utils.admin import broadcast_handler, backup_send, stats_buttons, bot_stats
 from utils.commands import invite, start, change_day, harvest_off_conv_handler, harvest_on_conv_handler
 from utils.payment_funcs import payment_link, verify_payment, off_conv_handler, verify_conv_handler, create_coupon
 
@@ -56,11 +56,11 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 # Constants for ConversationHandler states
 TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
-ADMIN_LIST = [103465015, 31583686, 391763080, 216033407, 5827206050]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
+ADMIN_LIST = db.get_admins()
 ###################################################################
 ####################### MENU NAVIGATION ###########################
 async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -165,17 +165,17 @@ def main():
     application.add_error_handler(error_handler)
 
     # Menu navigation commands
-    application.add_handler(MessageHandler(filters.Regex('🏘 بازگشت به خانه'), home_view))
-    application.add_handler(MessageHandler(filters.Regex('👨‍🌾 مدیریت باغ‌ها'), farm_management_view))
-    application.add_handler(MessageHandler(filters.Regex('🌟 سرویس VIP'), payment_view))
-    application.add_handler(MessageHandler(filters.Regex('📲 دریافت اطلاعات اختصاصی باغ'), info_view))
+    application.add_handler(MessageHandler(filters.Regex('^🏘 بازگشت به خانه$'), home_view))
+    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت باغ‌ها$'), farm_management_view))
+    application.add_handler(MessageHandler(filters.Regex('^🌟 سرویس VIP$'), payment_view))
+    application.add_handler(MessageHandler(filters.Regex('^📲 دریافت اطلاعات اختصاصی باغ$'), info_view))
 
     # Bot handlers
     application.add_handler(register_conv_handler)
     application.add_handler(add_farm_conv_handler)
-    application.add_handler(MessageHandler(filters.Regex("دعوت از دیگران"), invite))
-    application.add_handler(MessageHandler(filters.Regex('📬 ارتباط با ما'), contact_us))
-    application.add_handler(MessageHandler(filters.Regex('💶 خرید اشتراک'), payment_link))
+    application.add_handler(MessageHandler(filters.Regex("^📤 دعوت از دیگران$"), invite))
+    application.add_handler(MessageHandler(filters.Regex("^📬 ارتباط با ما$"), contact_us))
+    application.add_handler(MessageHandler(filters.Regex("^💶 خرید اشتراک$"), payment_link))
     application.add_handler(CommandHandler("verify", verify_payment))
     application.add_handler(off_conv_handler)
     application.add_handler(verify_conv_handler)
@@ -190,6 +190,7 @@ def main():
     application.add_handler(set_location_handler)
     application.add_handler(broadcast_handler)
     application.add_handler(CommandHandler("stats", bot_stats))
+    application.add_handler(CommandHandler("today", backup_send))
     application.add_handler(CallbackQueryHandler(stats_buttons, pattern="^(member_count|member_count_change|excel_download|block_count|no_location_count|no_phone_count)$"))
 
     application.add_handler(CommandHandler("start", start))
