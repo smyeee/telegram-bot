@@ -246,6 +246,9 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sp_data = gpd.read_file(f"data/Iran{today}_AdviseSP.geojson")
             else:
                 sp_data = gpd.read_file(f"data/Iran{yesterday}_AdviseSP.geojson")
+                day3 = day2
+                day2 = today
+                today = yesterday
             # sp_data = gpd.read_file(f"data/pesteh{today}_AdviseSP.geojson")
             point = Point(longitude, latitude)
             threshold = 0.1  # degrees

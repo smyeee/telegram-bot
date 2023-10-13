@@ -116,7 +116,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     try:
         advise_pre_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Bef.geojson")
         advise_post_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Aft.geojson")
-        weather_data = gpd.read_file(f"data/pesteh{today}_weather.geojson")
+        weather_data = gpd.read_file(f"data/Iran{today}_weather.geojson")
         # advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
     # advise_data = advise_data.dropna(subset=['Adivse'])
         for id in ids:
