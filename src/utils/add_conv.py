@@ -26,6 +26,7 @@ from .keyboards import (
     get_product_keyboard,
     get_province_keyboard,
     back_button,
+    land_type_keyboard
 )
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -47,7 +48,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Constants for ConversationHandler states
 (
+    ASK_TYPE,
     ASK_PRODUCT,
+    HANDLE_PRODUCT,
     ASK_PROVINCE,
     ASK_CITY,
     ASK_VILLAGE,
@@ -55,19 +58,13 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
     ASK_LOCATION,
     HANDLE_LOCATION,
     HANDLE_LINK
-) = range(8)
-PROVINCES = ["کرمان", "خراسان رضوی", "خراسان جنوبی", "یزد", "فارس", "سمنان", "مرکزی", "تهران", "اصفهان", "قزوین", "سیستان و بلوچستان", "قم", "سایر"]
-PRODUCTS = [
-    "پسته اکبری",
-    "پسته اوحدی",
-    "پسته احمدآقایی",
-    "پسته بادامی",
-    "پسته فندقی",
-    "پسته کله قوچی",
-    "پسته ممتاز",
-    "سایر",
-]
+) = range(10)
+
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+
+MESSAGES = {
+    ""
+}
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -85,53 +82,56 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ConversationHandler.END
     reply_text = """
-لطفا برای تشخیص این باغ یک نام وارد کنید:
+لطفا برای تشخیص این کشت یک نام وارد کنید:
 مثلا: باغ پسته
 """
     await update.message.reply_text(reply_text, reply_markup=back_button())
     #
-    return ASK_PRODUCT
+    return ASK_TYPE
 
-async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Receives and handles <<name>>"""
     user = update.effective_user
     user_data = context.user_data
-    logger.info(update.message.text)
-    if update.message.text == "بازگشت":
+    message_text = update.message.text
+    if message_text == "بازگشت":
         db.log_activity(user.id, "back")
         await update.message.reply_text("عمیلات لغو شد", reply_markup=manage_farms_keyboard())
         return ConversationHandler.END
-    if update.message.text in MENU_CMDS:
+    elif update.message.text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
         await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
         return ConversationHandler.END
-    if not update.message.text:
-        db.log_activity(user.id, "error - no name received")
-        reply_text = """
-لطفا برای دسترسی ساده‌تر به این باغ یک نام انتخاب کنید:
-مثلا باغ شماره 1
-"""
-        await update.message.reply_text(reply_text, reply_markup=back_button())
-        return ASK_PRODUCT
-    if "." in update.message.text:
-        db.log_activity(user.id, "error - chose name with .", f"{update.message.text}")
+    elif "." in message_text:
+        db.log_activity(user.id, "error - chose name with .", f"{message_text}")
         reply_text = (
                 "نام باغ نباید شامل <b>.</b> باشد. لطفا یک نام دیگر انتخاب کنید"
             )
         await update.message.reply_text(reply_text, reply_markup=back_button(), parse_mode=ParseMode.HTML)
-        return ASK_PRODUCT
+        return ASK_TYPE
+    elif not message_text:
+        db.log_activity(user.id, "error - no name received")
+        reply_text = """
+لطفا برای تشخیص این کشت یک نام وارد کنید:
+مثلا: باغ پسته
+"""
+        await update.message.reply_text(reply_text, reply_markup=back_button())
+        return ASK_TYPE
     elif db.user_collection.find_one({"_id": user.id}).get("farms"):
         used_farm_names = db.user_collection.find_one({"_id": user.id})["farms"].keys()
-        if update.message.text in used_farm_names:
-            db.log_activity(user.id, "error - chose same name", f"{update.message.text}")
+        if message_text in used_farm_names:
+            db.log_activity(user.id, "error - chose same name", f"{message_text}")
             reply_text = (
                 "شما قبلا از این نام استفاده کرده‌اید. لطفا یک نام جدید انتخاب کنید."
             )
             await update.message.reply_text(reply_text, reply_markup=back_button())
-            return ASK_PRODUCT
-    farm_name = update.message.text.strip()
+            return ASK_TYPE
+    farm_name = message_text.strip()
     user_data["farm_name"] = farm_name
-    db.log_activity(user.id, "chose name", f"{update.message.text}")
+    db.log_activity(user.id, "chose name", farm_name)
     new_farm_dict = {
+        "type": None,
         "product": None,
         "province": None,
         "city": None,
@@ -141,61 +141,196 @@ async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "location-method": None
     }
     db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
-    await update.message.reply_text(
-        "لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard()
-    )
-    return ASK_PROVINCE
+    reply_text = """
+لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+"""
+    # await update.message.reply_text(reply_text, reply_markup=back_button())
+    await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
+    return ASK_PRODUCT
+    
 
-async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Receives and handles <<land_type>>"""
     user = update.effective_user
     user_data = context.user_data
-    if update.message.text == "بازگشت":
+    message_text = update.message.text
+    # logger.info(update.message.text)
+    if message_text == "بازگشت":
         db.log_activity(user.id, "back")
         reply_text = """
-لطفا برای تشخیص این باغ یک نام انتخاب کنید:
-مثلا باغ شماره 1
+لطفا برای تشخیص این کشت یک نام وارد کنید:
+مثلا: باغ پسته
 """
         await update.message.reply_text(reply_text, reply_markup=back_button())
+        return ASK_TYPE
+    elif message_text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif "." in message_text:
+        db.log_activity(user.id, "error - chose land type with .", f"{update.message.text}")
+        reply_text = (
+                "نوع کشت نمی‌تواند شامل <b>.</b> باشد. لطفا دوباره آن را وارد کنید."
+            )
+        await update.message.reply_text(reply_text, reply_markup=land_type_keyboard(), parse_mode=ParseMode.HTML)
         return ASK_PRODUCT
-    # Get the answer to the province question
-    if not update.message.text or update.message.text not in PRODUCTS:
-        db.log_activity(user.id, "error - chose wrong product", f"{update.message.text}")
+    elif not message_text:
+        db.log_activity(user.id, "error - no name received")
+        reply_text = """
+لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+"""
+        await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
+        return ASK_PRODUCT
+    
+
+    farm_name = user_data["farm_name"]
+    land_type = message_text.strip()
+    user_data["land_type"] = land_type
+    db.log_activity(user.id, "chose land type", land_type)
+    db.set_user_attribute(user.id, f"farms.{farm_name}.type", land_type)
+    if land_type == "باغ":
         await update.message.reply_text(
-            "لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard()
+            "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
+            reply_markup=ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True))
+        return HANDLE_PRODUCT
+    else:
+        await update.message.reply_text("چه محصولی پرورش می‌دهید؟", reply_markup=back_button()
         )
         return ASK_PROVINCE
-    product = update.message.text.strip()
+
+
+async def handle_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Receives the farm name"""
+    user = update.effective_user
+    user_data = context.user_data
+    land_type = user_data["land_type"]
+    message_text = update.message.text
+    # logger.info(update.message.text)
+    if message_text == "بازگشت":
+        db.log_activity(user.id, "back")
+        reply_text = """
+لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+"""
+        await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
+        return ASK_PRODUCT
+    elif message_text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif "." in message_text:
+        db.log_activity(user.id, "error - chose product with .", f"{message_text}")
+        reply_text = (
+                "نام محصول نباید شامل <b>.</b> باشد. لطفا یک بار دیگر نام محصول را بدون <b>.</b> وارد کنید."
+            )
+        await update.message.reply_text(reply_text, reply_markup=back_button(), parse_mode=ParseMode.HTML)
+        return HANDLE_PRODUCT
+    elif not message_text:
+        db.log_activity(user.id, "error - no product received")
+        if land_type == "باغ":
+            keyboard = ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True)
+            await update.message.reply_text(
+                "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", reply_markup=keyboard
+            )
+            return HANDLE_PRODUCT
+        else:
+            await update.message.reply_text("چه محصولی پرورش می‌دهید؟", reply_markup=back_button()
+            )
+            return HANDLE_PRODUCT
+    user_data["farm_product"] = message_text
+    if land_type == "باغ" and message_text == "پسته":
+        db.log_activity(user.id, "chose product", "پسته")
+        await update.message.reply_text(
+            "لطفا نوع پسته باغ خود را انتخاب کنید", reply_markup=get_product_keyboard()
+        )
+        return ASK_PROVINCE
+    else:
+        await update.message.reply_text(
+            "لطفا یک بار دیگر محصول خود را وارد کنید.")
+        return ASK_PROVINCE
+
+async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """ 
+    If land_type==باغ this function receives output of handle_product
+    Otherwise will receive output of ask_product
+    """
+    user = update.effective_user
+    user_data = context.user_data
+    message_text = update.message.text
+    land_type = user_data["land_type"]
+
+    if message_text == "بازگشت":
+        db.log_activity(user.id, "back")
+        if land_type != "باغ":
+            reply_text = """
+لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+"""
+            await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
+            return ASK_PRODUCT
+        else:
+            await update.message.reply_text(
+            "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
+            reply_markup=ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True))
+            return HANDLE_PRODUCT
+    # Get the answer to the province question
+    elif message_text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif not message_text or "." in message_text:
+        db.log_activity(user.id, "error - chose wrong product", f"{update.message.text}")
+        await update.message.reply_text(
+            "لطفا فرایند را از ابتدا شروع کنید.", reply_markup=get_product_keyboard()
+        )
+        return ConversationHandler.END
+    product = message_text.strip()
     farm_name = user_data["farm_name"]
     db.set_user_attribute(user.id, f"farms.{farm_name}.product", product)
     db.log_activity(user.id, "chose product", f"{product}")
     await update.message.reply_text(
-        "لطفا استان محل باغ خود را انتخاب کنید:", reply_markup=get_province_keyboard()
+        "لطفا استان خود را انتخاب کنید. اگر استان شما در گزینه‌ها نبود آن را بنویسید", reply_markup=get_province_keyboard()
     )
     return ASK_CITY
 
 async def ask_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
-    if update.message.text == "بازگشت":
+    message_text = update.message.text
+    land_type = user_data["land_type"]
+
+    if message_text == "بازگشت":
         db.log_activity(user.id, "back")
-        await update.message.reply_text(
-            "لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard()
+        if land_type != "باغ":
+            await update.message.reply_text("چه محصولی پرورش می‌دهید؟", reply_markup=back_button()
         )
-        return ASK_PROVINCE
+            return ASK_PROVINCE
+        else:
+            await update.message.reply_text(
+            "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
+            reply_markup=ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True))
+            return HANDLE_PRODUCT
+
+        # await update.message.reply_text(
+        #     "لطفا محصول باغ را انتخاب کنید", reply_markup=get_product_keyboard()
+        # )
+        # return ASK_PROVINCE
     # Get the answer to the province question
-    if not update.message.text or update.message.text not in PROVINCES:
+    elif message_text in MENU_CMDS:
+        db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        return ConversationHandler.END
+    elif not message_text:
         db.log_activity(user.id, "error - chose wrong province", f"{update.message.text}")
         await update.message.reply_text(
-            "لطفا استان محل باغ خود را انتخاب کنید:",
+            "لطفا استان محل کشت خود را انتخاب کنید یا آن را بنویسید",
             reply_markup=get_province_keyboard(),
         )
         return ASK_CITY
-    province = update.message.text.strip()
+    province = message_text.strip()
     farm_name = user_data["farm_name"]
     db.set_user_attribute(user.id, f"farms.{farm_name}.province", province)
     db.log_activity(user.id, "chose province", f"{province}")
     await update.message.reply_text(
-        "لطفا شهرستان محل باغ را وارد کنید:", reply_markup=back_button()
+        "لطفا شهرستان محل کشت را وارد کنید:", reply_markup=back_button()
     )
     return ASK_VILLAGE
 
@@ -205,7 +340,7 @@ async def ask_village(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text == "بازگشت":
         db.log_activity(user.id, "back")
         await update.message.reply_text(
-            "لطفا استان محل باغ خود را انتخاب کنید:",
+            "لطفا استان محل کشت خود را انتخاب کنید:",
             reply_markup=get_province_keyboard(),
         )
         return ASK_CITY
@@ -217,7 +352,7 @@ async def ask_village(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.text:
         db.log_activity(user.id, "error - city")
         await update.message.reply_text(
-            "لطفا شهرستان محل باغ را وارد کنید:", reply_markup=back_button()
+            "لطفا شهرستان محل کشت را وارد کنید:", reply_markup=back_button()
         )
         return ASK_VILLAGE
     city = update.message.text.strip()
@@ -225,7 +360,7 @@ async def ask_village(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.set_user_attribute(user.id, f"farms.{farm_name}.city", city)
     db.log_activity(user.id, "entered city", f"{city}")
     await update.message.reply_text(
-        "لطفا روستای محل باغ را وارد کنید:", reply_markup=back_button()
+        "لطفا روستای محل کشت و آدرس حدودی آن را وارد کنید:", reply_markup=back_button()
     )
     return ASK_AREA
 
@@ -234,9 +369,7 @@ async def ask_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data
     if update.message.text == "بازگشت":
         db.log_activity(user.id, "back")
-        await update.message.reply_text(
-            "لطفا شهرستان محل باغ را وارد کنید:", reply_markup=back_button()
-        )
+        await update.message.reply_text("لطفا شهرستان محل کشت را وارد کنید:", reply_markup=back_button())
         return ASK_VILLAGE
     # Get the answer to the village question
     if update.message.text in MENU_CMDS:
@@ -246,14 +379,14 @@ async def ask_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.text:
         db.log_activity(user.id, "error - village")
         await update.message.reply_text(
-            "لطفا روستای محل باغ را وارد کنید:", reply_markup=back_button()
+            "لطفا روستای محل کشت و آدرس حدودی آن را وارد کنید:", reply_markup=back_button()
         )
         return ASK_AREA
     village = update.message.text.strip()
     farm_name = user_data["farm_name"]
     db.set_user_attribute(user.id, f"farms.{farm_name}.village", village)
     db.log_activity(user.id, "entered village", f"{village}")
-    await update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
+    await update.message.reply_text("لطفا متراژ کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
     return ASK_LOCATION
 
 async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -261,7 +394,7 @@ async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data
     if update.message.text == "بازگشت":
         db.log_activity(user.id, "back")
-        await update.message.reply_text("لطفا روستای محل باغ را وارد کنید:", reply_markup=back_button())
+        await update.message.reply_text("لطفا روستای محل کشت و آدرس حدودی آن را وارد کنید:", reply_markup=back_button())
         return ASK_AREA
     # Get the answer to the phone number question
     if update.message.text in MENU_CMDS:
@@ -270,7 +403,7 @@ async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not update.message.text:
         db.log_activity(user.id, "error - area")
-        await update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
+        await update.message.reply_text("لطفا متراژ کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
         return ASK_LOCATION
     area = update.message.text.strip()
     farm_name = user_data["farm_name"]
@@ -303,11 +436,18 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data
     if update.message.text == "بازگشت":
         db.log_activity(user.id, "back")
-        await update.message.reply_text("لطفا سطح زیر کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
+        await update.message.reply_text("لطفا متراژ کشت خود را به هکتار وارد کنید:", reply_markup=back_button())
         return ASK_LOCATION
     if update.message.text == "ارسال لینک آدرس (گوگل مپ یا نشان)":
         db.log_activity(user.id, "chose location link")
-        await update.message.reply_text("لطفا لینک آدرس باغ خود را ارسال کنید.", reply_markup=back_button())
+        reply_text = """
+ لطفا مطابق فیلم راهنما لینک موقعیت باغ خود را از گوگل مپ یا نشان ارسال کنید.
+ 
+👉 https://t.me/agriweath/59 
+
+در صورت نیاز به راهنمایی بیشتر همین حالا به @agriiadmin پیام دهید.
+"""
+        await update.message.reply_text(reply_text, reply_markup=back_button())
         return HANDLE_LINK
             
     farm_name = user_data["farm_name"]
@@ -346,7 +486,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "chose to send location from map")
         logger.info(f"{update.effective_user.id} chose: az google map entekhab mikonam")
         reply_text = """
-        مطابق فیلم راهنما موقعیت لوکیشن باغ خود را انتخاب کنید
+        مطابق فیلم راهنما موقعیت (لوکیشن) باغ خود را انتخاب کنید
         
         👉  https://t.me/agriweath/2
         """
@@ -406,7 +546,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 add_farm_conv_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("➕ اضافه کردن باغ"), add)],
         states={
+            ASK_TYPE: [MessageHandler(filters.TEXT, ask_type)],
             ASK_PRODUCT: [MessageHandler(filters.TEXT, ask_product)],
+            HANDLE_PRODUCT: [MessageHandler(filters.TEXT, handle_product)],
             ASK_PROVINCE: [MessageHandler(filters.TEXT, ask_province)],
             ASK_CITY: [MessageHandler(filters.TEXT, ask_city)],
             ASK_VILLAGE: [MessageHandler(filters.TEXT, ask_village)],

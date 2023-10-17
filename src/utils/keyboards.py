@@ -89,6 +89,9 @@ def edit_keyboard_reply():
     ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
+def land_type_keyboard():
+    keyboard = [["باغ", "مزرعه"], ["صیفی", "گلخانه"], ['بازگشت']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 
 def return_keyboard():
