@@ -113,6 +113,12 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     advise_receiver_id = []  # [ [day1], [day2], [day3] ]
     jdates = [jdate, jday2, jday3]
     advise_tags = ['امروز', 'فردا', 'پس فردا']
+    for admin in admin_list:
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            await context.bot.send_message(
+                chat_id=admin,
+                text=f"در حال ارسال پیام به کاربران...",
+            )
     try:
         advise_pre_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Bef.geojson")
         advise_post_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Aft.geojson")
@@ -206,7 +212,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                     f"user's location: ({longitude},{latitude}) | distance in weather file: {point.distance(Point(closest_coords_weather))} > {threshold}"
                                 )
                             # Define some Conditions before sending advice:
-                            if farms[farm]["product"] == "سایر":
+                            if not farms[farm]["product"].startswith("پسته"):
                                 continue
                             if farms[farm].get("harvest-off"):
                                 idx_min_dist_advise = advise_post_harvest.geometry.distance(point).idxmin()
