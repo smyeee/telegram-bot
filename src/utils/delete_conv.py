@@ -164,7 +164,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 delete_conv_handler = ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex("🗑 حذف باغ ها"), delete_farm_keyboard)
+            MessageHandler(filters.Regex("🗑 حذف کشت"), delete_farm_keyboard)
         ],
         states={
             CONFIRM_DELETE: [MessageHandler(filters.ALL, confirm_delete)],

@@ -427,7 +427,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 edit_farm_conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("✏️ ویرایش باغ ها"), edit_farm_keyboard)],
+        entry_points=[MessageHandler(filters.Regex("✏️ ویرایش کشت‌ها"), edit_farm_keyboard)],
         states={
             CHOOSE_ATTR: [MessageHandler(filters.ALL, choose_attr_to_edit)],
             EDIT_FARM: [MessageHandler(filters.ALL, edit_farm)],

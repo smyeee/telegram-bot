@@ -544,7 +544,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 add_farm_conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("➕ اضافه کردن باغ"), add)],
+        entry_points=[MessageHandler(filters.Regex("➕ اضافه کردن کشت"), add)],
         states={
             ASK_TYPE: [MessageHandler(filters.TEXT, ask_type)],
             ASK_PRODUCT: [MessageHandler(filters.TEXT, ask_product)],

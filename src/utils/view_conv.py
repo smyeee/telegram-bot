@@ -127,7 +127,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 view_conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("🖼 مشاهده باغ ها"), view_farm_keyboard)],
+        entry_points=[MessageHandler(filters.Regex("🖼 مشاهده کشت‌ها"), view_farm_keyboard)],
         states={
             VIEW_FARM: [MessageHandler(filters.ALL, view_farm)],
         },

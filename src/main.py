@@ -166,7 +166,7 @@ def main():
 
     # Menu navigation commands
     application.add_handler(MessageHandler(filters.Regex('^🏘 بازگشت به خانه$'), home_view))
-    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت باغ‌ها$'), farm_management_view))
+    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت کشت‌ها$'), farm_management_view))
     application.add_handler(MessageHandler(filters.Regex('^🌟 سرویس VIP$'), payment_view))
     application.add_handler(MessageHandler(filters.Regex('^📲 دریافت اطلاعات اختصاصی باغ$'), info_view))
 
