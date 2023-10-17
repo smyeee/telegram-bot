@@ -494,7 +494,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         👉  https://t.me/agriweath/2
         """
-        await update.message.reply_text(reply_text, reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text(reply_text, reply_markup=back_button())
         return HANDLE_LOCATION
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
