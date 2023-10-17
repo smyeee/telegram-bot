@@ -39,7 +39,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Constants for ConversationHandler states
 CONFIRM_DELETE, DELETE_FARM = range(2)
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -52,7 +52,7 @@ async def delete_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYP
     user_farms = db.get_farms(user.id)
     if user_farms:
         await update.message.reply_text(
-            "یکی از باغ های خود را انتخاب کنید",
+            "یکی از کشت‌های خود را انتخاب کنید",
             reply_markup=farms_list_reply(db, user.id),
         )
         return CONFIRM_DELETE
@@ -77,7 +77,7 @@ async def confirm_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - wrong farm to delete", farm)
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="یکی از کشت‌های خود را انتخاب کنید",
             reply_markup=farms_list_reply(db, user.id),
         )
         return CONFIRM_DELETE
@@ -91,7 +91,7 @@ async def confirm_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     location = user_farms.get(farm)["location"]
     text = f"""
 آیا از حذف <b>{farm}</b> با مشخصات زیر اطمینان دارید؟
-محصول باغ: {user_farms[farm].get("product")}
+محصول: {user_farms[farm].get("product")}
 مساحت: {user_farms[farm].get("area")}
 آدرس انتخاب شده ⬇️
 """
@@ -129,7 +129,7 @@ async def delete_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "back")
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="یکی از کشت‌های خود را انتخاب کنید",
             reply_markup=farms_list_reply(db, user.id),
         )
         return CONFIRM_DELETE

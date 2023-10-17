@@ -38,7 +38,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Constants for ConversationHandler states
 VIEW_FARM = range(1)
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -51,7 +51,7 @@ async def view_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if user_farms:
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="یکی از کشت‌های خود را انتخاب کنید",
             reply_markup=farms_list_reply(db, user.id),
         )
         return VIEW_FARM
@@ -77,7 +77,7 @@ async def view_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - chose wrong farm to view", farm)
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="یکی از کشت‌های خود را انتخاب کنید",
             reply_markup=farms_list_reply(db, user.id),
         )
         return VIEW_FARM
@@ -97,7 +97,7 @@ async def view_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         text = f"""
 <b>{farm}</b>
-محصول باغ: {user_farms[farm].get("product")}
+محصول: {user_farms[farm].get("product")}
 مساحت: {user_farms[farm].get("area")}
 آدرس انتخاب شده ⬇️
 """
@@ -113,7 +113,7 @@ async def view_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=user.id,
                 text=f"متاسفانه موقعیت <{farm}> ثبت نشده است. "
-                "می توانید از طریق گزینه ویرایش باغ موقعیت آن را ثبت کنید.",
+                "می توانید از طریق گزینه ویرایش کشت موقعیت آن را ثبت کنید.",
                 reply_markup=farms_list_reply(db, user.id),
             )
         db.log_activity(user.id, "viewed a farm", farm)
