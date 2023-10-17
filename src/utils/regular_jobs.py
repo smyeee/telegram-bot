@@ -109,8 +109,10 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     villages = pd.read_excel("vilages.xlsx")
     weather_report_receiver_id = []
     weather_report_count = 0
-    advise_count = 0             # [ [day1], [day2], [day3] ]
-    advise_receiver_id = []  # [ [day1], [day2], [day3] ]
+    advise_post_count = 0             # [ [day1], [day2], [day3] ]
+    advise_post_receiver_id = []  # [ [day1], [day2], [day3] ]
+    advise_pre_count = 0             # [ [day1], [day2], [day3] ]
+    advise_pre_receiver_id = []  # [ [day1], [day2], [day3] ]
     jdates = [jdate, jday2, jday3]
     advise_tags = ['امروز', 'فردا', 'پس فردا']
     for admin in admin_list:
@@ -215,11 +217,15 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                             if not farms[farm]["product"].startswith("پسته"):
                                 continue
                             if farms[farm].get("harvest-off"):
+                                advise_post_count += 1
+                                advise_post_receiver_id.append(id)
                                 idx_min_dist_advise = advise_post_harvest.geometry.distance(point).idxmin()
                                 closest_coords_advise = advise_post_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
                                 ps_msg = ""
                                 row = advise_post_harvest.iloc[idx_min_dist_advise]
                             elif farms[farm].get("harvest-off") == False or farms[farm].get("harvest-off") == None:
+                                advise_pre_count += 1
+                                advise_pre_receiver_id.append(id)
                                 idx_min_dist_advise = advise_pre_harvest.geometry.distance(point).idxmin()
                                 closest_coords_advise = advise_pre_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
                                 ps_msg = "در صورتی که برداشت محصولتان تکمیل شده و تمایل به دریافت روزانه توصیه‌های پس از برداشت دارید از دستور /harvest_off استفاده کرده و باغ خود را انتخاب کنید."
@@ -268,53 +274,14 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                         message=advise,
                                         function="send_advice",
                                         )
-                                    advise_count += 1
-                                    advise_receiver_id.append(id)
+                                    # advise_count += 1
+                                    # advise_receiver_id.append(id)
                                 except Forbidden:
                                     db.set_user_attribute(id, "blocked", True)
                                     logger.info(f"user:{id} has blocked the bot!")
                                 except BadRequest:
                                     logger.info(f"user:{id} chat was not found!")
-                                ############### old way
-    #                             for i, advise in enumerate(advise_3days):
-    #                                 if pd.isna(advise):
-    #                                     logger.info(
-    #                                         f"No advice for user {id} in day: {i+1}"
-    #                                     )
-                                    
-    #                                 if not pd.isna(advise):
-    #                                     advise = f"""
-    # باغدار عزیز 
-    # توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <{farm}> برای {advise_tags[i]} مورخ {jdates[i]} ارسال می‌شود:
 
-    # {advise}
-    #                                 """
-                                        
-    #                                     try:
-    #                                         # await bot.send_message(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-    #                                         await context.bot.send_message(chat_id=id, text=advise)
-    #                                         username = db.user_collection.find_one({"_id": id})[
-    #                                             "username"
-    #                                         ]
-    #                                         db.log_new_message(
-    #                                             user_id=id,
-    #                                             username=username,
-    #                                             message=advise,
-    #                                             function="send_advice",
-    #                                         )
-    #                                         logger.info(f"sent recommendation to {id} for {farm}")
-    #                                         advise_count[i] += 1
-    #                                         advise_receiver_id[i].append(id)
-    #                                         # await bot.send_location(chat_id=id, location=Location(latitude=latitude, longitude=longitude))
-    #                                     except Forbidden:
-    #                                         db.set_user_attribute(id, "blocked", True)
-    #                                         logger.info(f"user:{id} has blocked the bot!")
-    #                                     except BadRequest:
-    #                                         logger.info(f"user:{id} chat was not found!")
-    #                         else:
-    #                             logger.info(
-    #                                 f"user's location: ({longitude},{latitude}) | distance in advise file: {point.distance(Point(closest_coords_advise))} > {threshold}"
-    #                             )
                     except KeyError:
                         for admin in admin_list:
                             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -325,14 +292,11 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
         db.log_sent_messages(weather_report_receiver_id, "send_weather_report")
         logger.info(f"sent weather report to {weather_report_count} people")
 
-        db.log_sent_messages(advise_receiver_id, "send_advice_to_users")
-        logger.info(f"sent today's advice info to {advise_count} people")
+        db.log_sent_messages(advise_post_receiver_id, "send_post_harvest_advice_to_users")
+        logger.info(f"sent today's post harvest advice to {advise_post_count} people")
         
-        # db.log_sent_messages(advise_receiver_id[1], "send_advice_to_users")
-        # logger.info(f"sent day2 advice info to {advise_count[1]} people")
-
-        # db.log_sent_messages(advise_receiver_id[2], "send_advice_to_users")
-        # logger.info(f"sent day3 advice info to {advise_count[2]} people")
+        db.log_sent_messages(advise_pre_receiver_id, "send_pre_harvest_advice_to_users")
+        logger.info(f"sent today's pre harvest advice to {advise_pre_count} people")
 
         for admin in admin_list:
             try:
@@ -341,20 +305,18 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                 )
                 await context.bot.send_message(chat_id=admin, text=f"{len(set(weather_report_receiver_id))}:\n{weather_report_receiver_id}")
 
+
                 await context.bot.send_message(
-                    chat_id=admin, text=f"توصیه به {advise_count} باغ ارسال شد"
+                    chat_id=admin, text=f"توصیه پس از برداشت به {advise_post_count} باغ ارسال شد"
                 )
-                await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_receiver_id))}:\n{advise_receiver_id}")
+                await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_post_receiver_id))}:\n{advise_post_receiver_id}")
 
-                # await context.bot.send_message(
-                #     chat_id=admin, text=f"توصیه به {advise_count[1]} باغ ارسال شد"
-                # )
-                # await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_receiver_id[1]))}:\n{advise_receiver_id[1]}")
 
-                # await context.bot.send_message(
-                #     chat_id=admin, text=f"توصیه به {advise_count[2]} باغ ارسال شد"
-                # )
-                # await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_receiver_id[2]))}:\n{advise_receiver_id[2]}")
+                await context.bot.send_message(
+                    chat_id=admin, text=f"توصیه پیش از برداشت به {advise_pre_count} باغ ارسال شد"
+                )
+                await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_pre_receiver_id))}:\n{advise_pre_receiver_id}")
+
             except BadRequest or Forbidden:
                     logger.warning(f"admin {admin} has deleted the bot")
     except DriverError:
