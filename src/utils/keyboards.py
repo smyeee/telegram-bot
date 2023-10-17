@@ -84,7 +84,7 @@ def edit_keyboard_reply():
         "تغییر موقعیت",
     ],
     [
-        "بازگشت به لیست باغ ها",
+        "بازگشت به لیست کشت‌ها",
     ]
     ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
