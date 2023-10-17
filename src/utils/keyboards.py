@@ -99,7 +99,7 @@ def return_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 # Function to get the multi-choice keyboard for provinces
 def get_province_keyboard():
-    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['مرکزی', 'تهران', 'اصفهان'], ['قم', 'سیستان و بلوچستان', 'قزوین'], ['سایر', 'بازگشت']]
+    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['مرکزی', 'تهران', 'اصفهان'], ['قم', 'سیستان و بلوچستان', 'قزوین'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 # 🌳🧾💶💰✅
@@ -152,7 +152,7 @@ def register_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def get_product_keyboard():
-    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر', 'بازگشت']]
+    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def conf_del_keyboard():

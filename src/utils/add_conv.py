@@ -142,7 +142,8 @@ async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
     db.add_new_farm(user_id=user.id, farm_name=farm_name, new_farm=new_farm_dict)
     reply_text = """
-لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+لطفا نوع کشت خود را انتخاب کنید. 
+اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
 """
     # await update.message.reply_text(reply_text, reply_markup=back_button())
     await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
@@ -177,7 +178,8 @@ async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif not message_text:
         db.log_activity(user.id, "error - no name received")
         reply_text = """
-لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+لطفا نوع کشت خود را انتخاب کنید. 
+اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
 """
         await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
         return ASK_PRODUCT
@@ -190,7 +192,7 @@ async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.set_user_attribute(user.id, f"farms.{farm_name}.type", land_type)
     if land_type == "باغ":
         await update.message.reply_text(
-            "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
+            "لطفا محصول باغ را انتخاب کنید. \nدر صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
             reply_markup=ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True))
         return HANDLE_PRODUCT
     else:
@@ -209,7 +211,8 @@ async def handle_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if message_text == "بازگشت":
         db.log_activity(user.id, "back")
         reply_text = """
-لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+لطفا نوع کشت خود را انتخاب کنید. 
+اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
 """
         await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
         return ASK_PRODUCT
@@ -229,7 +232,7 @@ async def handle_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if land_type == "باغ":
             keyboard = ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True)
             await update.message.reply_text(
-                "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", reply_markup=keyboard
+                "لطفا محصول باغ را انتخاب کنید. \nدر صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", reply_markup=keyboard
             )
             return HANDLE_PRODUCT
         else:
@@ -262,13 +265,14 @@ async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "back")
         if land_type != "باغ":
             reply_text = """
-لطفا نوع کشت خود را انتخاب کنید. اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
+لطفا نوع کشت خود را انتخاب کنید. 
+اگر نوع کشت شما در گزینه‌‌ها نیست آن را بنویسید.
 """
             await update.message.reply_text(reply_text, reply_markup=land_type_keyboard())
             return ASK_PRODUCT
         else:
             await update.message.reply_text(
-            "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
+            "لطفا محصول باغ را انتخاب کنید. \nدر صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
             reply_markup=ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True))
             return HANDLE_PRODUCT
     # Get the answer to the province question
@@ -287,7 +291,7 @@ async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.set_user_attribute(user.id, f"farms.{farm_name}.product", product)
     db.log_activity(user.id, "chose product", f"{product}")
     await update.message.reply_text(
-        "لطفا استان خود را انتخاب کنید. اگر استان شما در گزینه‌ها نبود آن را بنویسید", reply_markup=get_province_keyboard()
+        "لطفا استان خود را انتخاب کنید. \nاگر استان شما در گزینه‌ها نبود آن را بنویسید", reply_markup=get_province_keyboard()
     )
     return ASK_CITY
 
@@ -305,7 +309,7 @@ async def ask_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ASK_PROVINCE
         else:
             await update.message.reply_text(
-            "لطفا محصول باغ را انتخاب کنید. در صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
+            "لطفا محصول باغ را انتخاب کنید. \nدر صورتی‌‌‌که باغ پسته ندارید محصول باغ خود را بنویسید.", 
             reply_markup=ReplyKeyboardMarkup([["پسته", "بازگشت"]], resize_keyboard=True, one_time_keyboard=True))
             return HANDLE_PRODUCT
 
@@ -525,7 +529,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return HANDLE_LOCATION
     else:
         db.log_activity(user.id, "sent location link", text)
-        reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا تا بررسی ادمین منتظر بمانید. از شکیبایی شما سپاسگزاریم."
+        reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا تا بررسی ادمین منتظر بمانید.\n از شکیبایی شما سپاسگزاریم."
         db.set_user_attribute(user.id, f"farms.{farm_name}.location-method", "Link")
         db.log_activity(user.id, "finish add farm with location link", farm_name)
         context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1), chat_id=user.id, data=user.username)    

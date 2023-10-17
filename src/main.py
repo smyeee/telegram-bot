@@ -71,7 +71,7 @@ async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def farm_management_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    reply_text = "مدیریت باغ‌ها"
+    reply_text = "مدیریت کشت‌ها"
     db.log_activity(user.id, "navigated to farm management view")
     await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
 
@@ -159,8 +159,8 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 def main():
     proxy_url = 'http://127.0.0.1:8889'
-    # application = ApplicationBuilder().token(TOKEN).build()
-    application = ApplicationBuilder().token(TOKEN).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
+    application = ApplicationBuilder().token(TOKEN).build()
+    # application = ApplicationBuilder().token(TOKEN).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
     # Add handlers to the application
     application.add_error_handler(error_handler)
 
