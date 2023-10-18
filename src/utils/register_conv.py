@@ -94,9 +94,9 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data["phone"] = phone
     db.set_user_attribute(user_id=user.id, key="phone-number", value=phone)
     reply_text = """
-اکنون می‌توانید با انتخاب گزینه <b>(➕ اضافه کردن باغ)</b> باغ‌های خود را ثبت کنید.
+اکنون می‌توانید با انتخاب گزینه <b>(➕ اضافه کردن کشت)</b> باغ‌های خود را ثبت کنید.
     """
-    keyboard = [['➕ اضافه کردن باغ']]
+    keyboard = [['➕ اضافه کردن کشت']]
     
     await update.message.reply_text(reply_text, parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True))
     return ConversationHandler.END

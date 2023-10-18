@@ -214,6 +214,8 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                     f"user's location: ({longitude},{latitude}) | distance in weather file: {point.distance(Point(closest_coords_weather))} > {threshold}"
                                 )
                             # Define some Conditions before sending advice:
+                            if not farms[farm]["product"]:
+                                continue
                             if not farms[farm]["product"].startswith("پسته"):
                                 continue
                             if farms[farm].get("harvest-off"):
