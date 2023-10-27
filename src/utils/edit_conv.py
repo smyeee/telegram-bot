@@ -382,6 +382,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
     text = update.message.text
+    farm = user_data["selected_farm"]
     if text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", text)
         await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
@@ -408,6 +409,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return HANDLE_EDIT
     reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا منتظر تایید ادمین باشید. با تشکر."
+    db.set_user_attribute(user.id, f"farms.{farm}.link-status", "To be verified")
     db.log_activity(user.id, "finish edit location with link")
     await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
     context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    

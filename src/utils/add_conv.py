@@ -531,6 +531,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "sent location link", text)
         reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا تا بررسی ادمین منتظر بمانید.\n از شکیبایی شما سپاسگزاریم."
         db.set_user_attribute(user.id, f"farms.{farm_name}.location-method", "Link")
+        db.set_user_attribute(user.id, f"farms.{farm_name}.link-status", "To be verified")
         db.log_activity(user.id, "finish add farm with location link", farm_name)
         context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1), chat_id=user.id, data=user.username)    
         await update.message.reply_text(reply_text, reply_markup=start_keyboard())

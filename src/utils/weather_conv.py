@@ -209,6 +209,10 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ConversationHandler.END
         finally:
             os.system("rm table.png")
+    elif user_farms[farm].get("link-status") == "To be verified":
+        reply_text = "لینک لوکیشن ارسال شده توسط شما هنوز تایید نشده است.\nلطفا تا بررسی ادمین آباد شکیبا باشید."
+        await context.bot.send_message(chat_id=user.id, text=reply_text,reply_markup=start_keyboard())
+        return ConversationHandler.END
     else:
         await context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست اطلاعات هواشناسی نسبت به ثبت موققعیت اقدام فرمایید.",
                                  reply_markup=start_keyboard())
@@ -299,6 +303,10 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info(f"{user.id} requested today's weather. pesteh{today}_AdviseSP.geojson was not found!")
             await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
             return ConversationHandler.END
+    elif user_farms[farm].get("link-status") == "To be verified":
+        reply_text = "لینک لوکیشن ارسال شده توسط شما هنوز تایید نشده است.\nلطفا تا بررسی ادمین آباد شکیبا باشید."
+        await context.bot.send_message(chat_id=user.id, text=reply_text,reply_markup=start_keyboard())
+        return ConversationHandler.END
     else:
         await context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست اطلاعات هواشناسی نسبت به ثبت موققعیت اقدام فرمایید.",
                                  reply_markup=start_keyboard())
