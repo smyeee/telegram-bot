@@ -207,6 +207,7 @@ async def handle_lat_long(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.longitude", float(user_data["long"]))
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.latitude", float(user_data["lat"]))
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.link-status", "Verified")
+    db.log_activity(user.id, "set a user's location", user_data["target"][0])
     for admin in ADMIN_LIST:
         await context.bot.send_message(chat_id=admin, text=f"Location of farm {user_data['farm_name']} belonging to {user_data['target'][0]} was set")
         await context.bot.send_location(chat_id=admin, latitude=float(user_data["lat"]), longitude=float(user_data["long"]))
