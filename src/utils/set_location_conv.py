@@ -11,6 +11,7 @@ from telegram.ext import (
     ConversationHandler,
 )
 from telegram.error import BadRequest, Forbidden
+from telegram.constants import ParseMode
 import requests
 import re
 import warnings
@@ -148,6 +149,9 @@ async def ask_latitude(update: Update, context: ContextTypes.DEFAULT_TYPE):
 https://goo.gl/maps/3Nx2zh3pevaz9vf16
 """)
         return ASK_LATITUDE
+    elif len(target) == 1 and longitude.replace(".", "").isdecimal() == False:
+        await update.message.reply_text("\n\n <b>مقدار Longitude وارد شده قابل قبول نیست. طول و عرض جغرافیایی باید اعداد صحیح یا اعشار باشند.\nدوباره تلاش کنید.</b> \n\n", parse_mode=ParseMode.HTML)
+        return ASK_LATITUDE
     elif len(target) == 1:
         user_data["long"] = longitude
         await update.message.reply_text(f"what's the latitude of {user_data['target']}?\ndo you want to /cancel ?")
@@ -195,6 +199,9 @@ async def handle_lat_long(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif not latitude:
         await update.message.reply_text(f"what's the latitude of {latitude}? \ndo you want to /cancel ?")
+        return HANDLE_LAT_LONG
+    elif latitude.replace(".", "").isdecimal() == False:
+        await update.message.reply_text("\n\n <b>مقدار Latitude وارد شده قابل قبول نیست. طول و عرض جغرافیایی باید اعداد صحیح یا اعشار باشند.\nدوباره تلاش کنید.</b> \n\n", parse_mode=ParseMode.HTML)
         return HANDLE_LAT_LONG
     user_data["lat"] = latitude
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.longitude", float(user_data["long"]))
