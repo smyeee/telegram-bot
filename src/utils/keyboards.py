@@ -109,9 +109,22 @@ def get_province_keyboard():
 #     keyboard = [['📤 دعوت از دیگران'], ,  ['🗑 حذف باغ ها', '✏️ ویرایش باغ ها'], ['🌦 درخواست اطلاعات هواشناسی']]
 #     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
-def start_keyboard():
+
+def start_keyboard_not_registered():
+    pass
+
+def start_keyboard_no_farms():
+    pass
+
+def start_keyboard_no_location():
+    pass
+
+def start_keyboard_not_pesteh():
     keyboard = [ ['👨‍🌾 مدیریت کشت‌ها'],  ['🌟 سرویس VIP'] , ['🌦 پیش‌بینی هواشناسی', '🧪 شرایط محلول‌پاشی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
+def start_keyboard_pesteh_kar():
+    pass
 
 def manage_farms_keyboard():
     keyboard = [['🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت'], ['🗑 حذف کشت', '✏️ ویرایش کشت‌ها'], ['🏘 بازگشت به خانه']]

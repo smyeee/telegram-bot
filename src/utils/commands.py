@@ -21,7 +21,10 @@ import database
 from .regular_jobs import register_reminder, no_farm_reminder
 from .keyboards import (
     register_keyboard,
-    start_keyboard,
+    start_keyboard_no_farms,
+    start_keyboard_no_location,
+    start_keyboard_not_pesteh,
+    start_keyboard_pesteh_kar,
     view_sp_advise_keyboard,
     view_advise_keyboard,
     farms_list_reply
@@ -45,6 +48,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_data = context.user_data
     context.job_queue.run_once(no_farm_reminder, when=datetime.timedelta(hours=1), chat_id=user.id, data=user.username)    
+    user_document = db.user_collection.find_one( { "_id": user.id } )
     # Check if the user has already signed up
     if not db.check_if_user_is_registered(user_id=user.id):
         user_data["username"] = user.username
@@ -69,16 +73,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.job_queue.run_once(register_reminder, when=datetime.timedelta(hours=3), chat_id=user.id, data=user.username)    
         return ConversationHandler.END
     else:
-        reply_text = """
-باغدار عزیز سلام
-از این که به ما اعتماد کردید متشکریم.
-برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … باغ های خد را در بات ثبت کنید.
-راه‌های ارتباطی با ما:
-ادمین: @agriiadmin
-تلفن ثابت: 02164063410
-                """
-        await update.message.reply_text(reply_text, reply_markup=start_keyboard())
-        return ConversationHandler.END
+#         reply_text = """
+# باغدار عزیز سلام
+# از این که به ما اعتماد کردید متشکریم.
+# برای دریافت توصیه‌های کاربردی هواشناسی از قبیل سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، نیاز سرمایی و … باغ های خد را در بات ثبت کنید.
+# راه‌های ارتباطی با ما:
+# ادمین: @agriiadmin
+# تلفن ثابت: 02164063410
+#                 """
+#         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
+        if not db.check_if_user_has_farms():
+            reply_text = "لطفا پیش از دسترسی به خدمات آباد کشت خود را ثبت کنید"
+            await update.message.reply_text(reply_text,
+                                            reply_markup=start_keyboard_no_farms())
+            
+        else:
+            if not db.check_if_user_has_farms_with_location():
+                reply_text = "لطفا پیش از دسترسی به خدمات آباد لوکیشن کشت خود را ثبت کنید"
+                await update.message.reply_text(reply_text,
+                                                reply_markup=start_keyboard_no_location())
+            else:
+                if not db.check_if_user_has_pesteh():
+                    reply_text = "به آباد خوش آمدید"
+                    await update.message.reply_text(reply_text,
+                                                    reply_markup=start_keyboard_not_pesteh())
+                else:
+                    reply_text = "به آباد خوش آمدید"
+                    await update.message.reply_text(reply_text,
+                                                    reply_markup=start_keyboard_pesteh_kar())
 
 
 

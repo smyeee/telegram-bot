@@ -39,6 +39,33 @@ class Database:
                 return True
             else:
                 return False
+    
+    def check_if_user_has_farms(self, user_id: int, user_document: dict = None) -> bool:
+        if not user_document:
+            user_document = self.user_collection.find_one( {"_id": user_id} )
+        if user_document.get("farms"):
+            return True
+        else: 
+            return False
+        
+    def check_if_user_has_farms_with_location(self, user_id: int, user_document: dict = None) -> bool:
+        if not user_document:
+            user_document = self.user_collection.find_one( {"_id": user_id} )
+        # Lets assume that the user has atleast one farm i.e. we've filtered the users who don't have a farm
+        longitudes = { farm: user_document["farms"][farm]["location"].get("longitude") for farm in list(user_document["farms"].keys()) }
+        if any([longitudes[farm] for farm in list(longitudes.keys())]):
+            return True
+        else:
+            return False
+        
+    def check_if_user_has_pesteh(self, user_id: int, user_document: dict = None) -> bool:
+        if not user_document:
+            user_document = self.user_collection.find_one( {"_id": user_id} )
+        products = [user_document["farms"][farm].get("product") for farm in list(user_document["farms"].keys())]
+        if any([product.startswith("پسته") for product in products]):
+            return True
+        else:
+            return False
 
     def check_if_dialog_exists(self, user_id: int, raise_exception: bool = False):
         if self.dialog_collection.count_documents({"_id": user_id}) > 0:
