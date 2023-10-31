@@ -47,7 +47,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # Constants for ConversationHandler states
 
 RECV_WEATHER, RECV_SP = range(2)
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -125,7 +125,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if longitude is not None:
         try:
             if datetime.time(7, 0).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(20, 30).strftime("%H%M"):    
-                weather_data = gpd.read_file(f"data/pesteh{today}_weather.geojson")
+                weather_data = gpd.read_file(f"data/Iran{today}_weather.geojson")
                 point = Point(longitude, latitude)
                 threshold = 0.1  # degrees
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
@@ -164,7 +164,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
                     return ConversationHandler.END
             else:
-                weather_data = gpd.read_file(f"data/pesteh{yesterday}_weather.geojson")
+                weather_data = gpd.read_file(f"data/Iran{yesterday}_weather.geojson")
                 point = Point(longitude, latitude)
                 threshold = 0.1  # degrees
                 idx_min_dist = weather_data.geometry.distance(point).idxmin()
@@ -209,6 +209,10 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ConversationHandler.END
         finally:
             os.system("rm table.png")
+    elif user_farms[farm].get("link-status") == "To be verified":
+        reply_text = "لینک لوکیشن ارسال شده توسط شما هنوز تایید نشده است.\nلطفا تا بررسی ادمین آباد شکیبا باشید."
+        await context.bot.send_message(chat_id=user.id, text=reply_text,reply_markup=start_keyboard())
+        return ConversationHandler.END
     else:
         await context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست اطلاعات هواشناسی نسبت به ثبت موققعیت اقدام فرمایید.",
                                  reply_markup=start_keyboard())
@@ -243,9 +247,12 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if longitude is not None:
         try:
             if datetime.time(7, 0).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(20, 30).strftime("%H%M"):    
-                sp_data = gpd.read_file(f"data/pesteh{today}_AdviseSP.geojson")
+                sp_data = gpd.read_file(f"data/Iran{today}_AdviseSP.geojson")
             else:
-                sp_data = gpd.read_file(f"data/pesteh{yesterday}_AdviseSP.geojson")
+                sp_data = gpd.read_file(f"data/Iran{yesterday}_AdviseSP.geojson")
+                day3 = day2
+                day2 = today
+                today = yesterday
             # sp_data = gpd.read_file(f"data/pesteh{today}_AdviseSP.geojson")
             point = Point(longitude, latitude)
             threshold = 0.1  # degrees
@@ -296,6 +303,10 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info(f"{user.id} requested today's weather. pesteh{today}_AdviseSP.geojson was not found!")
             await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات باغ شما در حال حاضر موجود نیست", reply_markup=start_keyboard())
             return ConversationHandler.END
+    elif user_farms[farm].get("link-status") == "To be verified":
+        reply_text = "لینک لوکیشن ارسال شده توسط شما هنوز تایید نشده است.\nلطفا تا بررسی ادمین آباد شکیبا باشید."
+        await context.bot.send_message(chat_id=user.id, text=reply_text,reply_markup=start_keyboard())
+        return ConversationHandler.END
     else:
         await context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست اطلاعات هواشناسی نسبت به ثبت موققعیت اقدام فرمایید.",
                                  reply_markup=start_keyboard())

@@ -11,6 +11,7 @@ from telegram.ext import (
     ConversationHandler,
 )
 from telegram.error import BadRequest, Forbidden
+from telegram.constants import ParseMode
 import requests
 import re
 import warnings
@@ -39,7 +40,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # Constants for ConversationHandler states
 ASK_FARM_NAME, ASK_LONGITUDE, ASK_LATITUDE, HANDLE_LAT_LONG = range(4)
 
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -148,6 +149,9 @@ async def ask_latitude(update: Update, context: ContextTypes.DEFAULT_TYPE):
 https://goo.gl/maps/3Nx2zh3pevaz9vf16
 """)
         return ASK_LATITUDE
+    elif len(target) == 1 and longitude.replace(".", "").isdecimal() == False:
+        await update.message.reply_text("\n\n <b>مقدار Longitude وارد شده قابل قبول نیست. طول و عرض جغرافیایی باید اعداد صحیح یا اعشار باشند.\nدوباره تلاش کنید.</b> \n\n", parse_mode=ParseMode.HTML)
+        return ASK_LATITUDE
     elif len(target) == 1:
         user_data["long"] = longitude
         await update.message.reply_text(f"what's the latitude of {user_data['target']}?\ndo you want to /cancel ?")
@@ -196,9 +200,14 @@ async def handle_lat_long(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif not latitude:
         await update.message.reply_text(f"what's the latitude of {latitude}? \ndo you want to /cancel ?")
         return HANDLE_LAT_LONG
+    elif latitude.replace(".", "").isdecimal() == False:
+        await update.message.reply_text("\n\n <b>مقدار Latitude وارد شده قابل قبول نیست. طول و عرض جغرافیایی باید اعداد صحیح یا اعشار باشند.\nدوباره تلاش کنید.</b> \n\n", parse_mode=ParseMode.HTML)
+        return HANDLE_LAT_LONG
     user_data["lat"] = latitude
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.longitude", float(user_data["long"]))
     db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.location.latitude", float(user_data["lat"]))
+    db.set_user_attribute(int(user_data["target"][0]), f"farms.{user_data['farm_name']}.link-status", "Verified")
+    db.log_activity(user.id, "set a user's location", user_data["target"][0])
     for admin in ADMIN_LIST:
         await context.bot.send_message(chat_id=admin, text=f"Location of farm {user_data['farm_name']} belonging to {user_data['target'][0]} was set")
         await context.bot.send_location(chat_id=admin, latitude=float(user_data["lat"]), longitude=float(user_data["long"]))

@@ -71,7 +71,7 @@ async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def farm_management_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    reply_text = "مدیریت باغ‌ها"
+    reply_text = "مدیریت کشت‌ها"
     db.log_activity(user.id, "navigated to farm management view")
     await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
 
@@ -166,7 +166,7 @@ def main():
 
     # Menu navigation commands
     application.add_handler(MessageHandler(filters.Regex('^🏘 بازگشت به خانه$'), home_view))
-    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت باغ‌ها$'), farm_management_view))
+    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت کشت‌ها$'), farm_management_view))
     application.add_handler(MessageHandler(filters.Regex('^🌟 سرویس VIP$'), payment_view))
     application.add_handler(MessageHandler(filters.Regex('^📲 دریافت اطلاعات اختصاصی باغ$'), info_view))
 

@@ -84,11 +84,14 @@ def edit_keyboard_reply():
         "تغییر موقعیت",
     ],
     [
-        "بازگشت به لیست باغ ها",
+        "بازگشت به لیست کشت‌ها",
     ]
     ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
+def land_type_keyboard():
+    keyboard = [["باغ", "مزرعه"], ["صیفی", "گلخانه"], ['بازگشت']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 
 def return_keyboard():
@@ -96,7 +99,7 @@ def return_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 # Function to get the multi-choice keyboard for provinces
 def get_province_keyboard():
-    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['مرکزی', 'تهران', 'اصفهان'], ['قم', 'سیستان و بلوچستان', 'قزوین'], ['سایر', 'بازگشت']]
+    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['مرکزی', 'تهران', 'اصفهان'], ['قم', 'سیستان و بلوچستان', 'قزوین'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 # 🌳🧾💶💰✅
@@ -107,11 +110,11 @@ def get_province_keyboard():
 #     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def start_keyboard():
-    keyboard = [ ['👨‍🌾 مدیریت باغ‌ها'],  ['🌟 سرویس VIP'] , ['🌦 پیش‌بینی هواشناسی', '🧪 شرایط محلول‌پاشی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
+    keyboard = [ ['👨‍🌾 مدیریت کشت‌ها'],  ['🌟 سرویس VIP'] , ['🌦 پیش‌بینی هواشناسی', '🧪 شرایط محلول‌پاشی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def manage_farms_keyboard():
-    keyboard = [['🖼 مشاهده باغ ها', '➕ اضافه کردن باغ'], ['🗑 حذف باغ ها', '✏️ ویرایش باغ ها'], ['🏘 بازگشت به خانه']]
+    keyboard = [['🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت'], ['🗑 حذف کشت', '✏️ ویرایش کشت‌ها'], ['🏘 بازگشت به خانه']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
 def payment_keyboard():
@@ -149,7 +152,7 @@ def register_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def get_product_keyboard():
-    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'سایر', 'بازگشت']]
+    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def conf_del_keyboard():
