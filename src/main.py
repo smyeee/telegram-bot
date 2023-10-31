@@ -35,7 +35,7 @@ from utils.register_conv import register_conv_handler
 from utils.view_conv import view_conv_handler
 from utils.set_location_conv import set_location_handler
 from utils.admin import broadcast_handler, backup_send, stats_buttons, bot_stats
-from utils.commands import invite, start, change_day, harvest_off_conv_handler, harvest_on_conv_handler
+from utils.commands import invite, start, change_day, harvest_off_conv_handler, harvest_on_conv_handler, invite_conv
 from utils.payment_funcs import payment_link, verify_payment, off_conv_handler, verify_conv_handler, create_coupon
 
 # Enable logging
@@ -174,6 +174,7 @@ def main():
     application.add_handler(register_conv_handler)
     application.add_handler(add_farm_conv_handler)
     application.add_handler(MessageHandler(filters.Regex("^📤 دعوت از دیگران$"), invite))
+    # application.add_handler(invite_conv)
     application.add_handler(MessageHandler(filters.Regex("^📬 ارتباط با ما$"), contact_us))
     application.add_handler(MessageHandler(filters.Regex("^💶 خرید اشتراک$"), payment_link))
     application.add_handler(CommandHandler("verify", verify_payment))

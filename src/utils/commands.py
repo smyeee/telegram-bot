@@ -127,8 +127,10 @@ async def handle_invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text("شما هنوز لینک دعوت نساخته‌اید.", reply_markup=start_keyboard())
             ConversationHandler.END
     elif message_text=="ایجاد لینک دعوت جدید":
-        random_string = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(5))
+        db.log_activity(user.id, "chose to create an invite-link")
+        random_string = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
         db.set_user_attribute(user.id, "invite-links", random_string, array=True)
+        db.add_token(user.id, random_string)
         link = f"https://t.me/agriweathbot?start={random_string}"
         await update.message.reply_text(f"""
 سلام دوستان
@@ -145,13 +147,6 @@ async def handle_invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return ConversationHandler.END
 
 
-# invite_conv = ConversationHandler(
-    #     entry_points=[MessageHandler(filters.Regex("دعوت از دیگران"), invite_link)],
-    #     states={
-    #         HANDLE_INV_LINK: [MessageHandler(filters.TEXT , handle_invite_link)]
-    #     },
-    #     fallbacks=[CommandHandler("cancel", cancel)],
-    # )
 
 async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -349,6 +344,14 @@ harvest_on_conv_handler = ConversationHandler(
         entry_points=[CommandHandler("harvest_on", ask_harvest_on)],
         states={
             HARVEST_ON: [MessageHandler(filters.ALL, harvest_on)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+ 
+invite_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("دعوت از دیگران"), invite_link)],
+        states={
+            HANDLE_INV_LINK: [MessageHandler(filters.TEXT , handle_invite_link)]
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
