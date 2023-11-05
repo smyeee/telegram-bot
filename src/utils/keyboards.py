@@ -39,12 +39,15 @@ def farms_list_inline(database: db, user_id, view: bool = True, edit: bool = Fal
         keyboard = [ [InlineKeyboardButton(key, callback_data=f"{key}")] for key in keys_list ]
         return InlineKeyboardMarkup(keyboard)
     
-def farms_list_reply(database: db, user_id):
+def farms_list_reply(database: db, user_id, pesteh_kar: bool = None):
     farms = database.get_farms(user_id=user_id)
     if not farms:
         return None
     keys_list = list(farms.keys())
-    keyboard = [ [key] for key in keys_list ]
+    if pesteh_kar:
+        keyboard = [ [key] for key in keys_list if farms[key].get("product", "").startswith("پسته")]
+    else:
+        keyboard = [ [key] for key in keys_list ]
     keyboard.append(["↩️ بازگشت"])
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
         
