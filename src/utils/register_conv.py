@@ -14,9 +14,6 @@ from telegram.ext import (
 )
 from telegram.constants import ParseMode
 import database
-from .keyboards import (
-    start_keyboard
-)
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -65,7 +62,7 @@ async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the answer to the area question
     if update.message.text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not update.message.text:
         await update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید \nلغو با /cancel")
@@ -84,7 +81,7 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = update.message.text
     if phone in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", phone)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not phone or not phone.isdigit() or len(phone) != 11:
         db.log_activity(user.id, "error - entered phone", phone)

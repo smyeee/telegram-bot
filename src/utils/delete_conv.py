@@ -14,7 +14,6 @@ from telegram.constants import ParseMode
 import warnings
 import database
 from .keyboards import (
-    start_keyboard,
     manage_farms_keyboard,
     farms_list_reply,
     conf_del_keyboard,
@@ -58,7 +57,7 @@ async def delete_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYP
         return CONFIRM_DELETE
     else:
         await update.message.reply_text(
-            "شما هنوز باغی ثبت نکرده اید", reply_markup=start_keyboard()
+            "شما هنوز باغی ثبت نکرده اید", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
 
@@ -71,7 +70,7 @@ async def confirm_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_farms_names = list(db.get_farms(user.id).keys())
     if farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if farm not in user_farms_names and farm != "↩️ بازگشت":
         db.log_activity(user.id, "error - wrong farm to delete", farm)
@@ -84,7 +83,7 @@ async def confirm_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if farm == "↩️ بازگشت":
         db.log_activity(user.id, "back")
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات کنسل شد!", reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text="عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm to delete", farm)
@@ -122,7 +121,7 @@ async def delete_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if answer not in acceptable:
         db.log_activity(user.id, "error - wrong delete confirmation", answer)
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات موفق نبود", reply_markup=start_keyboard()
+            chat_id=user.id, text="عملیات موفق نبود", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     elif answer == "بازگشت":
@@ -136,7 +135,7 @@ async def delete_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif answer == "خیر":
         db.log_activity(user.id, "stopped delete")
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات لغو شد", reply_markup=start_keyboard()
+            chat_id=user.id, text="عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     elif answer == "بله":
@@ -150,7 +149,7 @@ async def delete_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=user.id,
                 text=text,
                 parse_mode=ParseMode.HTML,
-                reply_markup=start_keyboard(),
+                reply_markup=db.find_start_keyboard(user.id),
             )
             return ConversationHandler.END
         except KeyError:

@@ -111,20 +111,30 @@ def get_province_keyboard():
 
 
 def start_keyboard_not_registered():
-    pass
+    keyboard = [ ["✍️ ثبت نام"] ]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
 
 def start_keyboard_no_farms():
-    pass
+    keyboard = [ ["➕ اضافه کردن کشت"] ]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def start_keyboard_no_location():
-    pass
+    keyboard = [ ["✏️ ویرایش کشت‌ها"] ]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def start_keyboard_not_pesteh():
     keyboard = [ ['👨‍🌾 مدیریت کشت‌ها'],  ['🌟 سرویس VIP'] , ['🌦 پیش‌بینی هواشناسی', '🧪 شرایط محلول‌پاشی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
-    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def start_keyboard_pesteh_kar():
-    pass
+    keyboard = [ ['🌦 پیش‌بینی هواشناسی'], ['توصیه قبل از برداشت', 'توصیه بعد از برداشت'], ['🧪 شرایط محلول‌پاشی'], ['❄️ نیاز سرمایی'], ['🏘 بازگشت به خانه'] ]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+
+def home_keyboard_pesteh_kar():
+    keyboard = [ ['👨‍🌾 مدیریت کشت‌ها'],  ['🌟 سرویس VIP'] , ['📤 دعوت از دیگران', '📬 ارتباط با ما'], ['منوی هواشناسی']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+
 
 def manage_farms_keyboard():
     keyboard = [['🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت'], ['🗑 حذف کشت', '✏️ ویرایش کشت‌ها'], ['🏘 بازگشت به خانه']]

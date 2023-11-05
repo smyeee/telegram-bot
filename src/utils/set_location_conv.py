@@ -16,9 +16,6 @@ import requests
 import re
 import warnings
 import database
-from .keyboards import (
-    start_keyboard
-)
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -73,7 +70,7 @@ async def ask_farm_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif target_id in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", target_id)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not target_id:
         await update.message.reply_text(
@@ -112,14 +109,14 @@ async def ask_longitude(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif farm_name in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm_name)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not farm_name:
         await update.message.reply_text(f"نام باغ چیست؟ \n/cancel")
         return ASK_LONGITUDE
     elif len(user_data['target']) != len(farm_name.split('\n')):
         db.log_activity(user.id, "error - farm_name list not equal to IDs", farm_name)
-        await update.message.reply_text("تعداد آی‌دی‌ها و نام باغ ها یکسان نیست. لطفا دوباره شروع کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("تعداد آی‌دی‌ها و نام باغ ها یکسان نیست. لطفا دوباره شروع کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     user_data["farm_name"] = farm_name.split('\n')
     await update.message.reply_text("""
@@ -140,7 +137,7 @@ async def ask_latitude(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif longitude in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", longitude)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not longitude:
         await update.message.reply_text("""
@@ -160,11 +157,11 @@ https://goo.gl/maps/3Nx2zh3pevaz9vf16
         links = longitude.split("\n")
         if len(user_data['target']) != len(links):
             db.log_activity(user.id, "error - links list not equal to IDs", farm_name)
-            await update.message.reply_text("تعداد لینک ها و آیدی ها یکسان نیست. لطفا دوباره شروع کنید.", reply_markup=start_keyboard())
+            await update.message.reply_text("تعداد لینک ها و آیدی ها یکسان نیست. لطفا دوباره شروع کنید.", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         elif not all(link.startswith("https://goo.gl") for link in links):
             db.log_activity(user.id, "error - links not valid", farm_name)
-            await update.message.reply_text("لینک ها مورد قبول نیستند. لطفا دوباره شروع کنید.", reply_markup=start_keyboard())
+            await update.message.reply_text("لینک ها مورد قبول نیستند. لطفا دوباره شروع کنید.", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         with requests.session() as s:
             final_url = [s.head(link, allow_redirects=True).url for link in links]
@@ -195,7 +192,7 @@ async def handle_lat_long(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif latitude in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", latitude)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not latitude:
         await update.message.reply_text(f"what's the latitude of {latitude}? \ndo you want to /cancel ?")

@@ -3,6 +3,8 @@ from datetime import datetime
 import pickle
 import pandas as pd
 import os
+from telegram import ReplyKeyboardMarkup
+from typing import Callable, Type
 
 REQUIRED_FIELDS = [
     "_id",
@@ -66,6 +68,24 @@ class Database:
             return True
         else:
             return False
+
+    def find_start_keyboard(self, user_id: int, user_document: dict = None) -> Callable[[], Type[ReplyKeyboardMarkup]]:
+        from utils import keyboards
+        if not user_document:
+            user_document = self.user_collection.find_one( {"_id": user_id} )
+        if not self.check_if_user_is_registered(user_id):
+            return keyboards.start_keyboard_not_registered()
+        else:
+            if not self.check_if_user_has_farms(user_id, user_document):
+                return keyboards.start_keyboard_no_farms()
+            else:
+                if not self.check_if_user_has_farms_with_location(user_id, user_document):
+                    return keyboards.start_keyboard_no_location()
+                else:
+                    if not self.check_if_user_has_pesteh(user_id, user_document):
+                        return keyboards.start_keyboard_not_pesteh()
+                    else:
+                        return keyboards.start_keyboard_pesteh_kar()
 
     def check_if_dialog_exists(self, user_id: int, raise_exception: bool = False):
         if self.dialog_collection.count_documents({"_id": user_id}) > 0:

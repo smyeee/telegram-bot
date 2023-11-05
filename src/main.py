@@ -22,10 +22,12 @@ import database
 
 from utils.regular_jobs import send_todays_data, send_up_notice, get_member_count
 from utils.keyboards import (
-    start_keyboard,
     manage_farms_keyboard,
     payment_keyboard,
     request_info_keyboard,
+    start_keyboard_not_pesteh,
+    start_keyboard_pesteh_kar,
+    home_keyboard_pesteh_kar
 )
 from utils.add_conv import add_farm_conv_handler
 from utils.edit_conv import edit_farm_conv_handler
@@ -67,13 +69,24 @@ async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     reply_text = "بازگشت به منوی اصلی"
     db.log_activity(user.id, "navigated to home view")
-    await update.message.reply_text(reply_text, reply_markup=start_keyboard())
+    if db.check_if_user_has_pesteh(user.id):
+        reply_markup = home_keyboard_pesteh_kar()
+    else:
+        reply_markup = start_keyboard_not_pesteh()
+    
+    await update.message.reply_text(reply_text, reply_markup=reply_markup)
 
 async def farm_management_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     reply_text = "مدیریت کشت‌ها"
     db.log_activity(user.id, "navigated to farm management view")
     await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
+
+async def weather_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    reply_text = "منوی هواشناسی"
+    db.log_activity(user.id, "navigated to weather view")
+    await update.message.reply_text(reply_text, reply_markup=start_keyboard_pesteh_kar())
 
 async def info_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -125,7 +138,7 @@ async def contact_us(update: Update, context: ContextTypes.DEFAULT_TYPE):
 شماره تلفن: 02164063410
 آدرس: تهران، ضلع غربی دانشگاه شریف، برج فناوری بنتک
 """
-    await update.message.reply_text(text, reply_markup=start_keyboard())
+    await update.message.reply_text(text, reply_markup=db.find_start_keyboard(user.id))
 
 ###################################################################
 ###################################################################
@@ -166,6 +179,7 @@ def main():
 
     # Menu navigation commands
     application.add_handler(MessageHandler(filters.Regex('^🏘 بازگشت به خانه$'), home_view))
+    application.add_handler(MessageHandler(filters.Regex('^منوی هواشناسی$'), weather_view))
     application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت کشت‌ها$'), farm_management_view))
     application.add_handler(MessageHandler(filters.Regex('^🌟 سرویس VIP$'), payment_view))
     application.add_handler(MessageHandler(filters.Regex('^📲 دریافت اطلاعات اختصاصی باغ$'), info_view))

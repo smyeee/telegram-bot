@@ -21,7 +21,6 @@ import warnings
 import database
 from .regular_jobs import no_location_reminder
 from .keyboards import (
-    start_keyboard,
     manage_farms_keyboard,
     get_product_keyboard,
     get_province_keyboard,
@@ -78,7 +77,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - add farm", "not registered yet")
         await update.message.reply_text(
             "لطفا پیش از افزودن باغ از طریق /start ثبت نام کنید",
-            reply_markup=start_keyboard(),
+            reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
     reply_text = """
@@ -97,11 +96,11 @@ async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_text = update.message.text
     if message_text == "بازگشت":
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عمیلات لغو شد", reply_markup=manage_farms_keyboard())
+        await update.message.reply_text("عمیلات لغو شد", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif update.message.text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif "." in message_text:
         db.log_activity(user.id, "error - chose name with .", f"{message_text}")
@@ -166,7 +165,7 @@ async def ask_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ASK_TYPE
     elif message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif "." in message_text:
         db.log_activity(user.id, "error - chose land type with .", f"{update.message.text}")
@@ -218,7 +217,7 @@ async def handle_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ASK_PRODUCT
     elif message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif "." in message_text:
         db.log_activity(user.id, "error - chose product with .", f"{message_text}")
@@ -278,7 +277,7 @@ async def ask_province(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the answer to the province question
     elif message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not message_text or "." in message_text:
         db.log_activity(user.id, "error - chose wrong product", f"{update.message.text}")
@@ -320,7 +319,7 @@ async def ask_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the answer to the province question
     elif message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not message_text:
         db.log_activity(user.id, "error - chose wrong province", f"{update.message.text}")
@@ -351,7 +350,7 @@ async def ask_village(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the answer to the province question
     if update.message.text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not update.message.text:
         db.log_activity(user.id, "error - city")
@@ -378,7 +377,7 @@ async def ask_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the answer to the village question
     if update.message.text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not update.message.text:
         db.log_activity(user.id, "error - village")
@@ -403,7 +402,7 @@ async def ask_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the answer to the phone number question
     if update.message.text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not update.message.text:
         db.log_activity(user.id, "error - area")
@@ -473,7 +472,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
 توصیه‌های مرتبط با شرایط آب‌و‌هوایی از روزهای آینده برای شما ارسال خواهد  شد.
 برای ویرایش یا مشاهده اطلاعات باغ از گزینه‌های مرتبط در /start استفاده کنید.
 """
-        await update.message.reply_text(reply_text, reply_markup=start_keyboard())
+        await update.message.reply_text(reply_text, reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not location and text != "از نقشه داخل تلگرام انتخاب میکنم":
         db.log_activity(user.id, "error - location", text)
@@ -484,7 +483,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "finish add farm - no location", farm_name)
         
         context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    
-        await update.message.reply_text(reply_text, reply_markup=start_keyboard())
+        await update.message.reply_text(reply_text, reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif text == "از نقشه داخل تلگرام انتخاب میکنم":
         db.log_activity(user.id, "chose to send location from map")
@@ -504,7 +503,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     farm_name = user_data["farm_name"]
     if text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not text:
         db.log_activity(user.id, "error - no location link")
@@ -534,7 +533,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.set_user_attribute(user.id, f"farms.{farm_name}.link-status", "To be verified")
         db.log_activity(user.id, "finish add farm with location link", farm_name)
         context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1), chat_id=user.id, data=user.username)    
-        await update.message.reply_text(reply_text, reply_markup=start_keyboard())
+        await update.message.reply_text(reply_text, reply_markup=db.find_start_keyboard(user.id))
         for admin in ADMIN_LIST:
             try:
                 await context.bot.send_message(chat_id=admin, text=f"user {user.id} sent us a link for\nname:{farm_name}\n{text}")

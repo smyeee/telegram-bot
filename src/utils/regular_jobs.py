@@ -1,6 +1,6 @@
 import database
 from .table_generator import table
-from .keyboards import start_keyboard, view_advise_keyboard
+from .keyboards import view_advise_keyboard
 import pandas as pd
 import geopandas as gpd
 from shapely import Point
@@ -192,7 +192,7 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                 table([jdate, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values, "job-table.png")
                                 try:
                                     with open('job-table.png', 'rb') as image_file:
-                                        await context.bot.send_photo(chat_id=id, photo=image_file, caption=caption, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
+                                        await context.bot.send_photo(chat_id=id, photo=image_file, caption=caption, reply_markup=db.find_start_keyboard(id), parse_mode=ParseMode.HTML)
                                     username = db.user_collection.find_one({"_id": id})["username"]
                                     db.set_user_attribute(id, "blocked", False)
                                     db.log_new_message(

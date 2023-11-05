@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 import warnings
 import database
 from .keyboards import (
-    start_keyboard,
     stats_keyboard,
     back_button,
     choose_role
@@ -74,7 +73,7 @@ async def choose_receivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_text = update.message.text
     if message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not message_text:
         await update.message.reply_text(
@@ -84,11 +83,11 @@ async def choose_receivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CHOOSE_RECEIVERS
     elif message_text == "/cancel":
         db.log_activity(user.id, "/cancel")
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif message_text == "بازگشت":
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif message_text == "تمام کاربران":
         db.log_activity(user.id, "chose /send to all users")
@@ -128,7 +127,7 @@ async def choose_receivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return BROADCAST
     else:
         db.log_activity(user.id, "invalid receivers chosen")
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
 
 async def handle_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -137,7 +136,7 @@ async def handle_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data
     if ids in MENU_CMDS or not ids:
         db.log_activity(user.id, "error - answer in menu_cmd list", ids)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif ids == "بازگشت":
         db.log_activity(user.id, "back")
@@ -163,11 +162,11 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     i = 0
     receivers = []
     if message_text == "/cancel":
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=start_keyboard())
+        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif message_text == "بازگشت":
         await update.message.reply_text(
@@ -204,7 +203,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for id in ADMIN_LIST:
             try:
                 await context.bot.send_message(id, f"پیام برای {i} نفر از {len(receiver_list)} نفر ارسال شد."
-                                    , reply_markup=start_keyboard())
+                                    , reply_markup=db.find_start_keyboard(id))
             except BadRequest or Forbidden:
                 logger.warning(f"admin {id} has deleted the bot")
         return ConversationHandler.END

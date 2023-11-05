@@ -21,7 +21,6 @@ import random
 import string
 import database
 from .keyboards import (
-    start_keyboard,
     payment_keyboard,
 )
 
@@ -110,7 +109,7 @@ async def handle_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif coupon in MENU_CMDS:
         db.log_activity(user.id, "error - coupon in menu_cmd list", coupon)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید. /off", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید. /off", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif db.verify_coupon(coupon):
         if not db.get_user_attribute(user.id, "used-coupon"):
@@ -203,7 +202,7 @@ async def ask_ss(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     elif not code or code in MENU_CMDS:
         db.log_activity(user.id, "error - payment code in menu_cmd list", code)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif code not in all_codes:
         await context.bot.send_message(chat_id=user.id, text="کد وارد شده اشتباه است.")
@@ -222,7 +221,7 @@ async def handle_ss(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text in MENU_CMDS:
         db.log_activity(user.id, "error - text in menu_cmd list", text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not ss:
         db.log_activity(user.id, "error - no image was detected")
@@ -251,7 +250,7 @@ final price: {db.get_final_price(user.id, user_data["verification-code"])}
         return ConversationHandler.END
     else:
         db.log_activity(user.id, "error - no valid input")
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
 
 async def verify_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):

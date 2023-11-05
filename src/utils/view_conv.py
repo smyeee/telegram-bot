@@ -14,7 +14,6 @@ from telegram.constants import ParseMode
 import warnings
 import database
 from .keyboards import (
-    start_keyboard,
     manage_farms_keyboard,
     farms_list_reply,
 )
@@ -59,7 +58,7 @@ async def view_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await context.bot.send_message(
             chat_id=user.id,
             text="شما هنوز باغی ثبت نکرده اید",
-            reply_markup=start_keyboard(),
+            reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
 
@@ -71,7 +70,7 @@ async def view_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_farms_names = list(db.get_farms(user.id).keys())
     if farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if farm not in user_farms_names and farm != "↩️ بازگشت":
         db.log_activity(user.id, "error - chose wrong farm to view", farm)
@@ -84,7 +83,7 @@ async def view_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if farm == "↩️ بازگشت":
         db.log_activity(user.id, "back")
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات کنسل شد!", reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text="عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     if not user_farms[farm].get("location") == {}:

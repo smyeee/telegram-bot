@@ -82,18 +82,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # تلفن ثابت: 02164063410
 #                 """
 #         await update.message.reply_text(reply_text, reply_markup=start_keyboard())
-        if not db.check_if_user_has_farms():
+        if not db.check_if_user_has_farms(user.id, user_document):
             reply_text = "لطفا پیش از دسترسی به خدمات آباد کشت خود را ثبت کنید"
             await update.message.reply_text(reply_text,
                                             reply_markup=start_keyboard_no_farms())
             
         else:
-            if not db.check_if_user_has_farms_with_location():
+            if not db.check_if_user_has_farms_with_location(user.id, user_document):
                 reply_text = "لطفا پیش از دسترسی به خدمات آباد لوکیشن کشت خود را ثبت کنید"
                 await update.message.reply_text(reply_text,
                                                 reply_markup=start_keyboard_no_location())
             else:
-                if not db.check_if_user_has_pesteh():
+                if not db.check_if_user_has_pesteh(user.id, user_document):
                     reply_text = "به آباد خوش آمدید"
                     await update.message.reply_text(reply_text,
                                                     reply_markup=start_keyboard_not_pesteh())
@@ -102,7 +102,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_text(reply_text,
                                                     reply_markup=start_keyboard_pesteh_kar())
 
-
+async def user_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    await update.message.reply_text("Your keyboard is:", reply_markup=db.find_start_keyboard(user.id))
 
 # CREATE PERSONALIZED INVITE LINK FOR A USER
 async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -118,7 +120,7 @@ async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE):
 پیشنهاد میکنم حتما ازش استفاده کنید.
                                         
 {link}
-""", reply_markup=start_keyboard())
+""", reply_markup=db.find_start_keyboard(user.id))
 
 # invite link generation with a conversation, not added to app handlers right now.
 async def invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -133,20 +135,20 @@ async def handle_invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE)
     message_text = update.message.text
     if message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif message_text=="بازگشت":
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عمیلات قبلی لغو شد.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif message_text=="مشاهده لینک های قبلی":
         db.log_activity(user.id, "chose to view previous links")
         links = db.get_user_attribute(user.id, "invite-links")
         if links:
-            await update.message.reply_text(links, reply_markup=start_keyboard())
+            await update.message.reply_text(links, reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         else:
-            await update.message.reply_text("شما هنوز لینک دعوت نساخته‌اید.", reply_markup=start_keyboard())
+            await update.message.reply_text("شما هنوز لینک دعوت نساخته‌اید.", reply_markup=db.find_start_keyboard(user.id))
             ConversationHandler.END
     elif message_text=="ایجاد لینک دعوت جدید":
         db.log_activity(user.id, "chose to create an invite-link")
@@ -161,11 +163,11 @@ async def handle_invite_link(update: Update, context: ContextTypes.DEFAULT_TYPE)
                                         
 {link}
 """,    
-            reply_markup=start_keyboard())
+            reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     else: 
         db.log_activity(user.id, "error - option not valid", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
 
 
@@ -277,7 +279,7 @@ async def ask_harvest_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=user.id,
             text="شما هنوز باغی ثبت نکرده اید",
-            reply_markup=start_keyboard(),
+            reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
     
@@ -287,15 +289,15 @@ async def harvest_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_farms = db.get_farms(user.id)
     if farm == '↩️ بازگشت':
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
+        await update.message.reply_text("عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm not in list(user_farms.keys()):
         db.log_activity(user.id, "error - chose farm for harvest_off" , farm)
-        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
+        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm for harvest_off", farm)
     db.set_user_attribute(user.id, f"farms.{farm}.harvest-off", True)
@@ -303,7 +305,7 @@ async def harvest_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ارسال توصیه‌های برداشت برای باغ <b>#{farm.replace(" ", "_")}</b> متوقف شد. 
 در صورت تمایل به دریافت مجدد توصیه‌های برداشت /harvest_on را بزنید.
 """
-    await context.bot.send_message(chat_id=user.id, text= reply_text, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
+    await context.bot.send_message(chat_id=user.id, text= reply_text, reply_markup=db.find_start_keyboard(user.id), parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
 async def ask_harvest_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -322,7 +324,7 @@ async def ask_harvest_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=user.id,
             text="شما هنوز باغی ثبت نکرده اید",
-            reply_markup=start_keyboard(),
+            reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
     
@@ -332,22 +334,22 @@ async def harvest_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_farms = db.get_farms(user.id)
     if farm == '↩️ بازگشت':
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عملیات لغو شد", reply_markup=start_keyboard())
+        await update.message.reply_text("عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm not in list(user_farms.keys()):
         db.log_activity(user.id, "error - chose farm for harvest_on" , farm)
-        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=start_keyboard())
+        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm for harvest_on", farm)
     db.set_user_attribute(user.id, f"farms.{farm}.harvest-off", False)
     reply_text = f"""
 توصیه‌های برداشت برای باغ <b>#{farm.replace(" ", "_")}</b> ارسال خواهد شد.
 """
-    await context.bot.send_message(chat_id=user.id, text= reply_text, reply_markup=start_keyboard(), parse_mode=ParseMode.HTML)
+    await context.bot.send_message(chat_id=user.id, text= reply_text, reply_markup=db.find_start_keyboard(user.id), parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -20,7 +20,6 @@ import warnings
 import database
 from .regular_jobs import no_location_reminder
 from .keyboards import (
-    start_keyboard,
     manage_farms_keyboard,
     get_product_keyboard,
     get_province_keyboard,
@@ -72,7 +71,7 @@ async def edit_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await context.bot.send_message(
             chat_id=user.id,
             text="شما هنوز باغی ثبت نکرده اید",
-            reply_markup=start_keyboard(),
+            reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
 
@@ -86,7 +85,7 @@ async def choose_attr_to_edit(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_farms = list(db.get_farms(user.id).keys())
     if farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if farm not in user_farms and farm != "↩️ بازگشت":
         db.log_activity(user.id, "error - chose wrong farm", farm)
@@ -99,7 +98,7 @@ async def choose_attr_to_edit(update: Update, context: ContextTypes.DEFAULT_TYPE
     if farm == "↩️ بازگشت":
         db.log_activity(user.id, "back")
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات کنسل شد!", reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text="عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm to edit", farm)
@@ -198,7 +197,7 @@ async def edit_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return HANDLE_EDIT
     else:
         db.log_activity(user.id, "error - chose wrong value to edit", attr)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
 
 async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -212,7 +211,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         new_product = update.message.text
         if new_product in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_city)
-            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         if new_product == "بازگشت":
             db.log_activity(user.id, "back")
@@ -229,14 +228,14 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"محصول جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit product")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     elif attr == "تغییر استان":
         new_province = update.message.text
         if new_province in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_city)
-            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         if new_province == "بازگشت":
             await context.bot.send_message(chat_id=user.id, text = "یکی از موارد زیر را جهت ویرایش انتخاب کنید:", reply_markup=edit_keyboard_reply())
@@ -252,7 +251,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"استان جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit province")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     elif attr == "تغییر شهرستان":
@@ -262,7 +261,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return EDIT_FARM
         if new_city in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_city)
-            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         if not new_city:
             db.log_activity(user.id, "error - edit city")
@@ -272,7 +271,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"شهرستان جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit city")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     elif attr == "تغییر روستا":
@@ -282,7 +281,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return EDIT_FARM
         if new_village in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_village)
-            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         if not new_village:
             db.log_activity(user.id, "error - edit village")
@@ -292,7 +291,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"روستای جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit village")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     elif attr == "تغییر مساحت":
@@ -302,7 +301,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return EDIT_FARM
         if new_area in MENU_CMDS:
             db.log_activity(user.id, "error - answer in menu_cmd list", new_area)
-            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+            await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         if not new_area:
             db.log_activity(user.id, "error - edit area")
@@ -312,7 +311,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_text = f"مساحت جدید {farm} با موفقیت ثبت شد."
         db.log_activity(user.id, "finish edit area")
         await context.bot.send_message(
-            chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
+            chat_id=user.id, text=reply_text, reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     elif attr == "تغییر موقعیت":
@@ -343,7 +342,7 @@ async def handle_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_text = f"موقعیت جدید {farm} با موفقیت ثبت شد."
             db.log_activity(user.id, "finish edit location", f"long: {new_location.longitude}, lat: {new_location.latitude}")
             await context.bot.send_message(
-                chat_id=user.id, text=reply_text, reply_markup=manage_farms_keyboard()
+                chat_id=user.id, text=reply_text, reply_markup=db.find_start_keyboard(user.id)
             )
             return ConversationHandler.END
         if not new_location and text != "از نقشه داخل تلگرام انتخاب میکنم":
@@ -385,7 +384,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     farm = user_data["selected_farm"]
     if text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=start_keyboard())
+        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not text:
         db.log_activity(user.id, "error - no location link")
@@ -411,7 +410,7 @@ async def handle_edit_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_text = "ارسال لینک آدرس باغ با موفقیت انجام شد. لطفا منتظر تایید ادمین باشید. با تشکر."
     db.set_user_attribute(user.id, f"farms.{farm}.link-status", "To be verified")
     db.log_activity(user.id, "finish edit location with link")
-    await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
+    await update.message.reply_text(reply_text, reply_markup=db.find_start_keyboard(user.id))
     context.job_queue.run_once(no_location_reminder, when=datetime.timedelta(hours=1),chat_id=user.id, data=user.username)    
     for admin in ADMIN_LIST:
         try:
