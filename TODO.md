@@ -1,0 +1,7 @@
+- [ ] make automn time editable
+- [ ] make it possible to choose multiple types of pesteh during:
+    - [x] automn time setting
+    - [ ] adding farms
+    - [ ] editing farms
+        - [ ] farm product
+        - [ ] farm automn time
