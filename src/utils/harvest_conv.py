@@ -13,7 +13,6 @@ from telegram.ext import (
 )
 from telegram.error import Forbidden, BadRequest
 
-import os
 from fiona.errors import DriverError
 import warnings
 import database
@@ -22,7 +21,6 @@ from .keyboards import (
     farms_list_reply,
     view_advise_keyboard
 )
-from .table_generator import table
 from telegram.constants import ParseMode
 
 warnings.filterwarnings("ignore", category=UserWarning)
