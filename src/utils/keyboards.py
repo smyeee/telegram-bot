@@ -185,6 +185,14 @@ def conf_del_keyboard():
     keyboard = [['بله'], ['خیر'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
+def automn_month():
+    keyboard = [['آبان'], ['آذر'], ['↩️ بازگشت']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
+def automn_week():
+    keyboard = [['هفته دوم', 'هفته اول'], ['هفته چهارم', 'هفته سوم'], ['↩️ بازگشت']]
+    return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
 def choose_role():
     keyboard = [['تمام کاربران'], ['تعیین id'], ['لوکیشن دار'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)
