@@ -17,7 +17,7 @@ db = database.Database()
 
 message = """
 🟢 Changes:
-✅ موارد 33-35-36 در بکلاگ
+✅ موارد 34-37 در بکلاگ
 """
 
 # Incomplete registration
