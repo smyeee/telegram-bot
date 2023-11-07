@@ -39,6 +39,7 @@ from utils.set_location_conv import set_location_handler
 from utils.admin import broadcast_handler, backup_send, stats_buttons, bot_stats
 from utils.commands import invite, start, change_day, harvest_off_conv_handler, harvest_on_conv_handler, invite_conv
 from utils.payment_funcs import payment_link, verify_payment, off_conv_handler, verify_conv_handler, create_coupon
+from utils.harvest_conv import harvest_conv_handler
 
 # Enable logging
 logging.basicConfig(
@@ -195,6 +196,7 @@ def main():
     application.add_handler(off_conv_handler)
     application.add_handler(verify_conv_handler)
     application.add_handler(weather_req_conv_handler)
+    application.add_handler(harvest_conv_handler)
     application.add_handler(view_conv_handler)
     application.add_handler(edit_farm_conv_handler)
     application.add_handler(delete_conv_handler)

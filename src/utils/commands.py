@@ -249,7 +249,7 @@ async def change_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user_id, "chose sp-advice date", "day3")
     
     advise = f"""
-توصیه مرتبط با وضعیت آب و هوایی باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> برای #{day} مورخ <b>{date}</b>:
+توصیه برداشت مربوط به باغ شما با نام <b>#{farm_name.replace(" ", "_")}</b> برای #{day} مورخ <b>{date}</b>:
 
 <pre>{advise}</pre>
 """
