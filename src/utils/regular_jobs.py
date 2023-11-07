@@ -109,12 +109,12 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     villages = pd.read_excel("vilages.xlsx")
     weather_report_receiver_id = []
     weather_report_count = 0
-    advise_post_count = 0             # [ [day1], [day2], [day3] ]
-    advise_post_receiver_id = []  # [ [day1], [day2], [day3] ]
-    advise_pre_count = 0             # [ [day1], [day2], [day3] ]
-    advise_pre_receiver_id = []  # [ [day1], [day2], [day3] ]
-    jdates = [jdate, jday2, jday3]
-    advise_tags = ['امروز', 'فردا', 'پس فردا']
+    # advise_post_count = 0             # [ [day1], [day2], [day3] ]
+    # advise_post_receiver_id = []  # [ [day1], [day2], [day3] ]
+    # advise_pre_count = 0             # [ [day1], [day2], [day3] ]
+    # advise_pre_receiver_id = []  # [ [day1], [day2], [day3] ]
+    # jdates = [jdate, jday2, jday3]
+    # advise_tags = ['امروز', 'فردا', 'پس فردا']
     for admin in admin_list:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             await context.bot.send_message(
@@ -122,8 +122,8 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                 text=f"در حال ارسال پیام به کاربران...",
             )
     try:
-        advise_pre_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Bef.geojson")
-        advise_post_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Aft.geojson")
+        # advise_pre_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Bef.geojson")
+        # advise_post_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Aft.geojson")
         weather_data = gpd.read_file(f"data/Iran{today}_weather.geojson")
         # advise_data_tomorrow = gpd.read_file(f"data/pesteh{tomorrow}_2.geojson")
     # advise_data = advise_data.dropna(subset=['Adivse'])
@@ -214,75 +214,75 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                                     f"user's location: ({longitude},{latitude}) | distance in weather file: {point.distance(Point(closest_coords_weather))} > {threshold}"
                                 )
                             # Define some Conditions before sending advice:
-                            if not farms[farm]["product"]:
-                                continue
-                            if not farms[farm]["product"].startswith("پسته"):
-                                continue
-                            if farms[farm].get("harvest-off"):
-                                advise_post_count += 1
-                                advise_post_receiver_id.append(id)
-                                idx_min_dist_advise = advise_post_harvest.geometry.distance(point).idxmin()
-                                closest_coords_advise = advise_post_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
-                                ps_msg = ""
-                                row = advise_post_harvest.iloc[idx_min_dist_advise]
-                            elif farms[farm].get("harvest-off") == False or farms[farm].get("harvest-off") == None:
-                                advise_pre_count += 1
-                                advise_pre_receiver_id.append(id)
-                                idx_min_dist_advise = advise_pre_harvest.geometry.distance(point).idxmin()
-                                closest_coords_advise = advise_pre_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
-                                ps_msg = "در صورتی که برداشت محصولتان تکمیل شده و تمایل به دریافت روزانه توصیه‌های پس از برداشت دارید از دستور /harvest_off استفاده کرده و باغ خود را انتخاب کنید."
-                                row = advise_pre_harvest.iloc[idx_min_dist_advise]
-                            ################################################
-                            # Send advice to all other farms
-                            if point.distance(Point(closest_coords_advise)) <= threshold:
+    #                         if not farms[farm]["product"]:
+    #                             continue
+    #                         if not farms[farm]["product"].startswith("پسته"):
+    #                             continue
+    #                         if farms[farm].get("harvest-off"):
+    #                             advise_post_count += 1
+    #                             advise_post_receiver_id.append(id)
+    #                             idx_min_dist_advise = advise_post_harvest.geometry.distance(point).idxmin()
+    #                             closest_coords_advise = advise_post_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
+    #                             ps_msg = ""
+    #                             row = advise_post_harvest.iloc[idx_min_dist_advise]
+    #                         elif farms[farm].get("harvest-off") == False or farms[farm].get("harvest-off") == None:
+    #                             advise_pre_count += 1
+    #                             advise_pre_receiver_id.append(id)
+    #                             idx_min_dist_advise = advise_pre_harvest.geometry.distance(point).idxmin()
+    #                             closest_coords_advise = advise_pre_harvest.geometry.iloc[idx_min_dist_advise].coords[0]
+    #                             ps_msg = "در صورتی که برداشت محصولتان تکمیل شده و تمایل به دریافت روزانه توصیه‌های پس از برداشت دارید از دستور /harvest_off استفاده کرده و باغ خود را انتخاب کنید."
+    #                             row = advise_pre_harvest.iloc[idx_min_dist_advise]
+    #                         ################################################
+    #                         # Send advice to all other farms
+    #                         if point.distance(Point(closest_coords_advise)) <= threshold:
 
-                                advise_3days = [row[f'Time={today}'], row[f'Time={day2}'], row[f'Time={day3}']]
-                                # advise_3days_no_nan = ["" for text in advise_3days if pd.isna(text)]
-                                # logger.info(f"{advise_3days}\n\n{advise_3days_no_nan}\n----------------------------")
-                                db.set_user_attribute(id, f"farms.{farm}.advise", {"today": advise_3days[0], "day2": advise_3days[1], "day3":advise_3days[2]})
-                                ############### NEW WAY
-                                try:
-                                    if pd.isna(advise_3days[0]):
-                                        advise = f"""
-    باغدار عزیز 
-    توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
+    #                             advise_3days = [row[f'Time={today}'], row[f'Time={day2}'], row[f'Time={day3}']]
+    #                             # advise_3days_no_nan = ["" for text in advise_3days if pd.isna(text)]
+    #                             # logger.info(f"{advise_3days}\n\n{advise_3days_no_nan}\n----------------------------")
+    #                             db.set_user_attribute(id, f"farms.{farm}.advise", {"today": advise_3days[0], "day2": advise_3days[1], "day3":advise_3days[2]})
+    #                             ############### NEW WAY
+    #                             try:
+    #                                 if pd.isna(advise_3days[0]):
+    #                                     advise = f"""
+    # باغدار عزیز 
+    # توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
 
-    <pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
+    # <pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
 
-    <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+    # <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
 
-    ----------------------------------------------------
-    {ps_msg}
-        """
-                                    else:
-                                        advise = f"""
-    باغدار عزیز 
-    توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
+    # ----------------------------------------------------
+    # {ps_msg}
+    #     """
+    #                                 else:
+    #                                     advise = f"""
+    # باغدار عزیز 
+    # توصیه زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{advise_tags[0]} مورخ <b>{jdates[0]}</b> ارسال می‌شود:
 
-    <pre>{advise_3days[0]}</pre>
+    # <pre>{advise_3days[0]}</pre>
 
-    <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+    # <i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
 
-    ----------------------------------------------------
-    {ps_msg}
-        """
-                                    await context.bot.send_message(chat_id=id, text=advise, reply_markup=view_advise_keyboard(farm), parse_mode=ParseMode.HTML)
-                                    username = db.user_collection.find_one({"_id": id})[
-                                        "username"
-                                    ]
-                                    db.log_new_message(
-                                        user_id=id,
-                                        username=username,
-                                        message=advise,
-                                        function="send_advice",
-                                        )
-                                    # advise_count += 1
-                                    # advise_receiver_id.append(id)
-                                except Forbidden:
-                                    db.set_user_attribute(id, "blocked", True)
-                                    logger.info(f"user:{id} has blocked the bot!")
-                                except BadRequest:
-                                    logger.info(f"user:{id} chat was not found!")
+    # ----------------------------------------------------
+    # {ps_msg}
+    #     """
+    #                                 await context.bot.send_message(chat_id=id, text=advise, reply_markup=view_advise_keyboard(farm), parse_mode=ParseMode.HTML)
+    #                                 username = db.user_collection.find_one({"_id": id})[
+    #                                     "username"
+    #                                 ]
+    #                                 db.log_new_message(
+    #                                     user_id=id,
+    #                                     username=username,
+    #                                     message=advise,
+    #                                     function="send_advice",
+    #                                     )
+    #                                 # advise_count += 1
+    #                                 # advise_receiver_id.append(id)
+    #                             except Forbidden:
+    #                                 db.set_user_attribute(id, "blocked", True)
+    #                                 logger.info(f"user:{id} has blocked the bot!")
+    #                             except BadRequest:
+    #                                 logger.info(f"user:{id} chat was not found!")
 
                     except KeyError:
                         for admin in admin_list:
@@ -294,11 +294,11 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
         db.log_sent_messages(weather_report_receiver_id, "send_weather_report")
         logger.info(f"sent weather report to {weather_report_count} people")
 
-        db.log_sent_messages(advise_post_receiver_id, "send_post_harvest_advice_to_users")
-        logger.info(f"sent today's post harvest advice to {advise_post_count} people")
+        # db.log_sent_messages(advise_post_receiver_id, "send_post_harvest_advice_to_users")
+        # logger.info(f"sent today's post harvest advice to {advise_post_count} people")
         
-        db.log_sent_messages(advise_pre_receiver_id, "send_pre_harvest_advice_to_users")
-        logger.info(f"sent today's pre harvest advice to {advise_pre_count} people")
+        # db.log_sent_messages(advise_pre_receiver_id, "send_pre_harvest_advice_to_users")
+        # logger.info(f"sent today's pre harvest advice to {advise_pre_count} people")
 
         for admin in admin_list:
             try:
@@ -308,16 +308,16 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.send_message(chat_id=admin, text=f"{len(set(weather_report_receiver_id))}:\n{weather_report_receiver_id}")
 
 
-                await context.bot.send_message(
-                    chat_id=admin, text=f"توصیه پس از برداشت به {advise_post_count} باغ ارسال شد"
-                )
-                await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_post_receiver_id))}:\n{advise_post_receiver_id}")
+                # await context.bot.send_message(
+                #     chat_id=admin, text=f"توصیه پس از برداشت به {advise_post_count} باغ ارسال شد"
+                # )
+                # await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_post_receiver_id))}:\n{advise_post_receiver_id}")
 
 
-                await context.bot.send_message(
-                    chat_id=admin, text=f"توصیه پیش از برداشت به {advise_pre_count} باغ ارسال شد"
-                )
-                await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_pre_receiver_id))}:\n{advise_pre_receiver_id}")
+                # await context.bot.send_message(
+                #     chat_id=admin, text=f"توصیه پیش از برداشت به {advise_pre_count} باغ ارسال شد"
+                # )
+                # await context.bot.send_message(chat_id=admin, text=f"{len(set(advise_pre_receiver_id))}:\n{advise_pre_receiver_id}")
 
             except BadRequest or Forbidden:
                     logger.warning(f"admin {admin} has deleted the bot")
