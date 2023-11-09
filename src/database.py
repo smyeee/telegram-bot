@@ -64,6 +64,7 @@ class Database:
         if not user_document:
             user_document = self.user_collection.find_one( {"_id": user_id} )
         products = [user_document["farms"][farm].get("product", "") for farm in list(user_document["farms"].keys())]
+        products = [product for product in products if product]
         if any([product.startswith("پسته") for product in products]):
             return True
         else:
