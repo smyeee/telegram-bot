@@ -63,7 +63,7 @@ class Database:
     def check_if_user_has_pesteh(self, user_id: int, user_document: dict = None) -> bool:
         if not user_document:
             user_document = self.user_collection.find_one( {"_id": user_id} )
-        products = [user_document["farms"][farm].get("product") for farm in list(user_document["farms"].keys())]
+        products = [user_document["farms"][farm].get("product", "") for farm in list(user_document["farms"].keys())]
         if any([product.startswith("پسته") for product in products]):
             return True
         else:
