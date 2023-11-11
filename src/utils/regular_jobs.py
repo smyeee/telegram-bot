@@ -17,7 +17,7 @@ db = database.Database()
 
 message = """
 🟢 Changes:
-✅ موارد 34-37 در بکلاگ
+✅ اضافه شدن پسته‌کاران به دستور /send
 """
 
 # Incomplete registration
