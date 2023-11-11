@@ -96,6 +96,13 @@ async def choose_receivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
                                   reply_markup=back_button())
         return BROADCAST
+    elif message_text == "پسته‌کاران":
+        db.log_activity(user.id, "chose /send to pesteh farmers")
+        user_data["receiver_list"] = db.get_all_pesteh_farmers()
+        user_data["receiver_type"] = "to pesteh farmers"
+        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+                                  reply_markup=back_button())
+        return BROADCAST
     elif message_text == 'تعیین id': 
         db.log_activity(user.id, "chose /send to custom user list")
         await update.message.reply_text("آیدی کاربران مورد نظر را با یک فاصله وارد کن یا /cancel را بزن. مثلا: \n103465015 1547226 7842159", 

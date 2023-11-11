@@ -88,6 +88,32 @@ class Database:
                     else:
                         return keyboards.start_keyboard_pesteh_kar()
 
+    def get_all_pesteh_farmers(self) -> list:
+        pipeline = [
+            {
+                '$project': {
+                    'farms': {
+                        '$objectToArray': '$farms'
+                    }
+                }
+            }, {
+                '$unwind': '$farms'
+            }, {
+                '$match': {
+                    'farms.v.product': {
+                        '$regex': '^پسته'
+                    }
+                }
+            }, {
+                '$group': {
+                    '_id': '$_id'
+                }
+            }
+        ]
+        cursor = self.user_collection.aggregate(pipeline) # users who have atleast one pesteh farm 
+        users = [user["_id"] for user in cursor]
+        return users
+        
     def check_if_dialog_exists(self, user_id: int, raise_exception: bool = False):
         if self.dialog_collection.count_documents({"_id": user_id}) > 0:
             return True

@@ -15,7 +15,7 @@ def stats_keyboard():
         
     ],
     [
-        InlineKeyboardButton("دانلود فایل اکسل", callback_data='excel_download'),
+        # InlineKeyboardButton("دانلود فایل اکسل", callback_data='excel_download'),
         InlineKeyboardButton("تعداد اعضای بدون تلفن", callback_data='no_phone_count'),
     ],
     # [
@@ -194,7 +194,7 @@ def automn_week():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def choose_role():
-    keyboard = [['تمام کاربران'], ['تعیین id'], ['لوکیشن دار'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
+    keyboard = [['تمام کاربران'], ['تعیین id'], ['پسته‌کاران'], ['لوکیشن دار'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)
 
 def back_button():
