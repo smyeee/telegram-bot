@@ -34,7 +34,7 @@ db = database.Database()
 # START OF AUTOMN TIME CONVERSATION
 async def automn_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    db.log_activity(user.id, "request pre harvest")
+    db.log_activity(user.id, "start to set automn time")
     if db.check_if_user_has_pesteh(user.id):
         await context.bot.send_message(
             chat_id=user.id,
@@ -62,7 +62,7 @@ async def ask_automn_month(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm not in list(user_farms.keys()):
-        db.log_activity(user.id, "error - chose farm for harvest advice" , farm)
+        db.log_activity(user.id, "error - chose farm for automn time" , farm)
         await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm in MENU_CMDS:
@@ -72,6 +72,7 @@ async def ask_automn_month(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     db.log_activity(user.id, f"chose farm for setting automn time", farm)
     if user_farms[farm].get("automn-time"):
+        db.log_activity(user.id, "automn time of farm was already set", farm)
         reply_text = "نیاز سرمایی شما در حال محاسبه است و در زمان لازم اطلاع‌رسانی خواهد شد."
         await update.message.reply_text(reply_text, reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
@@ -160,7 +161,7 @@ async def confirm_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(reply_text, reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     else:
-        db.log_activity(user.id, "added product for farm during set-automn-time")
+        db.log_activity(user.id, "added product for farm during set-automn-time", new_product)
         db.set_user_attribute(user.id, f"farms.{farm}.product", f"{product} - {new_product}")
         farm_dict = db.get_farms(user.id)[farm]
         product = farm_dict.get("product")
