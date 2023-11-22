@@ -69,7 +69,7 @@ async def no_farm_reminder(context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=user_id, text=message_no_farms)           
             db.log_new_message(user_id=user_id,
                             username=username,
-                            message=message_incomplete_reg,
+                            message=message_no_farms,
                             function="no farm reminder")
         except Forbidden:
             db.set_user_attribute(user_id, "blocked", True)
@@ -87,7 +87,7 @@ async def no_location_reminder(context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.send_message(chat_id=user_id, text=message_no_location)           
                 db.log_new_message(user_id=user_id,
                                 username=username,
-                                message=message_incomplete_reg,
+                                message=message_no_location,
                                 function="no location reminder")
             except Forbidden:
                 db.set_user_attribute(user_id, "blocked", True)
