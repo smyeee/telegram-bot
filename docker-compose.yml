@@ -21,6 +21,9 @@ services:
     environment:
       - AGRIWEATHBOT_TOKEN=${agriweath_token}
       - MONGODB_URI=${mongodb_uri}
+      - ASANAK_USERNAME=${asanak_username}
+      - ASANAK_PASSWORD=${asanak_password}
+      - ASANAK_PHONE_NUM=${asanak_phone_num}
     # ports:
     #   - 8000:8000
     command: python3 -u src/main.py
