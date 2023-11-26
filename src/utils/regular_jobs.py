@@ -17,7 +17,7 @@ db = database.Database()
 
 message = """
 🟢 Changes:
-✅ اضافه شدن پسته‌کاران به دستور /send
+✅ اضافه شدن قابلیت ارسال sms""
 """
 
 # Incomplete registration
