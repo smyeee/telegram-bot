@@ -1,5 +1,3 @@
-import logging
-from logging.handlers import RotatingFileHandler
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -13,25 +11,13 @@ from telegram.ext import (
     ConversationHandler
 )
 from telegram.constants import ParseMode
+
+import datetime
+
 import database
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
 
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    encoding="utf-8",
-    level=logging.INFO,
-    handlers=[
-        RotatingFileHandler(
-            "bot_logs.log", maxBytes=512000, backupCount=5
-        ),  # File handler to write logs to a file
-        logging.StreamHandler(),  # Stream handler to display logs in the console
-    ],
-)
-logger = logging.getLogger("agriWeather-bot")
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
+from .logger import logger
+from .sms_funcs import sms_no_farm
 # Constants for ConversationHandler states
 ASK_PHONE, HANDLE_PHONE = range(2)
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
@@ -96,6 +82,10 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [['➕ اضافه کردن کشت']]
     
     await update.message.reply_text(reply_text, parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True))
+    if datetime.time(2, 30).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(17, 30).strftime("%H%M"): 
+        context.job_queue.run_once(sms_no_farm, when=datetime.timedelta(hours=2), chat_id=user.id, data=user.username)
+    else:
+        context.job_queue.run_once(sms_no_farm, when=datetime.time(4, 30), chat_id=user.id, data=user.username) 
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):

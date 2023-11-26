@@ -27,24 +27,8 @@ from .keyboards import (
     back_button,
     land_type_keyboard
 )
-
-warnings.filterwarnings("ignore", category=UserWarning)
-
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    encoding="utf-8",
-    level=logging.INFO,
-    handlers=[
-        RotatingFileHandler(
-            "bot_logs.log", maxBytes=512000, backupCount=5
-        ),  # File handler to write logs to a file
-        logging.StreamHandler(),  # Stream handler to display logs in the console
-    ],
-)
-logger = logging.getLogger("agriWeather-bot")
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
+from .logger import logger
+from .sms_funcs import sms_incomplete_farm
 # Constants for ConversationHandler states
 (
     ASK_TYPE,
@@ -85,7 +69,11 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 مثلا: باغ پسته
 """
     await update.message.reply_text(reply_text, reply_markup=back_button())
-    #
+    job_data = {"timestamp": datetime.datetime.now().strftime("%Y%m%d %H%M")}
+    if datetime.time(2, 30).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(17, 30).strftime("%H%M"): 
+        context.job_queue.run_once(sms_incomplete_farm, when=datetime.timedelta(hours=1), chat_id=user.id, data=job_data)
+    else:
+        context.job_queue.run_once(sms_incomplete_farm, when=datetime.time(4, 30), chat_id=user.id, data=job_data) 
     return ASK_TYPE
 
 

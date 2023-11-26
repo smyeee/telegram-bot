@@ -22,6 +22,7 @@ class Database:
         self.bot_collection = self.db["botCollection"]
         self.token_collection = self.db["tokenCollection"]
         self.dialog_collection = self.db["dialogCollection"]
+        self.sms_collection = self.db["smsCollection"]
 
     def check_if_user_exists(self, user_id: int, raise_exception: bool = False):
         if self.user_collection.count_documents({"_id": user_id}) > 0:
@@ -54,7 +55,7 @@ class Database:
         if not user_document:
             user_document = self.user_collection.find_one( {"_id": user_id} )
         # Lets assume that the user has atleast one farm i.e. we've filtered the users who don't have a farm
-        longitudes = { farm: user_document["farms"][farm]["location"].get("longitude") for farm in list(user_document["farms"].keys()) }
+        longitudes = { farm: user_document.get("farms", {}).get(farm, {}).get("location", {}).get("longitude") for farm in list(user_document.get("farms", {}).keys()) }
         if any([longitudes[farm] for farm in list(longitudes.keys())]):
             return True
         else:
@@ -122,6 +123,38 @@ class Database:
                 raise ValueError(f"User {user_id} does not exist")
             else:
                 return False
+
+    def check_if_user_activity_exsits(self, 
+                                      user_id: int, 
+                                      activity: str, 
+                                      gte: str, 
+                                      lte: str = datetime.now().strftime("%Y%m%d %H:%M"))->bool:
+        """checks user activities in the botCollection and returns True if a particular activity exists.
+
+        Args:
+            user_id (int): UserID of a Telegram.User
+            activity (str): Name of the activity
+            gt (str): Time to start the search (in `%Y%m%d %H:%M` format)
+            lt (str): Time to stop the search (in `%Y%m%d %H:%M` format)
+        """
+        document = self.bot_collection.find_one( {
+            "userID": user_id,
+            "user_activity": activity,
+            "timestamp": {"$gte": gte, "$lte": lte} 
+        } )
+        if document:
+            return True
+        else:
+            return False
+
+    def log_sms_message(self, user_id: int, msg: str, msg_code: int):
+        msg_document = {
+            "userID": user_id,
+            "msg": msg,
+            "msg-code": msg_code,
+            "timestamp": datetime.now().strftime("%Y%m%d %H:%M")
+        }
+        self.sms_collection.insert_one(msg_document)
     
     def add_new_user(
         self,
