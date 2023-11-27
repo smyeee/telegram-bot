@@ -114,6 +114,42 @@ class Database:
         cursor = self.user_collection.aggregate(pipeline) # users who have atleast one pesteh farm 
         users = [user["_id"] for user in cursor]
         return users
+
+    def register_not_pressed(self) -> list[int]:
+        """_summary_
+        Helper function that returns all users that started the bot but never pressed the register button
+        Returns:
+            list[int]: List of Telegram IDs
+        """
+        pipeline = [
+            {
+                '$match': {
+                    'user_activity': {
+                        '$exists': True
+                    }
+                }
+            }, {
+                '$group': {
+                    '_id': '$userID',
+                    'activity': {
+                        '$push': '$user_activity'
+                    }
+                }
+            }, {
+                '$match': {
+                    'activity': {
+                        '$elemMatch': {
+                            '$eq': 'start register'
+                        }
+                    }
+                }
+            },
+        ]
+        cursor = self.bot_collection.aggregate(pipeline)
+        pressed_register = [user["_id"] for user in cursor]
+        all_users = self.user_collection.distinct("_id")
+        not_pressed_register = [user for user in all_users if user not in pressed_register]
+        return not_pressed_register
         
     def check_if_dialog_exists(self, user_id: int, raise_exception: bool = False):
         if self.dialog_collection.count_documents({"_id": user_id}) > 0:

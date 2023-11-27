@@ -103,6 +103,13 @@ async def choose_receivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
                                   reply_markup=back_button())
         return BROADCAST
+    elif message_text == "دکمه ثبت نام را نزدند":
+        db.log_activity(user.id, "chose /send to users who never pressed register")
+        user_data["receiver_list"] = db.register_not_pressed()
+        user_data["receiver_type"] = "to users who started the bot but didn't press register btn"
+        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+                                  reply_markup=back_button())
+        return BROADCAST
     elif message_text == 'تعیین id': 
         db.log_activity(user.id, "chose /send to custom user list")
         await update.message.reply_text("آیدی کاربران مورد نظر را با یک فاصله وارد کن یا /cancel را بزن. مثلا: \n103465015 1547226 7842159", 
