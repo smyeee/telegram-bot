@@ -17,7 +17,7 @@ db = database.Database()
 
 message = """
 🟢 Changes:
-✅ اضافه شدن قابلیت ارسال sms""
+✅ اضافه شدن سگمنت به دستور /send
 """
 
 # Incomplete registration

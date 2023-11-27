@@ -178,6 +178,8 @@ class Database:
             "user_activity": activity,
             "timestamp": {"$gte": gte, "$lte": lte} 
         } )
+        from utils.logger import logger
+        logger.info(f"document: {document}\nuser: {user_id}, gte: {gte}, lt: {lte}, activity: {activity}")
         if document:
             return True
         else:
