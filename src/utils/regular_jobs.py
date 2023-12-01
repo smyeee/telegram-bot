@@ -117,10 +117,16 @@ async def send_todays_data(context: ContextTypes.DEFAULT_TYPE):
     # advise_tags = ['امروز', 'فردا', 'پس فردا']
     for admin in admin_list:
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            await context.bot.send_message(
-                chat_id=admin,
-                text=f"در حال ارسال پیام به کاربران...",
-            )
+            try:
+                await context.bot.send_message(
+                    chat_id=admin,
+                    text=f"در حال ارسال پیام به کاربران...",
+                )
+            except (Forbidden, BadRequest):
+                await context.bot.send_message(
+                    chat_id=103465015,
+                    text=f"admin user {admin} has blocked the bot"
+                )
     try:
         # advise_pre_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Bef.geojson")
         # advise_post_harvest = gpd.read_file(f"data/pesteh{today}_Advise_Aft.geojson")
