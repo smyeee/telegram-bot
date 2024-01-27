@@ -11,24 +11,24 @@ from utils.logger import logger
 
 db = Database()
 
-
 add_farm_before_location = """
-کاربر عزیز، ثبت زمین شما در ربات هواشناسی آباد تکمیل نشده است. جهت دریافت خدمات لطفا مراحل ثبت زمین را تا انتها انجام دهید.
-ربات آباد: t.me/agriweathbot
-تماس با ما: 02164063410
-نیاز به راهنمایی 22
-لغو 11
+Dear user, The registration of your land in the meteorological robot of Abed is not completed. To recieve the services, Please finish the registration of the land.
+The Abad robot : t.me/agriweathbot
+Contact us: 02164063410
+Need guidance 22
+Cancel 11
 """
 
 add_farm_after_location = """
-کاربر عزیز، برای دریافت خدمات هواشناسی آباد نیاز به ثبت موقعیت زمین شما است. لطفا موقعیت زمین خود را در ربات ثبت کنید.
-ربات آباد: t.me/agriweathbot
-تماس با ما: 02164063410
-نیاز به راهنمایی 22
-لغو 11
+Dear user, To receive the meteorological services of Abad, you need to register the location of your land. Please register the location of your land in the robot.
+The Abad robot: t.me/agriweathbot
+Contact us: 02164063410
+Need guidance 22
+Cancel 11
 """
 
-async def send_sms_method(text: str, receiver: str)->list[int]:
+
+async def send_sms_method(text: str, receiver: str) -> list[int]:
     asanak_username = os.environ["ASANAK_USERNAME"]
     asanak_password = os.environ["ASANAK_PASSWORD"]
     asanak_phone_num = os.environ["ASANAK_PHONE_NUM"]
@@ -41,12 +41,13 @@ async def send_sms_method(text: str, receiver: str)->list[int]:
         'Message': text,
         'destination': receiver
     }
-    
+
     async with aiohttp.ClientSession() as session:
         async with session.post(url, data=payload, headers=headers, timeout=5) as response:
             json = await response.json()
             # logger.info(f"response: {response}\ndata: {data}\njson: {json}")
             return json
+
 
 async def msg_status_method(msg_id: str):
     asanak_username = os.environ["ASANAK_USERNAME"]
@@ -58,12 +59,13 @@ async def msg_status_method(msg_id: str):
         'password': asanak_password,
         'msgid': msg_id,
     }
-    
+
     async with aiohttp.ClientSession() as session:
         async with session.post(url, data=payload, headers=headers, timeout=5) as response:
             json = await response.json()
             return json[0]
-        
+
+
 async def check_status(context: ContextTypes.DEFAULT_TYPE):
     user_id = context.job.chat_id
     data: dict = context.job.data
@@ -72,7 +74,7 @@ async def check_status(context: ContextTypes.DEFAULT_TYPE):
     msg_id = data.get("msg_id")
     msg_code = data.get("msg_code")
     origin: str = data.get("origin", "")
-    
+
     status = await msg_status_method(msg_id=msg_id)
     status_code = int(status.get("Status"))
     known_status = [-1, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
@@ -82,45 +84,45 @@ async def check_status(context: ContextTypes.DEFAULT_TYPE):
                 context.job_queue.run_once(sms_no_farm, when=datetime.timedelta(seconds=60), chat_id=user_id)
             elif origin.startswith("farm_incomplete"):
                 context.job_queue.run_once(sms_incomplete_farm, when=datetime.timedelta(seconds=60), chat_id=user_id,
-                                           data= data)
+                                           data=data)
         else:
             text = f"API call to sendsms returned a status code of {status}\njob data: {data}"
             await context.bot.send_message(chat_id=103465015, text=text)
             raise ValueError("Unknown sms status code")
     else:
         db.log_sms_message(user_id=user_id, msg=msg, msg_code=msg_code)
-            
-        
+
+
 async def sms_no_farm(context: ContextTypes.DEFAULT_TYPE):
     user_id = context.job.chat_id
     user_doc = db.user_collection.find_one({"_id": user_id})
     name = user_doc.get("name", "کاربر")
     phone_num = user_doc.get("phone-number")
     msg = f"""
-{name} عزیز، برای دریافت اطلاعات هواشناسی آباد، لطفا زمین خود را ثبت کنید.
-ربات آباد: @agriweathbot
-تماس با ما: 02164063410
-نیاز به راهنمایی 22
-لغو 11
+Dear {name} .to recieve the meteorological  information of Abad, Please register you land, 
+The Abad robot: @agriweathbot
+Contact us: 02164063410
+Need guidance 22
+Cancel 11
 """
     if db.check_if_user_is_registered(user_id) and not db.get_farms(user_id):
         if phone_num:
             res = await send_sms_method(text=msg, receiver=phone_num)
             data = {
                 "msg": msg,
-                "msg_code": 1, # Just a code to represent the message in google sheet
+                "msg_code": 1,  # Just a code to represent the message in google sheet
                 "receiver": phone_num,
-                "msg_id": res[0], # The ID returned by the sendsms method
+                "msg_id": res[0],  # The ID returned by the sendsms method
                 "origin": "no_farm_sms"
             }
             logger.info(res)
             context.job_queue.run_once(check_status, when=datetime.timedelta(minutes=5), chat_id=user_id, data=data)
-    
-    
+
+
 async def sms_incomplete_farm(context: ContextTypes.DEFAULT_TYPE):
     """
     Triggered as a user presses the `add_farm` button.
-    Must provide the time when `add_farm` was pressed to query the database according to that. 
+    Must provide the time when `add_farm` was pressed to query the database according to that.
     """
     user_id = context.job.chat_id
     data = context.job.data
@@ -130,18 +132,18 @@ async def sms_incomplete_farm(context: ContextTypes.DEFAULT_TYPE):
     phone_num = user_doc.get("phone-number")
     msg_from_status_check = data.get("msg")
     msg_before_location = f"""
-{name} عزیز، ثبت زمین شما در ربات هواشناسی آباد تکمیل نشده است. جهت دریافت خدمات لطفا مراحل ثبت زمین را تا انتها انجام دهید.
-ربات آباد: @agriweathbot
-تماس با ما: 02164063410
-نیاز به راهنمایی 22
-لغو 11
+Dear {name}, the registration of your land in the meteorological robot of Abad is not completed. In order to recieve the services please finish the registration of the land.
+The Abad robot: @agriweathbot
+Contact us: 02164063410
+Need guidance 22
+Cancel 11
     """
     msg_location = f"""
-{name} عزیز، برای دریافت خدمات هواشناسی آباد نیاز به ثبت موقعیت زمین شما است. لطفا موقعیت زمین خود را در ربات ثبت کنید.
-ربات آباد: @agriweathbot
-تماس با ما: 02164063410
-نیاز به راهنمایی 22
-لغو 11
+Dear{name}, to recieve the meteorological services of Abad, you need to register the location of your land. Please register the location of your land in the robot.
+The Abad robot: @agriweathbot
+Contact us: 02164063410
+Need guidance 22
+Cancel 11
 
     """
     if phone_num:
@@ -181,5 +183,4 @@ async def sms_incomplete_farm(context: ContextTypes.DEFAULT_TYPE):
                 }
                 context.job_queue.run_once(check_status, when=datetime.timedelta(minutes=5), chat_id=user_id, data=data)
 
-            
-        
+
