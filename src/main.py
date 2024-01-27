@@ -52,7 +52,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 # Constants for ConversationHandler states
-TOKEN = "6514412310:AAF8ryOrBDnCZBd-UStDkHVIaKRSnUAJdwQ"
+TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
