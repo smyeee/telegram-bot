@@ -6,17 +6,17 @@ db = database.Database
 def stats_keyboard():
     keyboard = [
     [
-        InlineKeyboardButton("تعداد اعضا", callback_data='member_count'),
-        InlineKeyboardButton("تغییرات تعداد اعضا", callback_data='member_count_change')
+        InlineKeyboardButton("member count", callback_data='member_count'),
+        InlineKeyboardButton("changes of member count", callback_data='member_count_change')
     ],
     [
-        InlineKeyboardButton("تعداد بلاک‌ها", callback_data='block_count'),
-        InlineKeyboardButton("تعداد اعضای بدون لوکیشن", callback_data='no_location_count'),
+        InlineKeyboardButton("block count", callback_data='block_count'),
+        InlineKeyboardButton("member count without location", callback_data='no_location_count'),
         
     ],
     [
         # InlineKeyboardButton("دانلود فایل اکسل", callback_data='excel_download'),
-        InlineKeyboardButton("تعداد اعضای بدون تلفن", callback_data='no_phone_count'),
+        InlineKeyboardButton("member count without phone", callback_data='no_phone_count'),
     ],
     # [
     #     InlineKeyboardButton("پراکندگی لوکیشن اعضا", callback_data='html_map'),
@@ -48,25 +48,25 @@ def farms_list_reply(database: db, user_id, pesteh_kar: bool = None):
         keyboard = [ [key] for key in keys_list if farms[key].get("product", "").startswith("پسته")]
     else:
         keyboard = [ [key] for key in keys_list ]
-    keyboard.append(["↩️ بازگشت"])
+    keyboard.append(["↩️ back"])
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
         
 def edit_keyboard_inline():
     keyboard = [
     [
-        InlineKeyboardButton("تغییر محصول", callback_data='product'),
-        InlineKeyboardButton("تغییر استان", callback_data='province')
+        InlineKeyboardButton("change the crop", callback_data='product'),
+        InlineKeyboardButton("change the province", callback_data='province')
     ],
     [
-        InlineKeyboardButton("تغییر شهرستان", callback_data='city'),
-        InlineKeyboardButton("تغییر روستا", callback_data='village')
+        InlineKeyboardButton("change the town", callback_data='city'),
+        InlineKeyboardButton("change the village", callback_data='village')
     ],
     [
-        InlineKeyboardButton("تغییر سطح", callback_data='area'),
-        InlineKeyboardButton("تغییر موقعیت", callback_data='location'),
+        InlineKeyboardButton("change the area", callback_data='area'),
+        InlineKeyboardButton("change the location", callback_data='location'),
     ],
     [
-        InlineKeyboardButton("بازگشت به لیست باغ ها", callback_data='back'),
+        InlineKeyboardButton("back to the garden's list", callback_data='back'),
     ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -75,25 +75,25 @@ def edit_keyboard_inline():
 def edit_keyboard_reply():
     keyboard = [
     [
-        "تغییر محصول",
-        "تغییر استان",
+        "change the crop",
+        "change the province",
     ],
     [
-        "تغییر شهرستان",
-        "تغییر روستا",
+        "change the town",
+        "change the village",
     ],
     [
-        "تغییر مساحت",
-        "تغییر موقعیت",
+        "change the area",
+        "change the location",
     ],
     [
-        "بازگشت به لیست کشت‌ها",
+        "back to the farm's list",
     ]
     ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def land_type_keyboard():
-    keyboard = [["باغ", "مزرعه"], ["صیفی", "گلخانه"], ['بازگشت']]
+    keyboard = [["garden", "farm"], ["herb", "green house"], ['back']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 
@@ -102,7 +102,7 @@ def return_keyboard():
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 # Function to get the multi-choice keyboard for provinces
 def get_province_keyboard():
-    keyboard = [['کرمان', 'خراسان رضوی', 'خراسان جنوبی'], ['یزد', 'فارس', 'سمنان'], ['مرکزی', 'تهران', 'اصفهان'], ['قم', 'سیستان و بلوچستان', 'قزوین'], ['بازگشت']]
+    keyboard = [['Kerman', 'Khorasan razavi', 'Khorasan jonoobi'], ['Yazd', 'Fars', 'Semnan'], ['Markazi', 'Tehram', 'Esfehan'], ['Ghom', 'Sistan va baloochestan', 'Ghazvin'], ['back']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 # 🌳🧾💶💰✅
@@ -114,41 +114,41 @@ def get_province_keyboard():
 
 
 def start_keyboard_not_registered():
-    keyboard = [ ["✍️ ثبت نام"] ]
+    keyboard = [ ["✍ sign up"] ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 
 def start_keyboard_no_farms():
-    keyboard = [ ["➕ اضافه کردن کشت"] ]
+    keyboard = [ ["➕ add farm"] ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def start_keyboard_no_location():
-    keyboard = [ ["✏️ ویرایش کشت‌ها"] ]
+    keyboard = [ ["✏️ edit the farms"] ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def start_keyboard_not_pesteh():
-    keyboard = [ ['👨‍🌾 مدیریت کشت‌ها'],  ['🌟 سرویس VIP'] , ['🌦 پیش‌بینی هواشناسی', '🧪 شرایط محلول‌پاشی'],  ['📤 دعوت از دیگران', '📬 ارتباط با ما']]
+    keyboard = [ ['👨‍🌾 manage the farms'],  ['🌟 VIP service'] , ['🌦 weather forecast', '🧪 spraying conditions'],  ['📤 invite others', '📬 contact us']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def start_keyboard_pesteh_kar():
-    keyboard = [ ['🌦 پیش‌بینی هواشناسی'], ['توصیه قبل از برداشت', 'توصیه بعد از برداشت'], ['🧪 شرایط محلول‌پاشی'], ['❄️ نیاز سرمایی'], ['🏘 بازگشت به خانه'] ]
+    keyboard = [ ['🌦weather forecast'], ['Pre-harvest advice', 'Post-harvest advice'], ['🧪 Spraying conditions'], ['❄️ cold demand'], ['🏘 back to home'] ]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def home_keyboard_pesteh_kar():
-    keyboard = [ ['👨‍🌾 مدیریت کشت‌ها'],  ['🌟 سرویس VIP'] , ['📤 دعوت از دیگران', '📬 ارتباط با ما'], ['منوی هواشناسی']]
+    keyboard = [ ['👨‍🌾crops management'],  ['🌟 VIP service'] , ['📤 invite others', '📬 contact us'], ['meteorology menu']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 
 def manage_farms_keyboard():
-    keyboard = [['🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت'], ['🗑 حذف کشت', '✏️ ویرایش کشت‌ها'], ['🏘 بازگشت به خانه']]
+    keyboard = [['🖼 see the farms', '➕ add farm'], ['🗑 delete the farm', '✏️ edit the farms'], ['🏘 back to home']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
 def payment_keyboard():
-    keyboard = [['💶 خرید اشتراک'], ['🧾 ارسال فیش پرداخت'], ['🏘 بازگشت به خانه']]
+    keyboard = [['💶 subscribe'], ['🧾 send the payment receipt'], ['🏘 back to home']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
 
 def request_info_keyboard():
-    keyboard = [ ['🌦 درخواست اطلاعات هواشناسی'],  ['🧪 دریافت توصیه محلول‌پاشی'], ['🏘 بازگشت به خانه']]
+    keyboard = [ ['🌦 Request weather information'],  ['🧪 Receive spraying advicec'], ['🏘 Back to home']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def view_advise_keyboard(farm_name: str):
@@ -174,29 +174,29 @@ def view_sp_advise_keyboard(farm_name: str):
     return reply_markup
 
 def register_keyboard():
-    keyboard = [['✍️ ثبت نام']]
+    keyboard = [['✍ sign up']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 def get_product_keyboard():
-    keyboard = [['پسته اکبری', 'پسته اوحدی', 'پسته احمدآقایی'], ['پسته بادامی', 'پسته فندقی', 'پسته کله قوچی'], ['پسته ممتاز', 'بازگشت']]
+    keyboard = [['Akbari pistachio', 'Ohedi pistachio', 'Ahmad aghayi pistachio'], ['Badami pistachio', 'fandoghi pistachio', 'Kalle ghoochi pistachio'], ['first class pistachio', 'back']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def conf_del_keyboard():
-    keyboard = [['بله'], ['خیر'], ['بازگشت']]
+    keyboard = [['yes'], ['no'], ['back']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def automn_month():
-    keyboard = [['آبان'], ['آذر'], ['↩️ بازگشت']]
+    keyboard = [['Aban'], ['Azar'], ['↩️ back']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def automn_week():
-    keyboard = [['هفته دوم', 'هفته اول'], ['هفته چهارم', 'هفته سوم'], ['↩️ بازگشت']]
+    keyboard = [['the second week', 'the first week'], ['the forth week', ' the third week'], ['↩️ back']]
     return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
 def choose_role():
-    keyboard = [['تعیین id'], ['تمام کاربران'], ['دکمه ثبت نام را نزدند'], ['پسته‌کاران'], ['لوکیشن دار'], ['بدون لوکیشن'], ['بدون شماره تلفن'], ['بازگشت']]
+    keyboard = [['specify the id'], ['all the users'], ['They did not hit the registration button'], ['pistachio farmers'], ['include the location'], ['without the location'], ['without phone number'], ['back']]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)
 
 def back_button():
-    keyboard = [['بازگشت']]
+    keyboard = [['back']]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True ,one_time_keyboard=True)

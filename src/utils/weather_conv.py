@@ -46,7 +46,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # Constants for ConversationHandler states
 
 RECV_WEATHER, RECV_SP = range(2)
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍ sign up', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -59,7 +59,7 @@ async def req_weather_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_farms:
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="Chooe one of your gardens",
             reply_markup=farms_list_reply(db, user.id),
         )
         return RECV_WEATHER
@@ -67,7 +67,7 @@ async def req_weather_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - no farm for weather report")
         await context.bot.send_message(
             chat_id=user.id,
-            text="شما هنوز باغی ثبت نکرده اید",
+            text="You have not registered any garden yet",
             reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
@@ -79,7 +79,7 @@ async def req_sp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_farms:
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="Choose one of your gardens",
             reply_markup=farms_list_reply(db, user.id),
         )
         return RECV_SP
@@ -87,7 +87,7 @@ async def req_sp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - no farm for sp report")
         await context.bot.send_message(
             chat_id=user.id,
-            text="شما هنوز باغی ثبت نکرده اید",
+            text="You ha not registered any garden yet",
             reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
@@ -107,15 +107,15 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
     jday4 = (jdatetime.datetime.now() + jdatetime.timedelta(days=3)).strftime("%Y/%m/%d")
     if farm == '↩️ بازگشت':
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm not in list(user_farms.keys()):
         db.log_activity(user.id, "error - chose farm for weather report" , farm)
-        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("Please try again. garden's name was wrong", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The previous operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm for weather report", farm)
     longitude = user_farms[farm]["location"]["longitude"]
@@ -144,8 +144,8 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         elif "rain_Time=" in key:
                             rain_values.append(round(value, 1))
                     caption = f"""
-باغدار عزیز 
-پیش‌بینی وضعیت آب و هوای باغ شما با نام <b>#{farm.replace(" ", "_")}</b> در چهار روز آینده بدین صورت خواهد بود
+Dear gardener
+The weather forecast for your garden named <b>#{farm.replace(" ", "_")}</b> will be like this in the next four days 
 """
                     table([jtoday, jday2, jday3, jday4], tmin_values, tmax_values, rh_values, spd_values, rain_values)
                     with open('table.png', 'rb') as image_file:
@@ -160,7 +160,7 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     db.log_activity(user.id, "received 4-day weather reports")
                     return ConversationHandler.END
                 else:
-                    await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=db.find_start_keyboard(user.id))
+                    await context.bot.send_message(chat_id=user.id, text="Unfortunately, weather information for your garden is not available at the moment", reply_markup=db.find_start_keyboard(user.id))
                     return ConversationHandler.END
             else:
                 weather_data = gpd.read_file(f"data/Iran{yesterday}_weather.geojson")
@@ -183,8 +183,8 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         elif "rain_Time=" in key:
                             rain_values.append(round(value, 1))
                     caption = f"""
-باغدار عزیز 
-پیش‌بینی وضعیت آب و هوای باغ شما با نام <b>#{farm.replace(" ", "_")}</b> در سه روز آینده بدین صورت خواهد بود
+dear gardener
+The weather forecast for your garden named <b>#{farm.replace(" ", "_")}</b> will be like this in the next three days 
 """
                     table([jday2, jday3, jday4], tmin_values[1:], tmax_values[1:], rh_values[1:], spd_values[1:], rain_values[1:])
                     with open('table.png', 'rb') as image_file:
@@ -200,20 +200,20 @@ async def recv_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     db.log_activity(user.id, "received 3-day weather reports")
                     return ConversationHandler.END
                 else:
-                    await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات هواشناسی باغ شما در حال حاضر موجود نیست", reply_markup=db.find_start_keyboard(user.id))
+                    await context.bot.send_message(chat_id=user.id, text="Unfortunately, weather information for your garden is not available at the moment", reply_markup=db.find_start_keyboard(user.id))
                     return ConversationHandler.END
         except DriverError:
             logger.info(f"{user.id} requested today's weather. pesteh{today}_1.geojson was not found!")
-            await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات باغ شما در حال حاضر موجود نیست", reply_markup=db.find_start_keyboard(user.id))
+            await context.bot.send_message(chat_id=user.id, text="Unfortunately, your garden information is not available at the moment", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
         finally:
             os.system("rm table.png")
     elif user_farms[farm].get("link-status") == "To be verified":
-        reply_text = "لینک لوکیشن ارسال شده توسط شما هنوز تایید نشده است.\nلطفا تا بررسی ادمین آباد شکیبا باشید."
+        reply_text = "The location link sent by you has not been verified yet.\nPlease be patient until Abad admin checks."
         await context.bot.send_message(chat_id=user.id, text=reply_text,reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     else:
-        await context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست اطلاعات هواشناسی نسبت به ثبت موققعیت اقدام فرمایید.",
+        await context.bot.send_message(chat_id=user.id, text="The location of your garden has not been registered. Please register your location before requesting weather information.",
                                  reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
 
@@ -226,19 +226,19 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     day2 = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y%m%d")
     day3 = (datetime.datetime.now() + datetime.timedelta(days=2)).strftime("%Y%m%d")
     jdate = jdatetime.datetime.now().strftime("%Y/%m/%d")
-    date_tag = 'امروز'
+    date_tag = 'today'
 
-    if farm == '↩️ بازگشت':
+    if farm == '↩️ back':
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm not in list(user_farms.keys()):
         db.log_activity(user.id, "error - chose farm for sp report" , farm)
-        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("Please try again. garden's name was invalid.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The prvious operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm for sp report", farm)
     longitude = user_farms[farm]["location"]["longitude"]
@@ -266,21 +266,21 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 try:
                     if pd.isna(sp_3days[0]):
                         advise = f"""
-باغدار عزیز 
-توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
+dear gardener
+The following spraying recommendation according to the weather condition of your garden named <b>#{farm.replace(" ", "_")}</b> for #{date_tag} dated <b>{jdate}</b > is sent:
 
-<pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
+<pre>There are no recommendations for this date</pre>
 
-<i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+<i>You can see the recommendations related to tomorrow and the day after tomorrow using the buttons below.</i>
 """
                     else:
                         advise = f"""
-باغدار عزیز 
-توصیه محلول‌‌پاشی زیر با توجه به وضعیت آب و هوایی باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{date_tag} مورخ <b>{jdate}</b> ارسال می‌شود:
+dear gardener
+The following spraying recommendation according to the weather condition of your garden named <b>#{farm.replace(" ", "_")}</b> for #{date_tag} dated <b>{jdate}</b > is sent:
 
 <pre>{sp_3days[0]}</pre>
 
-<i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+<i>You can see the recommendations related to tomorrow and the day after tomorrow using the buttons below.</i>
 """
                     await context.bot.send_message(chat_id=user.id, text=advise, reply_markup=view_sp_advise_keyboard(farm), parse_mode=ParseMode.HTML)
                     username = user.username
@@ -300,26 +300,26 @@ async def recv_sp(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     return ConversationHandler.END
         except DriverError:
             logger.info(f"{user.id} requested today's weather. pesteh{today}_AdviseSP.geojson was not found!")
-            await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات باغ شما در حال حاضر موجود نیست", reply_markup=db.find_start_keyboard(user.id))
+            await context.bot.send_message(chat_id=user.id, text="Unfortunately, your garden's information is not available at the moment", reply_markup=db.find_start_keyboard(user.id))
             return ConversationHandler.END
     elif user_farms[farm].get("link-status") == "To be verified":
-        reply_text = "لینک لوکیشن ارسال شده توسط شما هنوز تایید نشده است.\nلطفا تا بررسی ادمین آباد شکیبا باشید."
+        reply_text = "The location link sent by you has not been verified yet.\nPlease be patient until Abad admin checks."
         await context.bot.send_message(chat_id=user.id, text=reply_text,reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     else:
-        await context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست اطلاعات هواشناسی نسبت به ثبت موققعیت اقدام فرمایید.",
+        await context.bot.send_message(chat_id=user.id, text="The location of your garden has not been registered. Please register your location before requesting weather information.",
                                  reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
 
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("عملیات کنسل شد!")
+    await update.message.reply_text("The operation was cancelled!")
     return ConversationHandler.END   
 
 weather_req_conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('🌦 پیش‌بینی هواشناسی'), req_weather_data),
-                      MessageHandler(filters.Regex('🧪 شرایط محلول‌پاشی'), req_sp_data)],
+        entry_points=[MessageHandler(filters.Regex('🌦 weather forecast'), req_weather_data),
+                      MessageHandler(filters.Regex('🧪 spraying conditions'), req_sp_data)],
         states={
             RECV_WEATHER: [MessageHandler(filters.TEXT , recv_weather)],
             RECV_SP: [MessageHandler(filters.TEXT , recv_sp)]

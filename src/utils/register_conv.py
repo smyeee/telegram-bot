@@ -20,7 +20,7 @@ from .logger import logger
 from .sms_funcs import sms_no_farm
 # Constants for ConversationHandler states
 ASK_PHONE, HANDLE_PHONE = range(2)
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍ sign up', '📤 invite others', '🖼see the farms', '➕ add farm', '🗑 delete farm', '✏️ edit farms', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -33,11 +33,11 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.log_activity(user.id, "start register", f"{user.id} - username: {user.username}")
     if db.check_if_user_is_registered(user_id=user.id):
         await update.message.reply_text(
-            "شما قبلا ثبت نام کرده‌اید. می‌توانید با استفاده از /start به ثبت باغ‌های خود اقدام کنید"
+            "You have already signed up. You can register your gardens using /start "
         )
         return ConversationHandler.END
     await update.message.reply_text(
-        "لطفا نام و نام خانوادگی خود را وارد کنید \nلغو با /cancel", reply_markup=ReplyKeyboardRemove()
+        "Please enter your name and your family name \n /cancel", reply_markup=ReplyKeyboardRemove()
     )
     return ASK_PHONE
 
@@ -48,16 +48,16 @@ async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the answer to the area question
     if update.message.text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", update.message.text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The previous operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not update.message.text:
-        await update.message.reply_text("لطفا نام و نام خانوادگی خود را وارد کنید \nلغو با /cancel")
+        await update.message.reply_text("Please enter your name and your family name \n /cancel")
         db.log_activity(user.id, "error - enter name", f"{update.message.text}")
         return ASK_PHONE
     name = update.message.text.strip()
     user_data["name"] = name
     db.set_user_attribute(user_id=user.id, key="name", value=name)
-    await update.message.reply_text("لطفا شماره تلفن خود را وارد کنید: \nلغو با /cancel")
+    await update.message.reply_text("Please enter your phone number: \n /cancel")
     return HANDLE_PHONE
 
 async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -67,19 +67,19 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = update.message.text
     if phone in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", phone)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The previous operation was cancelled. Please try again", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     if not phone or not phone.isdigit() or len(phone) != 11:
         db.log_activity(user.id, "error - entered phone", phone)
-        await update.message.reply_text("شماره وارد شده مورد تایید نیست. لطفا دوباره شماره تلفن خود را وارد کنید: \nلغو با /cancel")
+        await update.message.reply_text("The number is not valid. Please try again:. \n /cancel")
         return HANDLE_PHONE
     db.log_activity(user.id, "entered phone", phone)
     user_data["phone"] = phone
     db.set_user_attribute(user_id=user.id, key="phone-number", value=phone)
     reply_text = """
-اکنون می‌توانید با انتخاب گزینه <b>(➕ اضافه کردن کشت)</b> باغ‌های خود را ثبت کنید.
+You can register your gardens using <b>('➕ add farm')</b>.
     """
-    keyboard = [['➕ اضافه کردن کشت']]
+    keyboard = [['➕ add farm']]
     
     await update.message.reply_text(reply_text, parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True))
     if datetime.time(2, 30).strftime("%H%M") <= datetime.datetime.now().strftime("%H%M") < datetime.time(17, 30).strftime("%H%M"): 
@@ -89,12 +89,12 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("عملیات کنسل شد!")
+    await update.message.reply_text("The operation was cancelled!")
     return ConversationHandler.END
 
 
 register_conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("✍️ ثبت نام"), register)],
+        entry_points=[MessageHandler(filters.Regex('✍ sign up'), register)],
         states={
             ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
             HANDLE_PHONE: [

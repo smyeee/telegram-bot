@@ -26,7 +26,7 @@ from telegram.constants import ParseMode
 warnings.filterwarnings("ignore", category=UserWarning)
 
 RECV_HARVEST, RECV_PRE_HARVEST, RECV_POST_HARVEST = range(3)
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍ sign up', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -40,7 +40,7 @@ async def req_pre_harvest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data["harvest_data"] = "PRE"
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="Choose one of your gardens",
             reply_markup=farms_list_reply(db, user.id, True),
         )
         return RECV_HARVEST
@@ -48,7 +48,7 @@ async def req_pre_harvest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - no farm for pre harvest advise")
         await context.bot.send_message(
             chat_id=user.id,
-            text="شما هنوز باغ پسته‌ای ثبت نکرده اید",
+            text="You have not registered any Pistachio garden yet.",
             reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
@@ -61,7 +61,7 @@ async def req_post_harvest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data["harvest_data"] = "POST"
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از باغ های خود را انتخاب کنید",
+            text="Choose one of your gardens",
             reply_markup=farms_list_reply(db, user.id, True),
         )
         return RECV_HARVEST
@@ -69,7 +69,7 @@ async def req_post_harvest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_activity(user.id, "error - no farm for post harvest advise")
         await context.bot.send_message(
             chat_id=user.id,
-            text="شما هنوز باغ پسته‌ای ثبت نکرده اید",
+            text="You have not registered any Pistachio garden yet",
             reply_markup=db.find_start_keyboard(user.id),
         )
         return ConversationHandler.END
@@ -81,27 +81,27 @@ async def recv_harvest_advice(update: Update, context: ContextTypes.DEFAULT_TYPE
     farm = update.message.text
     user_farms = db.get_farms(user.id)
     
-    if farm == '↩️ بازگشت':
+    if farm == '↩️ back':
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm not in list(user_farms.keys()):
         db.log_activity(user.id, "error - chose farm for harvest advice" , farm)
-        await update.message.reply_text("لطفا دوباره تلاش کنید. نام باغ اشتباه بود", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("Please try again. garden's name was invalid", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The previous operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     db.log_activity(user.id, f"chose farm for {harvest_type} harvest advice", farm)
     longitude = user_farms[farm]["location"]["longitude"]
     latitude = user_farms[farm]["location"]["latitude"]
     if user_farms[farm].get("link-status") == "To be verified":
-        reply_text = "لینک لوکیشن ارسال شده توسط شما هنوز تایید نشده است.\nلطفا تا بررسی ادمین آباد شکیبا باشید."
+        reply_text = "The location link you sent has not been verified yet.\n Please be patient until nabat's admin confirmation ."
         await context.bot.send_message(chat_id=user.id, text=reply_text,reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not longitude:
-        await context.bot.send_message(chat_id=user.id, text="موقعیت باغ شما ثبت نشده است. لظفا پیش از درخواست توصیه برداشت نسبت به ثبت موقعیت باغ خود اقدام فرمایید.",
+        await context.bot.send_message(chat_id=user.id, text="Your grden's location has not been registered. Please register your garden's location before asking for harvest advices.",
                                  reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     
@@ -133,22 +133,22 @@ async def recv_harvest_advice(update: Update, context: ContextTypes.DEFAULT_TYPE
                 advice = "پس از برداشت"
             else:
                 db.log_activity(user.id, "error - harvest type not found", harvest_type)
-                await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+                await update.message.reply_text("The previous operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
                 return ConversationHandler.END
         else:
             if harvest_type == "PRE":
                 harvest_data = gpd.read_file(f"data/pesteh{yesterday}_Advise_Bef.geojson")
-                advice = "پیش از برداشت"
+                advice = "before harvest"
             elif harvest_type == "POST":
                 harvest_data = gpd.read_file(f"data/pesteh{yesterday}_Advise_Aft.geojson")
-                advice = "پس از برداشت"
+                advice = "after harvest"
             else:
                 db.log_activity(user.id, "error - harvest type not found", harvest_type)
-                await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+                await update.message.reply_text("The previous operation was cancelled please try again.", reply_markup=db.find_start_keyboard(user.id))
                 return ConversationHandler.END
     except DriverError:
         logger.info(f"{user.id} requested harvest advice. file was not found!")
-        await context.bot.send_message(chat_id=user.id, text="متاسفانه اطلاعات باغ شما در حال حاضر موجود نیست", reply_markup=db.find_start_keyboard(user.id))
+        await context.bot.send_message(chat_id=user.id, text="Unfortunately your garden's information does not exist right now.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     threshold = 0.1  # degrees
     point = Point(longitude, latitude)
@@ -164,9 +164,9 @@ async def recv_harvest_advice(update: Update, context: ContextTypes.DEFAULT_TYPE
                     advise = f"""
 توصیه {advice} باغ شما با نام <b>#{farm.replace(" ", "_")}</b> برای #{advise_tags[0]} مورخ <b>{jdates[0]}</b>:
 
-<pre>توصیه‌ای برای این تاریخ موجود نیست</pre>
+<pre>There is no advice for this date</pre>
 
-<i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+<i>.You can see advices for tomorrow and the day after tomorrow using the buttons below</i>
 
 """
             else:
@@ -175,7 +175,7 @@ async def recv_harvest_advice(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 <pre>{advise_3days[0]}</pre>
 
-<i>می‌توانید با استفاده از دکمه‌های زیر توصیه‌‌های مرتبط با فردا و پس‌فردا را مشاهده کنید.</i>
+<i>You can see advices for tomorrow and the day after tomorrow using the buttons below.</i>
 
 """
             await context.bot.send_message(chat_id=user.id, text=advise, reply_markup=view_advise_keyboard(farm), parse_mode=ParseMode.HTML)
@@ -186,11 +186,11 @@ async def recv_harvest_advice(update: Update, context: ContextTypes.DEFAULT_TYPE
         except BadRequest:
             logger.info(f"user:{user.id} chat was not found!")
     else:
-        await context.bot.send_message(chat_id=user.id, text="در حال حاضر توصیه برداشت برای باغ شما موجود نیست", reply_markup=db.find_start_keyboard(user.id))
+        await context.bot.send_message(chat_id=user.id, text="Currently there is no harvest advice for your garden", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("عملیات کنسل شد!")
+    await update.message.reply_text("The operation was cancelled!")
     return ConversationHandler.END   
 
 harvest_conv_handler = ConversationHandler(

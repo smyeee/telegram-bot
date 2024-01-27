@@ -58,7 +58,7 @@ async def send(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.log_activity(user_id, "used /send")
     if user_id in ADMIN_LIST:
         await update.message.reply_text(
-            "گیرنده پیام کیست؟",
+            "Who is the reciever of the message",
             reply_markup=choose_role()
         )
         return CHOOSE_RECEIVERS
@@ -73,75 +73,75 @@ async def choose_receivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_text = update.message.text
     if message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The previous operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif not message_text:
         await update.message.reply_text(
-            "گیرنده پیام کیست؟",
+            "Who is the reciever if the message?",
             reply_markup=choose_role()
         )
         return CHOOSE_RECEIVERS
     elif message_text == "/cancel":
         db.log_activity(user.id, "/cancel")
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
-    elif message_text == "بازگشت":
+    elif message_text == "back":
         db.log_activity(user.id, "back")
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
-    elif message_text == "تمام کاربران":
+    elif message_text == "all the users":
         db.log_activity(user.id, "chose /send to all users")
         user_data["receiver_list"] = db.user_collection.distinct("_id")
         user_data["receiver_type"] = "to All Users"
-        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+        await update.message.reply_text("Please write down your message or press /cancel:",
                                   reply_markup=back_button())
         return BROADCAST
-    elif message_text == "پسته‌کاران":
+    elif message_text == "pistachio farmers":
         db.log_activity(user.id, "chose /send to pesteh farmers")
         user_data["receiver_list"] = db.get_all_pesteh_farmers()
         user_data["receiver_type"] = "to pesteh farmers"
-        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+        await update.message.reply_text("Please write down your message or press /cancel:",
                                   reply_markup=back_button())
         return BROADCAST
-    elif message_text == "دکمه ثبت نام را نزدند":
+    elif message_text == "They did not hit the register button":
         db.log_activity(user.id, "chose /send to users who never pressed register")
         user_data["receiver_list"] = db.register_not_pressed()
         user_data["receiver_type"] = "to users who started the bot but didn't press register btn"
-        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+        await update.message.reply_text("Please write down your message or press /cancel:",
                                   reply_markup=back_button())
         return BROADCAST
-    elif message_text == 'تعیین id': 
+    elif message_text == 'specify the id':
         db.log_activity(user.id, "chose /send to custom user list")
-        await update.message.reply_text("آیدی کاربران مورد نظر را با یک فاصله وارد کن یا /cancel را بزن. مثلا: \n103465015 1547226 7842159", 
+        await update.message.reply_text("آیدی کاربران مورد نظر را با یک فاصله وارد کن یا /cancel را بزن. e.g.: \n103465015 1547226 7842159",
                                   reply_markup=back_button())
         return HANDLE_IDS
-    elif message_text == "لوکیشن دار":
+    elif message_text == "include the location":
         db.log_activity(user.id, "chose /send to users with location")
         users = db.get_users_with_location()
         user_data["receiver_list"] = users
         user_data["receiver_type"] = "to Users With Location"
-        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+        await update.message.reply_text("Please write down your message or press /cancel::",
                                   reply_markup=back_button())
         return BROADCAST
-    elif message_text == "بدون لوکیشن":
+    elif message_text == "without location":
         db.log_activity(user.id, "chose /send to users without location")
         users = db.get_users_without_location()
         user_data["receiver_list"] = users
         user_data["receiver_type"] = "to Users W/O Location"
-        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+        await update.message.reply_text("Please write down your message or press /cancel:",
                                   reply_markup=back_button())
         return BROADCAST
-    elif message_text == "بدون شماره تلفن":
+    elif message_text == "without the phone number":
         db.log_activity(user.id, "chose /send to users without phone number")
         users = db.get_users_without_phone()
         user_data["receiver_list"] = users
         user_data["receiver_type"] = "to Users W/O Phone Number"
-        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+        await update.message.reply_text("Please write down your message or press /cancel::",
                                   reply_markup=back_button())
         return BROADCAST
     else:
         db.log_activity(user.id, "invalid receivers chosen")
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
 
 async def handle_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -150,18 +150,18 @@ async def handle_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data
     if ids in MENU_CMDS or not ids:
         db.log_activity(user.id, "error - answer in menu_cmd list", ids)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
-    elif ids == "بازگشت":
+    elif ids == "back":
         db.log_activity(user.id, "back")
-        await update.message.reply_text("گیرنده پیام را انتخاب کن", reply_markup=choose_role())
+        await update.message.reply_text("Choose the message receiver", reply_markup=choose_role())
         return CHOOSE_RECEIVERS
     else:
         db.log_activity(user.id, "entered custom list of users", ids)
         user_ids = [int(user_id) for user_id in ids.split(" ")]
         user_data["receiver_list"] = user_ids
         user_data["receiver_type"] = "Admin Chose Receivers"
-        await update.message.reply_text("لطفا پیام مورد نظرتان را بنویسید یا برای لغو /cancel را بزنید:", 
+        await update.message.reply_text("Please write down your message or press /cancel:",
                                   reply_markup=back_button())
         return BROADCAST
 
@@ -176,15 +176,15 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     i = 0
     receivers = []
     if message_text == "/cancel":
-        await update.message.reply_text("عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The operation was cancelled!", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
     elif message_text in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", message_text)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The previous operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
-    elif message_text == "بازگشت":
+    elif message_text == "back":
         await update.message.reply_text(
-            "گیرنده پیام کیست؟",
+            "Who is the reciever of the message?",
             reply_markup=choose_role()
         )
         return CHOOSE_RECEIVERS
@@ -216,7 +216,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.log_sent_messages(receivers, f"broadcast {user_data['receiver_type']}")
         for id in ADMIN_LIST:
             try:
-                await context.bot.send_message(id, f"پیام برای {i} نفر از {len(receiver_list)} نفر ارسال شد."
+                await context.bot.send_message(id, f"The message was sent to {i} people out of {len(receiver_list)} people."
                                     , reply_markup=db.find_start_keyboard(id))
             except BadRequest or Forbidden:
                 logger.warning(f"admin {id} has deleted the bot")
@@ -224,7 +224,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("عملیات کنسل شد!")
+    await update.message.reply_text("The operation was cancelled!")
     return ConversationHandler.END
 
 
@@ -244,7 +244,7 @@ async def bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in ADMIN_LIST:
         await update.message.reply_text(
-            "آمار مورد نظر را انتخاب کنید", reply_markup=stats_keyboard()
+            "Select the desired statistic", reply_markup=stats_keyboard()
         )
 
 async def stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -256,7 +256,7 @@ async def stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     id = update.effective_user.id
     if stat.data == "member_count":
         member_count = db.number_of_members() - db.number_of_blocks()
-        await context.bot.send_message(chat_id=id, text=f"تعداد اعضا: {member_count}")
+        await context.bot.send_message(chat_id=id, text=f"number of members: {member_count}")
     elif stat.data == "member_count_change":
         members_doc = db.bot_collection.find_one()
         if len(members_doc["time-stamp"]) < 15:
@@ -287,13 +287,13 @@ async def stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info("encountered error during excel download!")
     elif stat.data == "block_count":
         blocked_count = db.number_of_blocks()
-        await context.bot.send_message(chat_id=id, text=f"تعداد بلاک‌ها: {blocked_count}")
+        await context.bot.send_message(chat_id=id, text=f"block count: {blocked_count}")
     elif stat.data == "no_location_count":
         no_location_users = db.get_users_without_location()
-        await context.bot.send_message(chat_id=id, text=f"تعداد بدون لوکیشن: {len(no_location_users)}")
+        await context.bot.send_message(chat_id=id, text=f"no locaton count: {len(no_location_users)}")
     elif stat.data == "no_phone_count":
         no_phone_users = db.get_users_without_phone()
-        await context.bot.send_message(chat_id=id, text=f"تعداد بدون شماره تلفن: {len(no_phone_users)}")
+        await context.bot.send_message(chat_id=id, text=f"no phone count: {len(no_phone_users)}")
 
 
 broadcast_handler = ConversationHandler(

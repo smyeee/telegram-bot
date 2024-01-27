@@ -20,15 +20,8 @@ import traceback
 
 import database
 
-from utils.regular_jobs import send_todays_data, send_up_notice, get_member_count
-from utils.keyboards import (
-    manage_farms_keyboard,
-    payment_keyboard,
-    request_info_keyboard,
-    start_keyboard_not_pesteh,
-    start_keyboard_pesteh_kar,
-    home_keyboard_pesteh_kar
-)
+from utils.regular_jobs import *
+from utils.keyboards import *
 from utils.add_conv import add_farm_conv_handler
 from utils.edit_conv import edit_farm_conv_handler
 from utils.weather_conv import weather_req_conv_handler
@@ -59,7 +52,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 # Constants for ConversationHandler states
-TOKEN = os.environ["AGRIWEATHBOT_TOKEN"]
+TOKEN = "6514412310:AAF8ryOrBDnCZBd-UStDkHVIaKRSnUAJdwQ"
 MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده باغ ها', '➕ اضافه کردن باغ', '🗑 حذف باغ ها', '✏️ ویرایش باغ ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
@@ -69,7 +62,7 @@ ADMIN_LIST = db.get_admins()
 ####################### MENU NAVIGATION ###########################
 async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    reply_text = "بازگشت به منوی اصلی"
+    reply_text = "return to the main menu"
     db.log_activity(user.id, "navigated to home view")
     if db.check_if_user_has_pesteh(user.id):
         reply_markup = home_keyboard_pesteh_kar()
@@ -80,52 +73,50 @@ async def home_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def farm_management_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    reply_text = "مدیریت کشت‌ها"
+    reply_text = "manage the farms"
     db.log_activity(user.id, "navigated to farm management view")
     await update.message.reply_text(reply_text, reply_markup=manage_farms_keyboard())
 
 async def weather_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    reply_text = "منوی هواشناسی"
+    reply_text = "the meteorology menu"
     db.log_activity(user.id, "navigated to weather view")
     await update.message.reply_text(reply_text, reply_markup=start_keyboard_pesteh_kar())
 
 async def info_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    reply_text = "می‌توانید اطلاعات اختصاصی باغ خود را با انتخاب موارد زیر دریافت کنید"
+    reply_text = "You can get information specific to your garden by selecting the below options"
     db.log_activity(user.id, "navigated to farm info view")
     await update.message.reply_text(reply_text, reply_markup=request_info_keyboard())
 
 async def payment_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     reply_text = """
-<b>☘باغی آباد با "آباد"☘</b>
+<b>☘A fecund garden with "Abad"☘</b>
 
-با عضویت در ربات " آباد " از خدمات زیر بهره‌مند می‌شوید: 
+By joining "Abad" robot, you will benefit from the following services:
 
-💢 <b>رایگان:</b>
+💢 <b>free:</b>
 
-✅ دریافت پیش بینی روزانه هواشناسی برای چهار روز آینده (دمای کمینه، دمای بیشینه، سرعت باد، رطوبت هوا و بارش)
+✅Receive the daily weather forecast for the next four days (minimum temperature, maximum temperature, wind speed, air humidity and precipitation)
+✅ The option of registering a garden
 
-✅ امکان ثبت یک باغ
+💢 <b>vip service:</b>
 
+✅Receiving necessary warnings to prevent harmful meteorological phenomena (such as frostbite, heat stroke and sunburn, wind damage, hail, etc.)
 
-💢 <b>سرویس vip:</b>
+✅ Receive practical recommendations of agricultural meteorology specific to your pistachio variety (proper time of fertilizing, spraying and reminding of important actions of your garden)
 
-✅ دریافت هشدارهای لازم جهت پیشگیری از پدیده‌های خسارت‌زای هواشناسی (مانند سرمازدگی، گرمازدگی و آفتاب‌سوختگی، خسارت باد، تگرگ و … )
+✅ Receive text messages in critical situations in addition to Telegram bot
 
-✅ دریافت توصیه‌های کاربردی هواشناسی کشاورزی مخصوص رقم پسته شما ( زمان مناسب کوددهی، سم‌پاشی و یادآوری اقدامات مهم باغ شما)
-
-✅ دریافت پیامک در مواقع حساس علاوه بر بات تلگرامی
-
-✅ امکان ثبت تا ۵ باغ
+✅ The option of registering up to 5 gardens
 .
 .
 .
-و بسیاری از توصیه‌های کاربردی دیگر
+and many othere practical advices
 
 
-✅✅ در صورت عدم رضایت شما از سرویس در هر زمان، هزینه پرداختی باز می‌گردد.
+✅✅ If you are not satisfied with the service at any time, the paid fee will be returned.
 """
     db.log_activity(user.id, "navigated to payment view")
     await update.message.reply_text(reply_text, parse_mode=ParseMode.HTML, reply_markup=payment_keyboard())
@@ -134,11 +125,11 @@ async def contact_us(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db.log_activity(user.id, "viewed contact us message")
     text = """
-راه‌های ارتباط با ما:
+contact us:
 
-ادمین: @agriiadmin
-شماره تلفن: 02164063410
-آدرس: تهران، ضلع غربی دانشگاه شریف، برج فناوری بنتک
+the admin: @agriiadmin
+phone number: 02164063410
+address: Tehran, West side of Sharif University, Bontech Technology Tower
 """
     await update.message.reply_text(text, reply_markup=db.find_start_keyboard(user.id))
 
@@ -180,18 +171,18 @@ def main():
     application.add_error_handler(error_handler)
 
     # Menu navigation commands
-    application.add_handler(MessageHandler(filters.Regex('^🏘 بازگشت به خانه$'), home_view))
-    application.add_handler(MessageHandler(filters.Regex('^منوی هواشناسی$'), weather_view))
-    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 مدیریت کشت‌ها$'), farm_management_view))
-    application.add_handler(MessageHandler(filters.Regex('^🌟 سرویس VIP$'), payment_view))
-    application.add_handler(MessageHandler(filters.Regex('^📲 دریافت اطلاعات اختصاصی باغ$'), info_view))
+    application.add_handler(MessageHandler(filters.Regex('^🏘 back to home$'), home_view))
+    application.add_handler(MessageHandler(filters.Regex('^the meteorology menu$'), weather_view))
+    application.add_handler(MessageHandler(filters.Regex('^👨‍🌾 manage the farms$'), farm_management_view))
+    application.add_handler(MessageHandler(filters.Regex('^🌟 VIP service$'), payment_view))
+    application.add_handler(MessageHandler(filters.Regex('^📲 receive specific information of the garden$'), info_view))
 
     # Bot handlers
     application.add_handler(register_conv_handler)
     application.add_handler(add_farm_conv_handler)
-    application.add_handler(MessageHandler(filters.Regex("^📤 دعوت از دیگران$"), invite))
+    application.add_handler(MessageHandler(filters.Regex("^📤 invite others$"), invite))
     # application.add_handler(invite_conv)
-    application.add_handler(MessageHandler(filters.Regex("^📬 ارتباط با ما$"), contact_us))
+    application.add_handler(MessageHandler(filters.Regex("^📬 contact us$"), contact_us))
     application.add_handler(MessageHandler(filters.Regex("^💶 خرید اشتراک$"), payment_link))
     application.add_handler(CommandHandler("verify", verify_payment))
     application.add_handler(off_conv_handler)

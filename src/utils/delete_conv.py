@@ -38,7 +38,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Constants for ConversationHandler states
 CONFIRM_DELETE, DELETE_FARM = range(2)
-MENU_CMDS = ['✍️ ثبت نام', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
+MENU_CMDS = ['✍ sign up', '📤 دعوت از دیگران', '🖼 مشاهده کشت‌ها', '➕ اضافه کردن کشت', '🗑 حذف کشت', '✏️ ویرایش کشت‌ها', '🌦 درخواست اطلاعات هواشناسی', '/start', '/stats', '/send', '/set']
 ###################################################################
 ####################### Initialize Database #######################
 db = database.Database()
@@ -51,13 +51,13 @@ async def delete_farm_keyboard(update: Update, context: ContextTypes.DEFAULT_TYP
     user_farms = db.get_farms(user.id)
     if user_farms:
         await update.message.reply_text(
-            "یکی از کشت‌های خود را انتخاب کنید",
+            "Choose one of your farms",
             reply_markup=farms_list_reply(db, user.id),
         )
         return CONFIRM_DELETE
     else:
         await update.message.reply_text(
-            "شما هنوز باغی ثبت نکرده اید", reply_markup=db.find_start_keyboard(user.id)
+            "You have not registered any garden yet", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
 
@@ -70,29 +70,28 @@ async def confirm_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_farms_names = list(db.get_farms(user.id).keys())
     if farm in MENU_CMDS:
         db.log_activity(user.id, "error - answer in menu_cmd list", farm)
-        await update.message.reply_text("عمیلات قبلی لغو شد. لطفا دوباره تلاش کنید.", reply_markup=db.find_start_keyboard(user.id))
+        await update.message.reply_text("The previous operation was cancelled. Please try again.", reply_markup=db.find_start_keyboard(user.id))
         return ConversationHandler.END
-    if farm not in user_farms_names and farm != "↩️ بازگشت":
+    if farm not in user_farms_names and farm != "↩️ back":
         db.log_activity(user.id, "error - wrong farm to delete", farm)
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از کشت‌های خود را انتخاب کنید",
+            text="Choose one of your farms",
             reply_markup=farms_list_reply(db, user.id),
         )
         return CONFIRM_DELETE
-    if farm == "↩️ بازگشت":
+    if farm == "↩️ back":
         db.log_activity(user.id, "back")
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات کنسل شد!", reply_markup=db.find_start_keyboard(user.id)
+            chat_id=user.id, text="The operation was cancelled!", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
     db.log_activity(user.id, "chose farm to delete", farm)
     location = user_farms.get(farm)["location"]
-    text = f"""
-آیا از حذف <b>{farm}</b> با مشخصات زیر اطمینان دارید؟
-محصول: {user_farms[farm].get("product")}
-مساحت: {user_farms[farm].get("area")}
-آدرس انتخاب شده ⬇️
+    text = f"""Are you sure you want to delete <b>{farm}</b> with the following specifications?
+Crop: {user_farms[farm].get("product")}
+Area: {user_farms[farm].get("area")}
+Selected address ⬇️
 """
     await context.bot.send_message(chat_id=user.id, text=text, parse_mode=ParseMode.HTML)
 
@@ -107,7 +106,7 @@ async def confirm_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await context.bot.send_message(
             chat_id=user.id,
-            text=f"موقعیت <{farm}> ثبت نشده است. ",
+            text=f"location of <{farm}> is not registered. ",
             reply_markup=conf_del_keyboard(),
         )
         return DELETE_FARM
@@ -117,34 +116,34 @@ async def delete_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     farm = user_data["farm_to_delete"]
     answer = update.message.text
-    acceptable = ["بله", "خیر", "بازگشت"]
+    acceptable = ["yes", "no", "back"]
     if answer not in acceptable:
         db.log_activity(user.id, "error - wrong delete confirmation", answer)
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات موفق نبود", reply_markup=db.find_start_keyboard(user.id)
+            chat_id=user.id, text="The operation was not successful", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
-    elif answer == "بازگشت":
+    elif answer == "back":
         db.log_activity(user.id, "back")
         await context.bot.send_message(
             chat_id=user.id,
-            text="یکی از کشت‌های خود را انتخاب کنید",
+            text="Choose one of your farms",
             reply_markup=farms_list_reply(db, user.id),
         )
         return CONFIRM_DELETE
-    elif answer == "خیر":
+    elif answer == "no":
         db.log_activity(user.id, "stopped delete")
         await context.bot.send_message(
-            chat_id=user.id, text="عملیات لغو شد", reply_markup=db.find_start_keyboard(user.id)
+            chat_id=user.id, text="The operation was cancelled", reply_markup=db.find_start_keyboard(user.id)
         )
         return ConversationHandler.END
-    elif answer == "بله":
+    elif answer == "yes":
         db.log_activity(user.id, "confirmed delete")
         try:
             db.user_collection.update_one(
                 {"_id": user.id}, {"$unset": {f"farms.{farm}": ""}}
             )
-            text = f"{farm} با موفقیت حذف شد."
+            text = f"{farm} was successfully deleted."
             await context.bot.send_message(
                 chat_id=user.id,
                 text=text,
@@ -157,13 +156,13 @@ async def delete_farm(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("عملیات کنسل شد!")
+    await update.message.reply_text("The operation was cancelled!")
     return ConversationHandler.END
 
 
 delete_conv_handler = ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex("🗑 حذف کشت"), delete_farm_keyboard)
+            MessageHandler(filters.Regex("🗑 delete the farm"), delete_farm_keyboard)
         ],
         states={
             CONFIRM_DELETE: [MessageHandler(filters.ALL, confirm_delete)],

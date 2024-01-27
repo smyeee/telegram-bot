@@ -16,7 +16,7 @@ REQUIRED_FIELDS = [
 
 class Database:
     def __init__(self) -> None:
-        self.client = pymongo.MongoClient(os.environ["MONGODB_URI"])
+        self.client = pymongo.MongoClient("localhost:27017")
         self.db = self.client["agriweathBot"]  # database name
         self.user_collection = self.db["newUserCollection"]
         self.bot_collection = self.db["botCollection"]
@@ -214,9 +214,9 @@ class Database:
 
     def get_admins(self) -> list:
         """Return a list of admin IDs"""
-        admins = self.bot_collection.find_one({"name":"admin-list"})["admins"]
-        admins = [int(admin) for admin in admins]
-        return admins
+        # admins = self.bot_collection.find_one({"name":"admin-list"})["admins"]
+        # admins = [int(admin) for admin in admins]
+        # return admins
 
     def add_new_farm(self, user_id, farm_name: str, new_farm: dict):
         self.user_collection.update_one(
